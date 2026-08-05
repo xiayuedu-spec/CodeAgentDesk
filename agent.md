@@ -86,16 +86,17 @@ src/
 ## 5. 已实现功能
 
 - 多标签并行运行 claude（node-pty + xterm）
-- 新建会话（目录选择）、历史会话一键 `--resume`
+- 新建会话（目录选择）、历史会话一键 `--resume`（点击即恢复终端，不再自动弹详情）
 - 自动恢复上次打开的标签页
-- 会话重命名（右键）、归档、恢复、归档会话“借出”运行
-- 会话详情视图（用户/Claude 文本 + 工具调用折叠卡片）
+- 会话重命名（右键）、归档、恢复；归档会话“借出”运行（借出期间仍留在归档列表并高亮，切走自动放回；右键可永久恢复）
+- 会话详情视图（右键“查看详情”：用户/Claude 文本 + 工具调用折叠卡片，不展示 JSON 输入）
 - 导出 Markdown、复制会话内容
 - 全文搜索（返回可读的用户输入/Claude 输出，不带 JSON）
 - token 用量 / 请求数实时统计（3 秒刷新）
 - Claude 目录可配置（侧边栏齿轮）
 - 全局快捷键：`Ctrl+T` 新建、`Ctrl+W` 关闭、`Ctrl+K` 搜索、`Ctrl+1..9` 切标签
 - 终端内 `Ctrl+C` 复制选中、`Ctrl+V` 粘贴、右键菜单复制/粘贴
+- 终端栈常驻挂载：关闭一个标签不会卸载其他会话的终端
 
 ## 6. 已知坑与工作区补丁
 
@@ -104,9 +105,9 @@ src/
 3. **Electron 二进制**：如果 `node_modules/electron/dist` 不存在，需要 `node node_modules/electron/install.js` 联网补装。
 4. **preload 是 sandbox:true**：不能 `require` 本地模块，`preload/index.ts` 里通道名是手写副本，改 `shared/ipc-contract.ts` 时必须同步。
 5. **dev 脚本**：Vite 固定 `127.0.0.1:5173`；`concurrently` 里 `&&` 后面不能再用 `npm:xxx` 简写，必须写 `npm run dev:electron`。
-6. **终端滚轮**：Claude TUI 用 alternate screen 时滚轮行为由 claude 自己决定；xterm 已挂自定义 wheel handler（scrollLines）并设 `scrollback: 10000`。读历史对话以“会话详情视图”为准。
-7. **详情视图不能卸载终端**：`App.tsx` 里终端栈常驻挂载，详情打开时只加 `.hidden`，否则退出详情会丢滚动记录。
-8. **归档会话“借出”**：点击归档行 → 先把 JSONL 移回 projects 并 resume，但 UI 里仍标记归档；切到其他标签或关闭时自动移回归档目录。
+6. **终端滚轮**：Claude TUI 用 alternate screen 时滚轮行为由 claude 自己决定；xterm 使用默认滚轮行为并设 `scrollback: 10000`。读历史对话以“会话详情视图”为准。
+7. **终端栈必须常驻挂载**：`App.tsx` 中终端栈在非搜索分支始终渲染，当前无激活会话（欢迎页）时只加 `.hidden`，详情打开时也只加 `.hidden`。关闭激活标签后若卸载其他终端，会导致其他标签的滚动记录丢失。
+8. **归档会话“借出”**：点击归档行 → 先把 JSONL 移回 projects 并 resume，但 UI 里仍标记归档并高亮；切到其他标签或关闭时自动移回归档目录；右键“恢复”才是永久取消归档。
 
 ## 7. 开发约定
 

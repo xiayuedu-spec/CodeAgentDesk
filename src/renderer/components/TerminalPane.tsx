@@ -57,17 +57,6 @@ export function TerminalPane({ id, active }: TerminalPaneProps) {
     };
     scheduleFit();
 
-    terminal.attachCustomWheelEventHandler((event) => {
-      if (Math.abs(event.deltaY) < 1) return false;
-      const lines = event.deltaY > 0 ? 3 : -3;
-      try {
-        terminal.scrollLines(lines);
-      } catch {
-        return false;
-      }
-      return true;
-    });
-
     const dataDisposable = terminal.onData((data) => {
       void window.codeagentdesk.writeSession(id, data);
     });

@@ -12,6 +12,11 @@ export function SessionDetail({
   onExport,
   onClose,
 }: SessionDetailProps) {
+  const toolPreview = (value: string): string => {
+    const singleLine = value.replace(/\s+/g, ' ').trim();
+    return singleLine.length > 80 ? `${singleLine.slice(0, 80)}…` : singleLine;
+  };
+
   return (
     <div className="session-detail">
       <header className="detail-header">
@@ -38,8 +43,12 @@ export function SessionDetail({
           detail.entries.map((entry, index) =>
             entry.role === 'tool' ? (
               <details key={index} className="tool-card">
-                <summary>{entry.toolName ?? '工具调用'}</summary>
-                {entry.toolInput ? <pre className="tool-input">{entry.toolInput}</pre> : null}
+                <summary>
+                  <span className="tool-name">{entry.toolName ?? '工具调用'}</span>
+                  {entry.toolOutput ? (
+                    <span className="tool-preview">{toolPreview(entry.toolOutput)}</span>
+                  ) : null}
+                </summary>
                 {entry.toolOutput ? <pre className="tool-output">{entry.toolOutput}</pre> : null}
               </details>
             ) : (

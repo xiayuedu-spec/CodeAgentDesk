@@ -848,7 +848,26 @@ input {
   cursor: pointer;
 }
 
-.tool-input,
+.tool-name,
+.tool-preview {
+  display: block;
+}
+
+.tool-name {
+  color: var(--warn);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.tool-preview {
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
 .tool-output {
   margin: 0;
   padding: 8px 12px;
@@ -858,12 +877,4 @@ input {
   font-family: var(--mono);
   font-size: 11px;
   line-height: 1.6;
-}
-
-.tool-input {
-  color: var(--text-muted);
-}
-
-.tool-output {
-  color: var(--text);
 }

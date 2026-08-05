@@ -496,8 +496,9 @@ export default function App() {
     };
     if (result.archived) {
       setMode('archive');
-      void openDetailById(record.sessionId);
+      void openArchivedSession(record);
     } else {
+      setMode('sessions');
       void openHistory(record);
     }
   }
@@ -524,8 +525,9 @@ export default function App() {
     : null;
 
   const detailOpen = Boolean(detail && detailSessionId);
+  const terminalStackHidden = detailOpen || !activeSession;
   const terminalStack = (
-    <div className={`terminal-stack ${detailOpen ? 'hidden' : ''}`}>
+    <div className={`terminal-stack ${terminalStackHidden ? 'hidden' : ''}`}>
       {sessions.map((session) => (
         <div
           key={session.id}
@@ -727,7 +729,7 @@ export default function App() {
                         sessions.some(
                           (session) =>
                             session.sessionId === record.sessionId && session.id === activeId,
-                        )
+                        ) || detailSessionId === record.sessionId
                           ? 'active'
                           : ''
                       }`}
@@ -891,19 +893,17 @@ export default function App() {
                 ))
               )}
             </div>
-          ) : detail && detailSessionId ? (
+          ) : (
             <>
               {terminalStack}
-              <SessionDetail
-                detail={detail}
-                onExport={() => void exportFromDetail()}
-                onClose={closeDetail}
-              />
-            </>
-          ) : activeSession ? (
-            <>
-              {terminalStack}
-              <section className="info-panel" aria-label="会话状态">
+              {detail && detailSessionId ? (
+                <SessionDetail
+                  detail={detail}
+                  onExport={() => void exportFromDetail()}
+                  onClose={closeDetail}
+                />
+              ) : activeSession ? (
+                <section className="info-panel" aria-label="会话状态">
                 <div className="info-item">
                   <span>状态</span>
                   <strong
@@ -945,11 +945,10 @@ export default function App() {
                     <strong className="error-text truncate">{error}</strong>
                   </div>
                 ) : null}
-              </section>
-            </>
-          ) : (
-            <>
-              <div className="terminal-surface" role="log" aria-live="polite">
+                </section>
+              ) : (
+                <>
+                  <div className="terminal-surface" role="log" aria-live="polite">
                 <div className="terminal-line">
                   <span className="prompt">&gt;</span> codeagentdesk v{appInfo?.appVersion ?? '…'}
                 </div>
@@ -973,9 +972,9 @@ export default function App() {
                     <span className="prompt">&gt;</span> IPC 连接失败：{error}
                   </div>
                 ) : null}
-              </div>
+                  </div>
 
-              <section className="info-panel" aria-label="应用状态">
+                  <section className="info-panel" aria-label="应用状态">
                 <div className="info-item">
                   <span>IPC</span>
                   <strong className={error ? 'error-text' : 'ok-text'}>
@@ -990,7 +989,9 @@ export default function App() {
                   <span>数据目录</span>
                   <strong className="truncate">{appInfo?.userDataPath ?? '…'}</strong>
                 </div>
-              </section>
+                  </section>
+                </>
+              )}
             </>
           )}
         </div>
