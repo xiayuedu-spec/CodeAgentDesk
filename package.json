@@ -1,0 +1,44 @@
+{
+  "name": "codeagentdesk",
+  "version": "0.1.0",
+  "description": "Claude Code unified window manager desktop app",
+  "main": "dist-electron/main/index.js",
+  "private": true,
+  "author": "CodeAgentDesk",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "patch-package",
+    "dev": "npm run build:main && concurrently -k \"vite\" \"wait-on tcp:127.0.0.1:5173 && npm run dev:electron\"",
+    "dev:electron": "cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
+    "build": "npm run build:main && vite build",
+    "build:main": "tsc -p tsconfig.node.json",
+    "rebuild": "electron-rebuild -f -w node-pty",
+    "start": "electron .",
+    "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.json --noEmit",
+    "package": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "chokidar": "^4.0.3",
+    "lucide-react": "^1.28.0",
+    "node-pty": "^1.1.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "concurrently": "^10.0.4",
+    "cross-env": "^10.1.0",
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.3",
+    "patch-package": "^8.0.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.0",
+    "wait-on": "^9.1.0"
+  }
+}

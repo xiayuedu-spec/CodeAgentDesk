@@ -29,16 +29,16 @@ Claude Code 以 CLI/终端会话方式工作。关闭终端窗口后，之前的
 | 决策点 | 选择 | 理由 |
 |---|---|---|
 | 形态 | 桌面应用 | 用户选定 |
-| 技术栈 | Electron + Node (TypeScript 全栈) | node-pty/xterm.js 内嵌终端成熟稳定；child_process 管理 claude；@vscode/ripgrep 自带搜索二进制 |
+| 技术栈 | Electron + Node (TypeScript 全栈) | node-pty/xterm.js 内嵌终端并托管 claude 进程；@vscode/ripgrep 自带搜索二进制 |
 | 渲染层 | React + Vite | 生态成熟 |
 | 元数据存储 | better-sqlite3（本地 SQLite） | npm 自带预编译二进制，**用户机器无需安装任何数据库**；仅开发/打包时用 electron-rebuild 或 electron-builder `install-app-deps` 适配 Electron ABI 一次 |
 | 全文搜索 | @vscode/ripgrep 直接搜 JSONL | 无需系统装 rg；未来可平滑升级 FTS5 |
-| 会话绑定 | 监听 `~/.claude/projects` 新增 JSONL，读首行校验 cwd | 不依赖 claude 输出 session id |
+| 会话绑定 | 监听 `~/.claude/projects` 新增 JSONL，首行取 sessionId，再扫描事件校验 cwd | 不依赖 claude 输出 session id |
 | 关闭行为 | 关闭应用 = 会话终止但记录保留，可恢复 | 用户选定 |
 
 ### 环境
 - 主目标平台：Windows 11（用户当前环境）；Electron 天然跨平台，代码不做平台强绑定。
-- claude 可执行文件：默认从 PATH 找 `claude`，提供设置项自定义路径。
+- claude 可执行文件：默认从 PATH 解析可执行文件；Windows 上 PATH 命中的是 `claude.ps1`，不能直接 spawn，需按 PATHEXT 解析 `claude.cmd`/`.exe` 或经 shell 启动。提供设置项自定义路径。
 
 ## 4. 架构总览
 
@@ -83,20 +83,20 @@ Claude Code 以 CLI/终端会话方式工作。关闭终端窗口后，之前的
 ### 5.1 新建会话（spawn）
 1. 侧边栏点"＋ 新建会话"→ 目录选择对话框（默认上次使用的目录）。
 2. `SessionManager.spawn(cwd)`：node-pty 以 `cwd` 启动 `claude`（设置 `TERM`、`COLORTERM` 环境变量）。立即创建标签页，xterm 渲染输出。
-3. **绑定**：SessionIndexer 监听 `~/.claude/projects`。claude 启动后会出现新 JSONL；watcher 收到"新增文件"事件后读取首行，校验其中的 `cwd` 字段与本次 spawn 的 cwd 一致、且文件创建时间在 spawn 之后，即绑定 标签↔sessionId。
-   - 为消除歧义：维护一个 `pendingSpawns: Set<{cwd, spawnedAt}>`，新文件与集合匹配；多个候选取最新。
+3. **绑定**：SessionIndexer 监听 `~/.claude/projects`。claude 启动后会出现新 JSONL；watcher 收到"新增文件"事件后，先读首行 `last-prompt` 取 `sessionId`，再扫描前 N 行（如 50 行）找第一个带顶层 `cwd` 的事件（实测前 3 行 `last-prompt`/`mode`/`permission-mode` 和 `file-history-snapshot` 不带 cwd，普通事件从第 4 行起带 `cwd` + `entrypoint:"cli"`），校验 `cwd` 与本次 spawn 一致、文件创建时间在 spawn 之后，即绑定 标签↔sessionId。文件刚创建时 cwd 事件可能尚未写入，需短暂等待/重试。
+   - 为消除歧义：维护一个 `pendingSpawns: Set<{cwd, spawnedAt}>`，新文件与集合匹配；多个候选取最新；仍匹配不上时允许右键手动绑定。
 4. 绑定成功后写入 SQLite（sessions 记录）。绑定前标签标题显示"启动中…"。
 
 ### 5.2 恢复会话（resume）
 1. 侧边栏点某个会话 → `SessionManager.resume(sessionId, cwd)`：以 `cwd` 启动 `claude --resume <session-uuid>`。
-2. 直接绑定（已知 sessionId，无需 watcher）。原 JSONL 继续 append，索引器从已处理偏移继续增量更新。
+2. 直接绑定（已知 sessionId，无需 watcher），并把 SQLite 中该会话 `ended_at` 清回 `NULL`。原 JSONL 继续 append，索引器从已处理偏移继续增量更新。
 
 ### 5.3 终止 / 关闭标签
-1. 关闭标签：对 pty 发 `SIGTERM`，等 ~3s 未退出再 `SIGKILL`；写入 `ended_at`。
+1. 关闭标签：向 pty 发送 `Ctrl+C`（`\x03`），等 ~3s 未退出再 `pty.kill()` 强制结束并杀干净 claude 进程树；写入 `ended_at`。Windows 无 POSIX 信号，不使用 `SIGTERM`/`SIGKILL` 表述。
 2. claude 自行退出（如用户输入 `/exit`）：pty `onExit` → 写 `ended_at`，标签进入"已结束"状态或自动关闭。
 
 ### 5.4 关闭应用
-- 逐个对运行中的标签发 SIGTERM → 等 onExit → 写 `ended_at`。
+- 逐个对运行中的标签按 5.3 流程（Ctrl+C → 超时后 kill 进程树）终止 → 等 onExit → 写 `ended_at`。
 - 落盘 SQLite、关闭 watcher 后退出。
 
 ### 5.5 崩溃恢复
@@ -120,17 +120,19 @@ CREATE TABLE sessions (
   project_id        INTEGER NOT NULL REFERENCES projects(id),
   cwd               TEXT NOT NULL,
   file_path         TEXT NOT NULL UNIQUE,   -- JSONL 绝对路径
-  title             TEXT,                   -- 首条用户消息截断 ~40 字
+  title             TEXT,                   -- 标题（优先 ai-title，回退首条用户消息）
   started_at        TEXT NOT NULL,
   ended_at          TEXT,                   -- NULL = 进行中
   last_activity_at  TEXT NOT NULL,
   message_count     INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE TABLE file_progress (               -- 增量索引进度（append-only 安全恢复）
-  file_path    TEXT PRIMARY KEY,
-  lines_processed INTEGER NOT NULL DEFAULT 0,
-  updated_at   TEXT NOT NULL
+CREATE TABLE file_progress (               -- 增量索引进度
+  file_path        TEXT PRIMARY KEY,
+  lines_processed  INTEGER NOT NULL DEFAULT 0,
+  bytes_processed  INTEGER NOT NULL DEFAULT 0,
+  file_size        INTEGER NOT NULL DEFAULT 0,  -- 上次处理时文件大小，用于检测重写/截断
+  updated_at       TEXT NOT NULL
 );
 
 CREATE TABLE meta (                        -- 索引版本/模式信息
@@ -141,8 +143,12 @@ CREATE TABLE meta (                        -- 索引版本/模式信息
 
 **关键原则：JSONL 永远是源数据（source of truth），SQLite 只存元数据。** 详情视图、导出、搜索都直接读 JSONL，不冗余存消息正文。
 
+索引器不假设 JSONL 严格 append-only：resume 会重复追加 `last-prompt`/`mode`/`ai-title` 等块，未来版本也可能重写文件。`file_progress` 记录字节偏移与文件大小，发现文件变短或首行变化时重置该文件全量重扫。
+
+`message_count` 口径：统计 `origin.kind:"human"` 的用户输入次数（对话轮数），不含 hook 注入、sidechain 与元数据事件。
+
 ### 标题提取规则
-取 JSONL 中**第一条非工具结果的用户文本消息**（`type:"user"` 且 `message.content` 含普通 `text` 块，排除 tool_result），截断至约 40 字符。
+优先取 JSONL 中**最后一次 `ai-title` 事件**（Claude Code 自带生成标题，resume 后会追加新值）；无 `ai-title` 时回退到**第一条 `origin.kind:"human"` 的用户文本消息**（跳过 tool_result 以及 hook/插件注入的 user 文本块），截断至约 40 字符。
 
 ## 7. UI 布局（单个主窗口）
 
@@ -180,7 +186,7 @@ CREATE TABLE meta (                        -- 索引版本/模式信息
 ## 8. 搜索设计
 
 - `SearchService` 用 `@vscode/ripgrep`（npm 包自带 rg 二进制，**用户无需装 ripgrep**）。
-- 执行：`rg --json -i "<query>" <projectsDir> --glob "*.jsonl"`；收集命中 → 按 JSONL（会话）分组 → 返回 `{sessionId, project, line, snippet}`。
+- 执行：`rg --json -i "<query>" <projectsDir> --glob "*.jsonl"`；收集命中 → 按 JSONL（会话）分组 → 返回 `{sessionId, project, line, snippet}`。单行 JSONL 可能包含整文件内容（tool_result/快照），snippet 必须截断、每会话命中数需设上限；渲染前过滤 `last-prompt`/`mode`/`ai-title` 等元数据事件。
 - 渲染：按会话分组，显示命中行片段；点击可打开详情或恢复会话。
 - 升级路径：数据量增长后可切 SQLite FTS5（用现有 `file_progress` 增量建索引），SearchService 接口保持不变。
 
@@ -190,6 +196,7 @@ CREATE TABLE meta (                        -- 索引版本/模式信息
 - 用户文本 → `**User**` 引用块
 - assistant → `**Claude**`（保留代码围栏）
 - 工具调用/结果 → 折叠块（`<details>`）或围栏块
+- 解析兼容 `user.content` 为字符串或数组两种形态（实测都存在）；跳过 `last-prompt`/`mode`/`permission-mode`/`ai-title`/`file-history-snapshot`/hook 等元数据事件
 - 通过 Electron 保存对话框写出 `.md`
 
 纯函数，用样例 JSONL 做单测。
@@ -198,17 +205,17 @@ CREATE TABLE meta (                        -- 索引版本/模式信息
 
 | 场景 | 行为 |
 |---|---|
-| PATH 找不到 claude | 标签页内显示明确错误 + toast；设置面板可配 claude 可执行文件路径 |
+| PATH 找不到 claude | 标签页内显示明确错误 + toast；设置面板可配 claude 可执行文件路径（Windows 按 PATHEXT 解析 `.cmd`/`.exe`，`.ps1` 不作为直接 spawn 目标） |
 | pty 启动失败 | 同上，标签内提示原因 |
 | 会话进程中途崩溃 | toast"会话进程异常退出"；标记 ended；JSONL 保留，可恢复 |
 | watcher 异常 | 记日志不崩溃；索引器下次启动重试 |
 | SQLite 损坏 | 打开时迁移/校验失败 → 将坏库移开，从 JSONL 全量重建索引 |
-| 超大 JSONL | 列表不整读文件；详情视图虚拟化、分块流式读；搜索用 rg 返回行片段 |
+| 超大 JSONL | 列表不整读文件；详情视图虚拟化、按行流式读取（单行可能很大，大块 tool_result 默认折叠）；搜索用 rg 返回行片段并截断/限量 |
 
 ## 11. 测试策略
 
-- **单元测试（Vitest）**：JSONL 解析器、标题提取、Markdown 导出、SQLite schema/迁移、绑定匹配逻辑（pendingSpawns 匹配）。
-- **集成测试**：用**mock claude**（一个写入合法 JSONL 事件的脚本）跑 SessionManager spawn→绑定→索引链路，不依赖真实 claude；真实 claude 做冒烟测试。
+- **单元测试（Vitest）**：JSONL 解析器（用真实会话样例做夹具，覆盖 `ai-title`、`user.content` 字符串/数组、缺 command_permissions 的短会话）、标题提取、Markdown 导出、SQLite schema/迁移、绑定匹配逻辑（pendingSpawns 匹配）。
+- **集成测试**：用**mock claude**（按真实 JSONL 事件结构写入，并支持追加 `ai-title`/`last-prompt` 等块）跑 SessionManager spawn→绑定→索引链路，不依赖真实 claude；真实 claude 做冒烟测试。
 - **E2E（Playwright for Electron，v1.5 后补）**：启动应用 → 新建会话（mock claude）→ 输入 → 关闭 → 重开 → 恢复 → 搜索 → 导出。
 - **Windows 手工清单**：窗口关闭/重开、强制 kill、崩溃恢复、恢复含中文目录路径的会话。
 
@@ -261,6 +268,6 @@ codeagentdesk/
 
 ## 15. 风险与备注
 
-- **绑定歧义**：同一目录瞬间创建多个 JSONL 时靠"最新 + cwd 匹配"消除；极端情况允许用户手动改绑（右键"绑定到…"）。
-- **`--resume` 依赖**：claude CLI 的 `--resume <uuid>` 语义后续若变动，集中在 `SessionManager` 一处适配。
-- **中文字符/特殊路径**：Windows 路径编码与 `~/.claude/projects` 目录名对应关系需实测确认（避免仅按字符串猜测，优先按 `cwd` 字段校验）。
+- **绑定歧义**：同一目录瞬间创建多个 JSONL 时靠"最新 + cwd 匹配"消除，首行 `sessionId` 可快速区分；极端情况允许用户手动改绑（右键"绑定到…"）。
+- **`--resume` 依赖**：已在本机 `claude --help` 验证为 `-r, --resume [value]`（按 session ID 恢复）；语义后续若变动，集中在 `SessionManager` 一处适配。
+- **中文字符/特殊路径**：已实测目录名符合 `path.replace(/[\\:]/g, '-')`（如 `D:\ai\CodeAgentDesk` → `D--ai-CodeAgentDesk`）；仍以 JSONL 事件中的 `cwd` 字段为准校验，实现时补一条中文/特殊路径的端到端用例。

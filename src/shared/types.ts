@@ -1,0 +1,171 @@
+export interface AppInfo {
+  appVersion: string;
+  electronVersion: string;
+  chromeVersion: string;
+  nodeVersion: string;
+  platform: string;
+  userDataPath: string;
+  startedAt: string;
+}
+
+export interface AppConfig {
+  claudeDir?: string;
+}
+
+export interface ClaudeConfigInfo {
+  config: AppConfig;
+  resolvedClaudeDir: string;
+}
+
+export interface PickClaudeDirResult {
+  dir: string | null;
+}
+
+export interface PickDirectoryResult {
+  cwd: string | null;
+}
+
+export interface CreateSessionResult {
+  id: string;
+  cwd: string;
+  sequence: number;
+}
+
+export interface ResumeSessionResult {
+  id: string;
+  cwd: string;
+  sequence: number;
+}
+
+export interface SessionRecord {
+  sessionId: string;
+  cwd: string;
+  filePath: string;
+  archived: boolean;
+  archivedAt?: string;
+  customName?: string;
+  startedAt: string;
+  updatedAt: string;
+}
+
+export interface ChatEntry {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+export interface SessionDetailEntry {
+  role: 'user' | 'assistant' | 'tool';
+  text?: string;
+  toolName?: string;
+  toolInput?: string;
+  toolOutput?: string;
+}
+
+export interface SessionDetailResult {
+  sessionId: string;
+  title?: string;
+  cwd?: string;
+  entries: SessionDetailEntry[];
+}
+
+export interface ExportResult {
+  ok: boolean;
+  path?: string;
+  message?: string;
+}
+
+export interface UiState {
+  openSessionIds: string[];
+  activeSessionId?: string;
+}
+
+export interface RestoreSessionResult {
+  ok: boolean;
+  message?: string;
+}
+
+export interface ReadSessionTextResult {
+  ok: boolean;
+  text: string;
+  message?: string;
+}
+
+export interface SearchHit {
+  line: number;
+  snippet: string;
+  role: 'user' | 'assistant';
+}
+
+export interface SearchResult {
+  sessionId: string;
+  cwd: string;
+  archived: boolean;
+  customName?: string;
+  hits: SearchHit[];
+}
+
+export interface SessionUsage {
+  requests: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+}
+
+export interface RenameSessionResult {
+  ok: boolean;
+  message?: string;
+}
+
+export interface ArchiveSessionResult {
+  ok: boolean;
+  message?: string;
+}
+
+export interface SessionDataEvent {
+  id: string;
+  data: string;
+}
+
+export interface SessionExitedEvent {
+  id: string;
+  exitCode?: number;
+}
+
+export interface SessionBoundEvent {
+  id: string;
+  sessionId: string;
+}
+
+export interface SessionErrorEvent {
+  id: string;
+  message: string;
+}
+
+export interface CodeAgentDeskApi {
+  getAppInfo(): Promise<AppInfo>;
+  getClaudeConfig(): Promise<ClaudeConfigInfo>;
+  setClaudeDir(dir: string | null): Promise<ClaudeConfigInfo>;
+  pickClaudeDir(): Promise<PickClaudeDirResult>;
+  listSessions(): Promise<SessionRecord[]>;
+  pickDirectory(): Promise<PickDirectoryResult>;
+  createSession(cwd: string): Promise<CreateSessionResult>;
+  resumeSession(sessionId: string, cwd: string): Promise<ResumeSessionResult>;
+  renameSession(sessionId: string, name: string): Promise<RenameSessionResult>;
+  archiveSession(sessionId: string, cwd: string): Promise<ArchiveSessionResult>;
+  restoreArchivedSession(sessionId: string, cwd: string): Promise<RestoreSessionResult>;
+  readSessionDetail(sessionId: string): Promise<SessionDetailResult>;
+  exportSessionMarkdown(sessionId: string, cwd?: string): Promise<ExportResult>;
+  readSessionText(sessionId: string): Promise<ReadSessionTextResult>;
+  getUiState(): Promise<UiState>;
+  saveUiState(state: UiState): Promise<void>;
+  getSessionUsage(id: string): Promise<SessionUsage>;
+  searchSessions(query: string): Promise<SearchResult[]>;
+  writeSession(id: string, data: string): Promise<void>;
+  resizeSession(id: string, cols: number, rows: number): Promise<void>;
+  closeSession(id: string): Promise<void>;
+  onSessionData(callback: (event: SessionDataEvent) => void): () => void;
+  onSessionExited(callback: (event: SessionExitedEvent) => void): () => void;
+  onSessionBound(callback: (event: SessionBoundEvent) => void): () => void;
+  onSessionError(callback: (event: SessionErrorEvent) => void): () => void;
+}

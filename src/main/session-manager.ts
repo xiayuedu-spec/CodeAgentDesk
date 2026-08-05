@@ -1,0 +1,146 @@
+import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawn, type IPty } from 'node-pty';
+
+export interface SessionCallbacks {
+  onData(id: string, data: string): void;
+  onExit(id: string, exitCode?: number): void;
+  onBound(id: string, sessionId: string): void;
+  onError(id: string, message: string): void;
+}
+
+interface RunningSession {
+  id: string;
+  cwd: string;
+  pty: IPty;
+  sessionId?: string;
+}
+
+export class SessionManager {
+  private readonly sessions = new Map<string, RunningSession>();
+  private readonly sequences = new Map<string, number>();
+
+  constructor(private readonly callbacks: SessionCallbacks) {}
+
+  create(cwd: string): { id: string; cwd: string; sequence: number } {
+    const { sequence } = this.nextSequence(cwd);
+    const { id } = this.start(cwd, []);
+    return { id, cwd, sequence };
+  }
+
+  resume(cwd: string, sessionId: string): { id: string; cwd: string; sequence: number } {
+    const { sequence } = this.nextSequence(cwd);
+    const { id } = this.start(cwd, ['--resume', sessionId]);
+    const session = this.sessions.get(id);
+    if (session) session.sessionId = sessionId;
+    return { id, cwd, sequence };
+  }
+
+  findBySessionId(sessionId: string): string | null {
+    for (const [id, session] of this.sessions) {
+      if (session.sessionId === sessionId) return id;
+    }
+    return null;
+  }
+
+  bind(id: string, sessionId: string): void {
+    const session = this.sessions.get(id);
+    if (!session) return;
+    session.sessionId = sessionId;
+    this.callbacks.onBound(id, sessionId);
+  }
+
+  has(id: string): boolean {
+    return this.sessions.has(id);
+  }
+
+  getSession(id: string): { cwd: string; sessionId?: string } | null {
+    const session = this.sessions.get(id);
+    return session ? { cwd: session.cwd, sessionId: session.sessionId } : null;
+  }
+
+  write(id: string, data: string): void {
+    this.sessions.get(id)?.pty.write(data);
+  }
+
+  resize(id: string, cols: number, rows: number): void {
+    const session = this.sessions.get(id);
+    if (!session) return;
+    try {
+      session.pty.resize(cols, rows);
+    } catch {
+      // Ignore resize races while the pty is closing.
+    }
+  }
+
+  close(id: string): void {
+    const session = this.sessions.get(id);
+    if (!session) return;
+    try {
+      session.pty.kill();
+    } catch {
+      // Process may have already exited.
+    }
+  }
+
+  private resolveClaudeCommand(): string {
+    if (process.platform !== 'win32') return 'claude';
+    const directories = (process.env.PATH ?? '').split(path.delimiter);
+    const candidates = ['claude.cmd', 'claude.exe', 'claude.bat', 'claude'];
+    for (const directory of directories) {
+      if (!directory) continue;
+      for (const name of candidates) {
+        const candidate = path.join(directory, name);
+        try {
+          fs.accessSync(candidate);
+          return candidate;
+        } catch {
+          // Try the next candidate.
+        }
+      }
+    }
+    return 'claude.cmd';
+  }
+
+  private nextSequence(cwd: string): { sequence: number } {
+    const key = normalizeCwd(cwd);
+    const sequence = (this.sequences.get(key) ?? 0) + 1;
+    this.sequences.set(key, sequence);
+    return { sequence };
+  }
+
+  private start(cwd: string, args: string[]): { id: string } {
+    const id = randomUUID();
+    let pty: IPty;
+    try {
+      pty = spawn(this.resolveClaudeCommand(), args, {
+        name: 'xterm-256color',
+        cols: 100,
+        rows: 30,
+        cwd,
+        env: {
+          ...process.env,
+          TERM: 'xterm-256color',
+          COLORTERM: 'truecolor',
+        },
+      });
+    } catch (error) {
+      this.callbacks.onError(id, error instanceof Error ? error.message : String(error));
+      throw error;
+    }
+
+    this.sessions.set(id, { id, cwd, pty });
+    pty.onData((data) => this.callbacks.onData(id, data));
+    pty.onExit(({ exitCode }) => {
+      this.sessions.delete(id);
+      this.callbacks.onExit(id, exitCode);
+    });
+
+    return { id };
+  }
+}
+
+function normalizeCwd(cwd: string): string {
+  return process.platform === 'win32' ? cwd.toLowerCase() : cwd;
+}
