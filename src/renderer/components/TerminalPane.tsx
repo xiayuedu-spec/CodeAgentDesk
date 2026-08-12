@@ -146,6 +146,7 @@ export function TerminalPane({
       if (!container || !terminal || !fit) return;
       if (container.clientWidth === 0 || container.clientHeight === 0) return;
       fit.fit();
+      terminal.focus();
       terminal.refresh(0, terminal.rows - 1);
     });
     return () => cancelAnimationFrame(frame);
@@ -225,7 +226,10 @@ export function TerminalPane({
     <>
       <div className="terminal-pane">
         <div className="terminal-chrome">
-          <span className={`terminal-status ${status}`} />
+          <span
+            className={`terminal-status ${status}`}
+            title={status === 'running' ? '运行中' : status === 'starting' ? '启动中' : '已结束'}
+          />
           <span className="terminal-title">{title}</span>
           <div className="terminal-chrome-actions">
             <button
@@ -251,17 +255,19 @@ export function TerminalPane({
       {menu ? (
         <div
           className="terminal-context-menu"
+          role="menu"
           style={{ left: menu.x, top: menu.y }}
           onClick={(event) => event.stopPropagation()}
         >
           <button
             type="button"
+            role="menuitem"
             disabled={!hasSelection}
             onClick={() => void copySelection()}
           >
             复制
           </button>
-          <button type="button" onClick={() => void pasteClipboard()}>
+          <button type="button" role="menuitem" onClick={() => void pasteClipboard()}>
             粘贴
           </button>
         </div>

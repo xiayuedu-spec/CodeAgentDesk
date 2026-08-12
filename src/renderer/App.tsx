@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+} from 'react';
 import {
   Archive,
   ArchiveRestore,
@@ -7,6 +14,8 @@ import {
   Copy,
   FolderOpen,
   Link2,
+  PanelLeft,
+  PanelLeftClose,
   Pencil,
   Plus,
   RotateCcw,
@@ -82,11 +91,6 @@ const THEME_SWATCHES: Record<ThemeName, { bg: string; fg: string; accent: string
   mist: { bg: '#131619', fg: '#c6cdd4', accent: '#58a0a8' },
 };
 
-function formatTime(value: string | undefined): string {
-  if (!value) return '…';
-  return new Date(value).toLocaleString();
-}
-
 function folderName(cwd: string): string {
   const parts = cwd.split(/[\\/]/).filter(Boolean);
   return parts.at(-1) ?? cwd;
@@ -107,6 +111,39 @@ function statusLabel(status: SessionView['status']): string {
   return '启动中';
 }
 
+function formatRelativeTime(value: string | undefined): string {
+  if (!value) return '';
+  const elapsed = Date.now() - new Date(value).getTime();
+  if (elapsed < 60_000) return '刚刚';
+  const minutes = Math.floor(elapsed / 60_000);
+  if (minutes < 60) return `${minutes} 分钟前`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} 小时前`;
+  return `${Math.floor(hours / 24)} 天前`;
+}
+
+function renderTime(iso: string | undefined): ReactNode {
+  const text = formatRelativeTime(iso);
+  return text ? <span className="session-time">{text}</span> : null;
+}
+
+function highlight(text: string, needle: string): ReactNode {
+  const term = needle.trim().toLowerCase();
+  if (!term) return text;
+  const lower = text.toLowerCase();
+  const parts: ReactNode[] = [];
+  let index = 0;
+  let at = lower.indexOf(term);
+  while (at >= 0 && index < text.length) {
+    if (at > index) parts.push(text.slice(index, at));
+    parts.push(<mark key={at}>{text.slice(at, at + term.length)}</mark>);
+    index = at + term.length;
+    at = lower.indexOf(term, index);
+  }
+  if (index < text.length) parts.push(text.slice(index));
+  return parts;
+}
+
 export default function App() {
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [mode, setMode] = useState<Mode>('sessions');
@@ -124,6 +161,13 @@ export default function App() {
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [borrowedIds, setBorrowedIds] = useState<string[]>([]);
+  const [infoOpen, setInfoOpen] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(232);
+  const [navIndex, setNavIndex] = useState(-1);
+  const [loadingList, setLoadingList] = useState(true);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const sidebarBodyRef = useRef<HTMLDivElement | null>(null);
+  const sidebarWidthRef = useRef(232);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const retiringRef = useRef(new Set<string>());
 
@@ -144,7 +188,13 @@ export default function App() {
 
   useEffect(() => {
     const theme = claudeInfo?.config.theme ?? 'default';
+    const previous = document.documentElement.dataset.theme;
     document.documentElement.dataset.theme = theme;
+    if (previous && previous !== theme) {
+      document.body.classList.remove('theme-fade');
+      void document.body.offsetWidth; // 重新触发 cross-fade 动画
+      document.body.classList.add('theme-fade');
+    }
     void window.codeagentdesk.setWindowBackgroundColor(THEME_BACKGROUND[theme]);
   }, [claudeInfo]);
 
@@ -264,6 +314,7 @@ export default function App() {
       .then(async (value) => {
         if (cancelled) return;
         setRecords(value);
+        setLoadingList(false);
         const state = await window.codeagentdesk.getUiState();
         if (cancelled) return;
         const restored: SessionView[] = [];
@@ -290,7 +341,10 @@ export default function App() {
         setActiveId(active?.id ?? (restored.length > 0 ? restored[0].id : null));
       })
       .catch((reason: unknown) => {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
+        if (!cancelled) {
+          setError(reason instanceof Error ? reason.message : String(reason));
+          setLoadingList(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -342,6 +396,10 @@ export default function App() {
       window.removeEventListener('keydown', onKey);
     };
   }, [menu]);
+
+  useEffect(() => {
+    setNavIndex(-1);
+  }, [mode]);
 
   async function handleNewSession(): Promise<void> {
     const picked = await window.codeagentdesk.pickDirectory();
@@ -568,6 +626,56 @@ export default function App() {
     setMenu({ sessionId, cwd, archived, x, y });
   }
 
+  function startSidebarResize(event: ReactMouseEvent): void {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = sidebarWidthRef.current;
+    const onMove = (ev: MouseEvent): void => {
+      const next = Math.min(480, Math.max(180, startWidth + (ev.clientX - startX)));
+      sidebarWidthRef.current = next;
+      setSidebarWidth(next);
+    };
+    const onUp = (): void => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      document.body.classList.remove('resizing-sidebar');
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    document.body.classList.add('resizing-sidebar');
+  }
+
+  function openNavItem(item: {
+    kind: 'running' | 'history' | 'archived';
+    id?: string;
+    sessionId?: string;
+    cwd: string;
+  }): void {
+    if (item.kind === 'running' && item.id) {
+      setActiveId(item.id);
+    } else if (item.kind === 'history' && item.sessionId) {
+      const record = historyRecords.find((r) => r.sessionId === item.sessionId);
+      if (record) void openHistory(record);
+    } else if (item.kind === 'archived' && item.sessionId) {
+      const record = archivedRecords.find((r) => r.sessionId === item.sessionId);
+      if (record) void openArchivedSession(record);
+    }
+  }
+
+  function onSidebarKeyDown(event: ReactKeyboardEvent): void {
+    if (navItems.length === 0) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setNavIndex((i) => (i < 0 ? 0 : (i + 1) % navItems.length));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setNavIndex((i) => (i < 0 ? navItems.length - 1 : (i - 1 + navItems.length) % navItems.length));
+    } else if (event.key === 'Enter' && activeNav >= 0) {
+      event.preventDefault();
+      openNavItem(navItems[activeNav]);
+    }
+  }
+
   const activeSession = sessions.find((session) => session.id === activeId) ?? null;
   const historyRecords = records.filter(
     (record) => !record.archived && !sessions.some((s) => s.sessionId === record.sessionId),
@@ -578,6 +686,49 @@ export default function App() {
       records.find((record) => record.sessionId === menu.sessionId) ??
       null
     : null;
+
+  const navItems: {
+    key: string;
+    kind: 'running' | 'history' | 'archived';
+    id?: string;
+    sessionId?: string;
+    cwd: string;
+  }[] = (() => {
+    if (mode === 'sessions') {
+      return [
+        ...sessions.map((s) => ({
+          key: `s:${s.id}`,
+          kind: 'running' as const,
+          id: s.id,
+          sessionId: s.sessionId,
+          cwd: s.cwd,
+        })),
+        ...historyRecords.map((r) => ({
+          key: `h:${r.sessionId}`,
+          kind: 'history' as const,
+          sessionId: r.sessionId,
+          cwd: r.cwd,
+        })),
+      ];
+    }
+    if (mode === 'archive') {
+      return archivedRecords.map((r) => ({
+        key: `a:${r.sessionId}`,
+        kind: 'archived' as const,
+        sessionId: r.sessionId,
+        cwd: r.cwd,
+      }));
+    }
+    return [];
+  })();
+  const activeNav = navItems.length ? Math.min(navIndex, navItems.length - 1) : -1;
+  const navClass = (index: number): string => (activeNav === index ? ' nav-focus' : '');
+
+  useEffect(() => {
+    if (activeNav < 0) return;
+    const element = sidebarBodyRef.current?.querySelector(`[data-nav-index="${activeNav}"]`);
+    element?.scrollIntoView({ block: 'nearest' });
+  }, [activeNav]);
 
   const detailOpen = Boolean(detail && detailSessionId);
   const terminalStackHidden = detailOpen || !activeSession;
@@ -609,7 +760,7 @@ export default function App() {
     <div className="app">
       <TitleBar />
       <div className="app-body">
-        <aside className="sidebar">
+        <aside className="sidebar" style={{ width: sidebarWidth }}>
         <div className="brand">
           <span className="brand-icon">
             <Terminal size={18} strokeWidth={1.8} />
@@ -627,6 +778,19 @@ export default function App() {
             placeholder="搜索会话"
             aria-label="搜索会话"
           />
+          {query ? (
+            <button
+              type="button"
+              className="search-clear"
+              aria-label="清空搜索"
+              onClick={() => {
+                setQuery('');
+                searchInputRef.current?.focus();
+              }}
+            >
+              <X size={12} />
+            </button>
+          ) : null}
         </div>
 
         <div className="mode-switch" role="tablist" aria-label="视图模式">
@@ -653,9 +817,22 @@ export default function App() {
           </button>
         </div>
 
-        <div className="sidebar-body">
+        <div
+          className="sidebar-body"
+          ref={sidebarBodyRef}
+          tabIndex={0}
+          aria-label="会话列表"
+          onKeyDown={onSidebarKeyDown}
+        >
           {mode === 'sessions' ? (
-            sessions.length === 0 && historyRecords.length === 0 ? (
+            loadingList && sessions.length === 0 ? (
+              <div className="skeleton-list" aria-label="加载中">
+                <div className="skeleton-row" />
+                <div className="skeleton-row" />
+                <div className="skeleton-row" />
+                <div className="skeleton-row" />
+              </div>
+            ) : sessions.length === 0 && historyRecords.length === 0 ? (
               <div className="empty-state">
                 <FolderOpen size={20} strokeWidth={1.6} />
                 <span>暂无会话</span>
@@ -666,7 +843,7 @@ export default function App() {
                   <section className="session-group">
                     <div className="group-label">当前会话</div>
                     <ul className="session-list">
-                      {sessions.map((session) => (
+                      {sessions.map((session, i) => (
                         <li key={session.id}>
                           {renamingId === session.sessionId ? (
                             <div className="session-row renaming">
@@ -695,7 +872,8 @@ export default function App() {
                           ) : (
                             <button
                               type="button"
-                              className={`session-row ${session.id === activeId ? 'active' : ''}`}
+                              className={`session-row ${session.id === activeId ? 'active' : ''}${navClass(i)}`}
+                              data-nav-index={i}
                               onClick={() => setActiveId(session.id)}
                               onContextMenu={(event) => {
                                 event.preventDefault();
@@ -715,11 +893,19 @@ export default function App() {
                                 }
                               }}
                             >
-                              <span className={`session-dot ${session.status}`} />
+                              <span
+                                className={`session-dot ${session.status}`}
+                                title={statusLabel(session.status)}
+                              />
                               <span className="session-title">
                                 {formatSessionTitle(session)}
                               </span>
-                              <span className="session-cwd">{session.cwd}</span>
+                              <span className="session-cwd" title={session.cwd}>
+                                {session.cwd}
+                              </span>
+                              {renderTime(
+                                records.find((r) => r.sessionId === session.sessionId)?.updatedAt,
+                              )}
                             </button>
                           )}
                         </li>
@@ -732,7 +918,7 @@ export default function App() {
                   <section className="session-group">
                     <div className="group-label">历史会话</div>
                     <ul className="session-list">
-                      {historyRecords.map((record) => (
+                      {historyRecords.map((record, j) => (
                         <li key={record.sessionId}>
                           {renamingId === record.sessionId ? (
                             <div className="session-row renaming">
@@ -755,7 +941,8 @@ export default function App() {
                           ) : (
                             <button
                               type="button"
-                              className="session-row"
+                              className={`session-row${navClass(sessions.length + j)}`}
+                              data-nav-index={sessions.length + j}
                               onClick={() => void openHistory(record)}
                               onContextMenu={(event) => {
                                 event.preventDefault();
@@ -769,9 +956,12 @@ export default function App() {
                                 );
                               }}
                             >
-                              <span className="session-dot ended" />
+                              <span className="session-dot ended" title="已结束" />
                               <span className="session-title">{recordTitle(record)}</span>
-                              <span className="session-cwd">{record.cwd || '未知目录'}</span>
+                              <span className="session-cwd" title={record.cwd || ''}>
+                                {record.cwd || '未知目录'}
+                              </span>
+                              {renderTime(record.updatedAt)}
                             </button>
                           )}
                         </li>
@@ -789,7 +979,7 @@ export default function App() {
               </div>
             ) : (
               <ul className="session-list">
-                {archivedRecords.map((record) => (
+                {archivedRecords.map((record, k) => (
                   <li key={record.sessionId}>
                     <button
                       type="button"
@@ -800,7 +990,8 @@ export default function App() {
                         ) || detailSessionId === record.sessionId
                           ? 'active'
                           : ''
-                      }`}
+                      }${navClass(k)}`}
+                      data-nav-index={k}
                       onClick={() => void openArchivedSession(record)}
                       onContextMenu={(event) => {
                         event.preventDefault();
@@ -814,7 +1005,7 @@ export default function App() {
                         );
                       }}
                     >
-                      <span className="session-dot ended" />
+                      <span className="session-dot ended" title="已结束" />
                       <span className="session-title">{recordTitle(record)}</span>
                       <span className="session-cwd">{record.cwd || '未知目录'}</span>
                     </button>
@@ -901,15 +1092,41 @@ export default function App() {
           </div>
         </div>
         </aside>
+        <div
+          className="sidebar-resizer"
+          title="拖动调整侧边栏宽度"
+          onMouseDown={startSidebarResize}
+        />
 
         <main className="main">
-        <div className="tab-bar">
-          {sessions.map((session) => (
+        <div className="tab-bar" role="tablist" aria-label="打开的会话">
+          {sessions.map((session, i) => (
             <div
               key={session.id}
-              className={`tab ${session.id === activeId ? 'active' : ''}`}
-              role="button"
+              className={`tab ${session.id === activeId ? 'active' : ''}${
+                dragIndex === i ? ' dragging' : ''
+              }`}
+              role="tab"
+              aria-selected={session.id === activeId}
               tabIndex={0}
+              draggable
+              onDragStart={() => setDragIndex(i)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (dragIndex == null) return;
+                const from = dragIndex;
+                const to = i;
+                setDragIndex(null);
+                if (from === to) return;
+                setSessions((previous) => {
+                  const next = [...previous];
+                  const [moved] = next.splice(from, 1);
+                  next.splice(to, 0, moved);
+                  return next;
+                });
+              }}
+              onDragEnd={() => setDragIndex(null)}
               onClick={() => setActiveId(session.id)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') setActiveId(session.id);
@@ -931,7 +1148,10 @@ export default function App() {
                 }
               }}
             >
-              <span className={`tab-dot ${session.status}`} />
+              <span
+                className={`tab-dot ${session.status}`}
+                title={statusLabel(session.status)}
+              />
               <span>{formatSessionTitle(session)}</span>
               <button
                 type="button"
@@ -948,6 +1168,15 @@ export default function App() {
           ))}
           <button
             type="button"
+            className="icon-button tab-panel-toggle"
+            aria-label={infoOpen ? '收起信息面板' : '展开信息面板'}
+            title={infoOpen ? '收起信息面板' : '展开信息面板'}
+            onClick={() => setInfoOpen((open) => !open)}
+          >
+            {infoOpen ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
+          </button>
+          <button
+            type="button"
             className="icon-button tab-add"
             aria-label="新建会话"
             onClick={() => void handleNewSession()}
@@ -956,7 +1185,7 @@ export default function App() {
           </button>
         </div>
 
-        <div className="content">
+        <div className={`content ${infoOpen ? '' : 'info-collapsed'}`}>
           {mode === 'search' ? (
             <div className="search-results" role="log">
               {searchResults.length === 0 ? (
@@ -981,7 +1210,7 @@ export default function App() {
                           <span className={`search-role ${hit.role}`}>
                             {hit.role === 'user' ? '用户' : 'Claude'}
                           </span>
-                          <span className="search-snippet">{hit.snippet}</span>
+                          <span className="search-snippet">{highlight(hit.snippet, query)}</span>
                         </li>
                       ))}
                     </ul>
@@ -1002,9 +1231,7 @@ export default function App() {
                 <section className="info-panel" aria-label="会话状态">
                 <div className="info-item">
                   <span>状态</span>
-                  <strong
-                    className={activeSession.status === 'ended' ? 'error-text' : 'ok-text'}
-                  >
+                  <strong className={`status-text ${activeSession.status}`}>
                     {statusLabel(activeSession.status)}
                   </strong>
                 </div>
@@ -1018,22 +1245,33 @@ export default function App() {
                 </div>
                 <div className="info-item">
                   <span>请求数</span>
-                  <strong>{usage.requests}</strong>
+                  <strong className="usage-badge">{usage.requests}</strong>
                 </div>
                 <div className="info-item">
-                  <span>输入 Tokens</span>
-                  <strong>{usage.inputTokens.toLocaleString()}</strong>
-                </div>
-                <div className="info-item">
-                  <span>输出 Tokens</span>
-                  <strong>{usage.outputTokens.toLocaleString()}</strong>
-                </div>
-                <div className="info-item">
-                  <span>缓存读 / 写</span>
-                  <strong>
-                    {usage.cacheReadTokens.toLocaleString()} /{' '}
-                    {usage.cacheCreationTokens.toLocaleString()}
-                  </strong>
+                  <span>Token 用量</span>
+                  <div className="usage-bar" title="输入 / 输出 / 缓存读">
+                    <span className="usage-seg in" style={{ flexGrow: usage.inputTokens }} />
+                    <span className="usage-seg out" style={{ flexGrow: usage.outputTokens }} />
+                    <span
+                      className="usage-seg cache"
+                      style={{ flexGrow: usage.cacheReadTokens }}
+                    />
+                  </div>
+                  <div className="usage-legend">
+                    <span>
+                      <i className="usage-dot in" />
+                      输入 {usage.inputTokens.toLocaleString()}
+                    </span>
+                    <span>
+                      <i className="usage-dot out" />
+                      输出 {usage.outputTokens.toLocaleString()}
+                    </span>
+                    <span>
+                      <i className="usage-dot cache" />
+                      缓存读 {usage.cacheReadTokens.toLocaleString()} / 写{' '}
+                      {usage.cacheCreationTokens.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
                 {error ? (
                   <div className="info-item">
@@ -1043,50 +1281,37 @@ export default function App() {
                 ) : null}
                 </section>
               ) : (
-                <>
-                  <div className="terminal-surface" role="log" aria-live="polite">
-                <div className="terminal-line">
-                  <span className="prompt">&gt;</span> codeagentdesk v{appInfo?.appVersion ?? '…'}
-                </div>
-                <div className="terminal-line">
-                  <span className="prompt">&gt;</span> electron {appInfo?.electronVersion ?? '…'}
-                </div>
-                <div className="terminal-line">
-                  <span className="prompt">&gt;</span> chrome {appInfo?.chromeVersion ?? '…'}
-                </div>
-                <div className="terminal-line">
-                  <span className="prompt">&gt;</span> node {appInfo?.nodeVersion ?? '…'}
-                </div>
-                <div className="terminal-line">
-                  <span className="prompt">&gt;</span> platform {appInfo?.platform ?? '…'}
-                </div>
-                <div className="terminal-line">
-                  <span className="prompt">&gt;</span> userData {appInfo?.userDataPath ?? '…'}
-                </div>
-                {error ? (
-                  <div className="terminal-line error">
-                    <span className="prompt">&gt;</span> IPC 连接失败：{error}
+                <div className="welcome">
+                  <div className="welcome-icon">
+                    <Terminal size={26} strokeWidth={1.6} />
                   </div>
-                ) : null}
+                  <div className="welcome-title">CodeAgentDesk</div>
+                  <div className="welcome-sub">Claude Code 统一窗口管理器</div>
+                  <div className="welcome-actions">
+                    <button
+                      type="button"
+                      className="welcome-btn primary"
+                      onClick={() => void handleNewSession()}
+                    >
+                      <Plus size={16} />
+                      <span>新建会话</span>
+                    </button>
+                    {historyRecords.length > 0 ? (
+                      <button
+                        type="button"
+                        className="welcome-btn"
+                        onClick={() => sidebarBodyRef.current?.focus()}
+                      >
+                        <BookOpen size={16} />
+                        <span>打开历史会话</span>
+                      </button>
+                    ) : null}
                   </div>
-
-                  <section className="info-panel" aria-label="应用状态">
-                <div className="info-item">
-                  <span>IPC</span>
-                  <strong className={error ? 'error-text' : 'ok-text'}>
-                    {error ? '失败' : '已连接'}
-                  </strong>
+                  <div className="welcome-hint">
+                    Ctrl+K 全局搜索 · Ctrl+T 新建会话 · Ctrl+1..9 切换标签
+                  </div>
+                  {error ? <div className="welcome-error">{error}</div> : null}
                 </div>
-                <div className="info-item">
-                  <span>启动时间</span>
-                  <strong>{formatTime(appInfo?.startedAt)}</strong>
-                </div>
-                <div className="info-item">
-                  <span>数据目录</span>
-                  <strong className="truncate">{appInfo?.userDataPath ?? '…'}</strong>
-                </div>
-                  </section>
-                </>
               )}
             </>
           )}
@@ -1104,6 +1329,7 @@ export default function App() {
       {menu ? (
         <div
           className="context-menu"
+          role="menu"
           style={{ left: menu.x, top: menu.y }}
           onClick={(event) => event.stopPropagation()}
         >

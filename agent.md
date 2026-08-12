@@ -94,6 +94,9 @@ src/
 - 导出 Markdown、复制会话内容
 - 全文搜索（返回可读的用户输入/Claude 输出，不带 JSON）
 - token 用量 / 请求数实时统计（3 秒刷新）
+- Info 面板：token 用量条形对比（输入/输出/缓存）+ 请求数徽标，可折叠（标签栏右侧图标，折叠后终端全宽）
+- 状态色语义统一：启动=黄 / 运行=绿 / 结束=灰，侧边栏/标签/终端 chrome 三处状态点带 hover 提示
+- 主题切换 cross-fade（240ms）
 - Claude 目录可配置（侧边栏齿轮）
 - 皮肤切换（左下角设置，3 列色卡紧凑弹窗）：深色默认 / Mac 浅色 / 护眼豆沙绿 / 暖纸米黄 / 琥珀夜间 / 柔雾深青；终端配色随主题联动，窗口底色同步
 - 自绘窗口标题栏（Windows 隐藏系统标题栏，自定义最小化/最大化/关闭，窗口底色随主题同步）
@@ -104,6 +107,20 @@ src/
 - 终端内 `Ctrl+C` 复制选中、`Ctrl+V` 粘贴、右键菜单复制/粘贴
 - 终端栈常驻挂载：关闭一个标签不会卸载其他会话的终端
 - 表面层次精修：面板内顶高光 + 柔和阴影、hover/焦点环（深色主题）
+- 侧边栏可拖拽调宽（右缘手柄，180–480px）
+- 会话列表键盘导航：聚焦列表后 ↑/↓ 移动 + Enter 打开；未按键不显示高亮（navIndex 初始 -1，避免默认高亮第一行）
+- 激活终端自动聚焦：新建会话/切标签后 xterm 自动 `focus()`，可直接输入
+- 会话行 hover 显示完整路径（`session-cwd` 加 `title`）
+- 状态"启动中"呼吸动画（`startingPulse`，区别于 running 的外扩脉冲）
+- 数字等宽对齐：`body` 设 `font-variant-numeric: tabular-nums`，token 数字刷新不抖动
+- 圆角令牌化：`--radius-sm/md/lg` + `--shadow-card/pop`，主要控件统一走 `--radius-md`
+- 无障碍属性：标签 `role="tab"` + `aria-selected`（tab-bar 为 `tablist`）、右键菜单 `role="menu"`（终端菜单带 `menuitem`）
+- 欢迎页/空状态引导卡：品牌图标 + 「新建会话/打开历史会话」按钮 + 快捷键提示（替换原假终端行；无激活会话时显示，`grid-column: 1/-1`）
+- 微交互：搜索/工具卡 hover 上浮 `translateY(-1px)`、全局按钮按压 `scale(0.98)`、标签切换时终端淡入（`viewIn`）
+- 搜索命中关键词高亮（`<mark>`，`highlight()` 大小写不敏感分词）+ 搜索框一键清空按钮
+- 会话行显示相对时间（"3 分钟前"，`renderTime`/`formatRelativeTime`）；消息数徽标曾加后回退，勿再添加
+- 会话列表加载骨架屏（shimmer，`loadingList` 状态下 4 条占位）
+- 标签拖拽排序（HTML5 drag 重排，顺序随 ui-state 持久化）
 
 ## 6. 已知坑与工作区补丁
 
