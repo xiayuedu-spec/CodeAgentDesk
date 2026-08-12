@@ -371,7 +371,9 @@ async function toRecord(
       archived,
       archivedAt: meta.archivedAt,
       customName: meta.customName,
-      startedAt: stat.birthtime.toISOString(),
+      summary: meta.summary,
+      tags: meta.tags,
+      startedAt: info.startedAt ?? stat.birthtime.toISOString(),
       updatedAt: stat.mtime.toISOString(),
     };
   } catch {
@@ -379,9 +381,12 @@ async function toRecord(
   }
 }
 
-export async function readSessionInfo(file: string): Promise<{ cwd?: string; title?: string }> {
+export async function readSessionInfo(
+  file: string,
+): Promise<{ cwd?: string; title?: string; startedAt?: string }> {
   let cwd: string | undefined;
   let title: string | undefined;
+  let startedAt: string | undefined;
   let lines = 0;
   await new Promise<void>((resolve) => {
     const stream = fs.createReadStream(file, { encoding: 'utf8' });
@@ -397,9 +402,11 @@ export async function readSessionInfo(file: string): Promise<{ cwd?: string; tit
           type?: string;
           cwd?: unknown;
           aiTitle?: unknown;
+          timestamp?: unknown;
           message?: { content?: unknown };
         };
         if (!cwd && typeof event.cwd === 'string') cwd = event.cwd;
+        if (!startedAt && typeof event.timestamp === 'string') startedAt = event.timestamp;
         if (event.type === 'ai-title' && typeof event.aiTitle === 'string') {
           title = event.aiTitle.slice(0, 40);
         }
@@ -415,7 +422,7 @@ export async function readSessionInfo(file: string): Promise<{ cwd?: string; tit
     reader.on('error', () => resolve());
     stream.on('error', () => resolve());
   });
-  return { cwd, title };
+  return { cwd, title, startedAt };
 }
 
 function parseChatLine(line: string): ChatEntry | null {

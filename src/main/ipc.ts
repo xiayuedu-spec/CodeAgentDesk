@@ -18,6 +18,10 @@ import type {
   SessionRecord,
   SearchResult,
   SessionUsage,
+  SummarizeSessionResult,
+  DaySummarizeResult,
+  SummaryHistoryResult,
+  SummaryGetResult,
   ThemeName,
   UiState,
 } from '../shared/types';
@@ -38,6 +42,9 @@ import {
   searchSessions,
 } from './session-library';
 import { buildMarkdown } from './export';
+import { getRecentDirs, recordRecentDir } from './recent-dirs';
+import { summarizeDayText, summarizeMonthText, summarizeSession } from './summarize';
+import { getSummaryText, listSummaries, saveSummary, type SummaryKind } from './summary-store';
 import { readUiState, writeUiState } from './ui-state';
 import type { SessionMetaStore } from './session-meta-store';
 import type { SessionManager } from './session-manager';
@@ -108,6 +115,14 @@ export function registerIpcHandlers(
     },
   );
 
+  ipcMain.handle(
+    IpcChannel.configSetAutoSummarize,
+    (_event, enabled: boolean): ClaudeConfigInfo => {
+      writeConfig({ ...readConfig(), autoSummarize: enabled });
+      return readClaudeConfigInfo();
+    },
+  );
+
   ipcMain.handle(IpcChannel.configPickClaudeDir, async (): Promise<PickClaudeDirResult> => {
     const result = await dialog.showOpenDialog({
       title: '选择 Claude 目录',
@@ -121,6 +136,8 @@ export function registerIpcHandlers(
     listSessions(resolveClaudeHome(readConfig()), metaStore),
   );
 
+  ipcMain.handle(IpcChannel.recentDirsGet, (): string[] => getRecentDirs());
+
   ipcMain.handle(IpcChannel.sessionPickDirectory, async (): Promise<PickDirectoryResult> => {
     const result = await dialog.showOpenDialog({
       title: '选择会话工作目录',
@@ -131,9 +148,14 @@ export function registerIpcHandlers(
   });
 
   ipcMain.handle(IpcChannel.sessionCreate, (_event, cwd: string): CreateSessionResult => {
-    const created = sessions.create(cwd);
+    const resolved = path.resolve(cwd);
+    if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
+      throw new Error('所选目录不存在或不是文件夹');
+    }
+    recordRecentDir(resolved);
+    const created = sessions.create(resolved);
     const { id } = created;
-    watcher.registerPending(id, cwd);
+    watcher.registerPending(id, resolved);
     return created;
   });
 
@@ -285,6 +307,76 @@ export function registerIpcHandlers(
   );
 
   ipcMain.handle(
+    IpcChannel.sessionSummarize,
+    async (_event, sessionId: string): Promise<SummarizeSessionResult> => {
+      const filePath = await locateSessionFile(sessionId);
+      if (!filePath) return { ok: false, message: '找不到会话记录' };
+      const entries = await readChatEntries(filePath);
+      const text = entries
+        .map((entry) => `${entry.role === 'user' ? 'User' : 'Claude'}:\n${entry.text}`)
+        .join('\n\n');
+      if (!text.trim()) return { ok: false, message: '会话为空，无法总结' };
+      try {
+        const result = await summarizeSession(text);
+        metaStore.setSummary(sessionId, result.summary, result.tags);
+        return { ok: true, summary: result.summary, tags: result.tags };
+      } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : String(error) };
+      }
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.daySummarize,
+    async (_event, date?: string): Promise<DaySummarizeResult> => {
+      const day = date ?? new Date().toISOString().slice(0, 10);
+      const claudeHome = resolveClaudeHome(readConfig());
+      const combined = await collectRangeText(claudeHome, metaStore, day, day);
+      if (!combined.trim()) return { ok: false, message: `${day} 没有可总结的会话` };
+      try {
+        const text = await summarizeDayText(combined);
+        saveSummary('day', day, text);
+        return { ok: true, text };
+      } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : String(error) };
+      }
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.monthSummarize,
+    async (_event, month?: string): Promise<DaySummarizeResult> => {
+      const key = month ?? new Date().toISOString().slice(0, 7);
+      const claudeHome = resolveClaudeHome(readConfig());
+      const combined = await collectRangeText(claudeHome, metaStore, `${key}-01`, `${key}-31`);
+      if (!combined.trim()) return { ok: false, message: `${key} 没有可总结的会话` };
+      try {
+        const text = await summarizeMonthText(combined);
+        saveSummary('month', key, text);
+        return { ok: true, text };
+      } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : String(error) };
+      }
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.summariesList,
+    async (): Promise<SummaryHistoryResult> => ({
+      days: listSummaries('day'),
+      months: listSummaries('month'),
+    }),
+  );
+
+  ipcMain.handle(
+    IpcChannel.summariesGet,
+    async (_event, payload: { kind: SummaryKind; key: string }): Promise<SummaryGetResult> => {
+      const text = getSummaryText(payload.kind, payload.key);
+      return text ? { ok: true, text } : { ok: false, message: '找不到该总结' };
+    },
+  );
+
+  ipcMain.handle(
     IpcChannel.sessionExport,
     async (_event, payload: { sessionId: string; cwd?: string }): Promise<ExportResult> => {
       const filePath = await locateSessionFile(payload.sessionId, payload.cwd);
@@ -408,6 +500,37 @@ export function registerIpcHandlers(
 
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+/** 收集 [from, to] 日期区间内所有会话的可读文本（按会话分段）。 */
+async function collectRangeText(
+  claudeHome: string,
+  metaStore: SessionMetaStore,
+  from: string,
+  to: string,
+): Promise<string> {
+  const records = await listSessions(claudeHome, metaStore);
+  const inRange = records.filter((record) => {
+    const date = (record.startedAt || '').slice(0, 10);
+    return date >= from && date <= to;
+  });
+  const parts: string[] = [];
+  for (const record of inRange) {
+    try {
+      const entries = await readChatEntries(record.filePath);
+      const text = entries
+        .map((entry) => `${entry.role === 'user' ? 'User' : 'Claude'}:\n${entry.text}`)
+        .join('\n');
+      if (text.trim()) {
+        const name =
+          record.customName ?? record.cwd.split(/[\\/]/).filter(Boolean).pop() ?? record.sessionId;
+        parts.push(`## ${name}\n${text}`);
+      }
+    } catch {
+      // 跳过无法读取的会话。
+    }
+  }
+  return parts.join('\n\n');
 }
 
 function emptyUsage(): SessionUsage {

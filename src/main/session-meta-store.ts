@@ -8,6 +8,8 @@ export interface SessionMeta {
   archivedAt?: string;
   archivedPath?: string;
   cwd?: string;
+  summary?: string;
+  tags?: string[];
 }
 
 type SessionMetaMap = Record<string, SessionMeta>;
@@ -42,6 +44,13 @@ export class SessionMetaStore {
   restore(sessionId: string): SessionMeta {
     const meta = this.get(sessionId);
     const next = { ...meta, archived: false, archivedAt: undefined, archivedPath: undefined };
+    this.set(sessionId, next);
+    return next;
+  }
+
+  setSummary(sessionId: string, summary: string, tags: string[]): SessionMeta {
+    const meta = this.get(sessionId);
+    const next = { ...meta, summary, tags };
     this.set(sessionId, next);
     return next;
   }

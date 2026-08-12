@@ -70,8 +70,10 @@ src/
 ### 应用数据（Windows 为 %APPDATA%/codeagentdesk）
 
 - `config.json`：`{ "claudeDir": "...", "theme": "default" | "mac" | "green" | "sepia" | "amber" | "mist" }`
-- `session-meta.json`：`{ [sessionId]: { customName?, archived?, archivedAt?, archivedPath?, cwd? } }`
+- `session-meta.json`：`{ [sessionId]: { customName?, archived?, archivedAt?, archivedPath?, cwd?, summary?, tags? } }`
 - `ui-state.json`：`{ openSessionIds: [], activeSessionId? }`（自动恢复上次打开的标签）
+- `recent-dirs.json`：最近使用的工作目录（去重，最多 8 个）
+- `summaries.json`：已归档总结 `{ days: { [date]: {text,updatedAt} }, months: { [month]: {...} } }`
 - `archive/<encodedDir>/<sessionId>.jsonl`：归档会话文件
 
 ## 4. Claude JSONL 事实清单（重要，别凭假设）
@@ -84,43 +86,75 @@ src/
 - token 用量在 assistant 事件的 `message.usage`：`input_tokens`、`output_tokens`、`cache_read_input_tokens`、`cache_creation_input_tokens`；同一 `message.id` 会出现多次，统计时按 id 去重取最后一次。
 - 会话绑定：watcher 监听 claudeHome，新增 `.jsonl` 后扫描前 200 行找顶层 `cwd` 与 pendingSpawn 匹配。
 
-## 5. 已实现功能
+## 5. 功能清单（当前全部已实现）
 
-- 多标签并行运行 claude（node-pty + xterm）
-- 新建会话（目录选择）、历史会话一键 `--resume`（点击即恢复终端，不再自动弹详情）
-- 自动恢复上次打开的标签页
-- 会话重命名（右键）、归档、恢复；归档会话“借出”运行（借出期间仍留在归档列表并高亮，切走自动放回；右键可永久恢复）
-- 会话详情视图（右键“查看详情”：用户/Claude 文本 + 工具调用折叠卡片，不展示 JSON 输入）
+> 供与其他项目对比、后续集成新能力。按类别分组。
+
+### 5.1 会话管理（核心）
+- 多标签并行运行 claude（node-pty + xterm），每标签一个独立会话
+- 新建会话（目录选择）；**最近目录快速新建**（`recent-dirs.json` 持久化、去重保留 8 个，新建弹层一键开会话）
+- 历史会话一键 `--resume`（点击即恢复终端，不自动弹详情）
+- 自动恢复上次打开的标签页（`ui-state.json`）
+- 会话重命名（右键）、归档、恢复；归档会话"借出"运行（借出期间留在归档列表并高亮，切走自动放回；右键永久恢复）
+- 历史列表实时刷新：watcher 检测 `.jsonl` 新增/删除 → 广播 `sessionsChanged` → 渲染层自动刷新
+- 拖放目录开会话（虚线 overlay，`webUtils.getPathForFile` 取路径，主进程 `isDirectory` 校验）
+- 终端栈常驻挂载：关闭一标签不卸载其他会话终端，滚动记录不丢
+- 激活终端自动聚焦：新建/切标签后 xterm 直接可输入
+
+### 5.2 搜索与详情
+- 全文搜索：跨全部会话 JSONL，返回可读用户输入/Claude 输出（不带 JSON）
+- 搜索命中关键词 `<mark>` 高亮 + 搜索框一键清空
+- 会话详情视图：用户/Claude 文本 + 工具调用折叠卡片（不展示 JSON 输入）
 - 导出 Markdown、复制会话内容
-- 全文搜索（返回可读的用户输入/Claude 输出，不带 JSON）
-- token 用量 / 请求数实时统计（3 秒刷新）
-- Info 面板：token 用量条形对比（输入/输出/缓存）+ 请求数徽标，可折叠（标签栏右侧图标，折叠后终端全宽）
-- 状态色语义统一：启动=黄 / 运行=绿 / 结束=灰，侧边栏/标签/终端 chrome 三处状态点带 hover 提示
-- 主题切换 cross-fade（240ms）
-- Claude 目录可配置（侧边栏齿轮）
-- 皮肤切换（左下角设置，3 列色卡紧凑弹窗）：深色默认 / Mac 浅色 / 护眼豆沙绿 / 暖纸米黄 / 琥珀夜间 / 柔雾深青；终端配色随主题联动，窗口底色同步
-- 自绘窗口标题栏（Windows 隐藏系统标题栏，自定义最小化/最大化/关闭，窗口底色随主题同步）
-- 终端轻量 chrome：标题、运行状态点、复制内容/查看详情按钮
-- 底部状态栏：会话数、归档数、Claude 目录、版本号
-- 克制动效（160ms 淡入）与右键菜单图标/分隔线
-- 全局快捷键：`Ctrl+T` 新建、`Ctrl+W` 关闭、`Ctrl+K` 搜索、`Ctrl+1..9` 切标签
+- 会话行信息：相对时间（"3 分钟前"）、hover 完整路径
+
+### 5.3 总结与 AI
+- 会话 AI 摘要+标签：详情视图 ✨ 按钮，`claude -p` 无头生成，存 `session-meta.json`（`summary`/`tags`，60s 超时）
+- 自动摘要：会话结束自动生成（已有跳过），历史/归档行显示标签 chips + 摘要行
+- 总结体系（自动归档到 `summaries.json`）：**今日/月度**总结 + **日历**（每格显示当天会话数、有归档带圆点、点某天查看或"找回"——基于当天会话记录重新生成）+ **历史查看**（日/月列表看全文）；模态四标签（今日/月度/日历/历史）；入口：底部状态栏胶囊 / 欢迎页 / Ctrl+P
+- 相关 IPC：`session:summarize`、`day:summarize`（可传日期）、`month:summarize`、`summaries:list`、`summaries:get`
+
+### 5.4 界面与主题
+- 6 套主题：深色默认 / Mac 浅色 / 护眼豆沙绿 / 暖纸米黄 / 琥珀夜间 / 柔雾深青；设置弹窗色卡切换；终端配色联动、窗口底色同步、切换 cross-fade（240ms）
+- 自绘窗口标题栏（Windows 隐藏系统标题栏，自定义最小化/最大化/关闭，底色随主题同步）
+- 侧边栏（右缘）与右侧 Info 面板（左缘）均可拖拽调宽，180–480px
+- Info 面板：token 用量条形对比（输入/输出/缓存）+ 请求数徽标，可折叠（折叠后终端全宽）
+- 状态色语义统一：启动=黄 / 运行=绿 / 结束=灰，侧边栏/标签/终端 chrome 三处一致 + hover 提示
+- 欢迎页引导卡、列表骨架屏、微交互（hover 上浮/按压反馈/切换淡入）、表面层次（面板内高光+柔和阴影）、圆角令牌化、数字等宽对齐、启动呼吸动画
+- 无障碍：tab `role="tab"`/`aria-selected`、右键菜单 `role="menu"`/`menuitem`
+
+### 5.5 交互与快捷键
+- 命令面板 `Ctrl+P`：新建/最近目录/恢复历史/归档/搜索/导出/切主题/设置/每日总结，输入过滤 + ↑↓/Enter
+- 全局快捷键：`Ctrl+T` 新建、`Ctrl+W` 关闭、`Ctrl+K` 搜索、`Ctrl+P` 命令面板、`Ctrl+1..9` 切标签
+- 会话列表键盘导航：聚焦后 ↑↓/Enter 打开（未按键不高亮）
 - 终端内 `Ctrl+C` 复制选中、`Ctrl+V` 粘贴、右键菜单复制/粘贴
-- 终端栈常驻挂载：关闭一个标签不会卸载其他会话的终端
-- 表面层次精修：面板内顶高光 + 柔和阴影、hover/焦点环（深色主题）
-- 侧边栏可拖拽调宽（右缘手柄，180–480px）
-- 会话列表键盘导航：聚焦列表后 ↑/↓ 移动 + Enter 打开；未按键不显示高亮（navIndex 初始 -1，避免默认高亮第一行）
-- 激活终端自动聚焦：新建会话/切标签后 xterm 自动 `focus()`，可直接输入
-- 会话行 hover 显示完整路径（`session-cwd` 加 `title`）
-- 状态"启动中"呼吸动画（`startingPulse`，区别于 running 的外扩脉冲）
-- 数字等宽对齐：`body` 设 `font-variant-numeric: tabular-nums`，token 数字刷新不抖动
-- 圆角令牌化：`--radius-sm/md/lg` + `--shadow-card/pop`，主要控件统一走 `--radius-md`
-- 无障碍属性：标签 `role="tab"` + `aria-selected`（tab-bar 为 `tablist`）、右键菜单 `role="menu"`（终端菜单带 `menuitem`）
-- 欢迎页/空状态引导卡：品牌图标 + 「新建会话/打开历史会话」按钮 + 快捷键提示（替换原假终端行；无激活会话时显示，`grid-column: 1/-1`）
-- 微交互：搜索/工具卡 hover 上浮 `translateY(-1px)`、全局按钮按压 `scale(0.98)`、标签切换时终端淡入（`viewIn`）
-- 搜索命中关键词高亮（`<mark>`，`highlight()` 大小写不敏感分词）+ 搜索框一键清空按钮
-- 会话行显示相对时间（"3 分钟前"，`renderTime`/`formatRelativeTime`）；消息数徽标曾加后回退，勿再添加
-- 会话列表加载骨架屏（shimmer，`loadingList` 状态下 4 条占位）
-- 标签拖拽排序（HTML5 drag 重排，顺序随 ui-state 持久化）
+- 未激活标签活动提醒：非激活标签有新输出时 dot 变黄快闪，切到后清除
+- 标签拖拽排序（顺序随 ui-state 持久化）
+- 底部状态栏：会话数、归档数、今日总结入口、Claude 目录、版本号
+
+### 5.6 数据与配置
+- Claude 目录可配置（侧边栏齿轮）；解析优先级 `config.json#claudeDir` → `CLAUDE_CONFIG_DIR` → `~/.claude`
+- 数据文件：`config.json`（claudeDir/theme）、`session-meta.json`（重命名/归档/摘要/标签）、`ui-state.json`（标签恢复）、`recent-dirs.json`、`summaries.json`（日/月总结）、`archive/`（归档会话 JSONL）
+- 会话文件定位统一走 `ipc.ts` 的 `locateSessionFile()`
+
+### 5.7 工程底座
+- Electron + React + Vite + TS；主进程持有全部能力（pty/搜索/存储/导出/总结），渲染层经 preload 类型化 API 调 IPC（`sandbox:true` + `contextIsolation`）
+- `shared/ipc-contract.ts` 通道名唯一来源 + `shared/types.ts` 类型；新增通道改四处
+- 元数据用 JSON 文件存储（未用 SQLite）；node-pty 编译补丁（patch-package）、chokidar v4、`webUtils` 拖放取路径
+- 依赖：electron / react / node-pty / @xterm / chokidar / lucide-react / patch-package
+
+### 5.8 未实现（路线图，供对比）
+- 分屏 split view（标签页内多窗格）
+- 批量归档 / 批量导出 / 彻底删除会话
+- 系统通知（会话结束/异常）
+- 会话固定/收藏
+- 详情视图 Markdown 渲染 + 代码高亮
+- 用量趋势图表 / 成本统计
+- 后台 daemon 续跑（关应用会话继续）
+- Prompt 模板库
+- 跨会话 AI 问答（RAG）
+- 项目交接文档 / 周报（目前只有每日/月度总结）
+- 会话对比、任务/待办提取
 
 ## 6. 已知坑与工作区补丁
 
@@ -134,6 +168,10 @@ src/
 8. **归档会话“借出”**：点击归档行 → 先把 JSONL 移回 projects 并 resume，但 UI 里仍标记归档并高亮；切到其他标签或关闭时自动移回归档目录；右键“恢复”才是永久取消归档。
 9. **自绘标题栏**：Windows 用 `titleBarStyle: 'hidden'` + `-webkit-app-region` 做拖拽区，窗口按钮走 `window:*` IPC；主题切换时通过 `window:set-background-color` 同步窗口底色，避免切换白闪。Mac 皮肤暂未做交通灯。
 10. **设置弹窗定位**：紧凑设置弹窗是 `position:absolute; left:0; right:auto; bottom:42px; width:300px`，从侧边栏齿轮向右展开，避免被侧边栏裁切。内容再变多时建议改回独立设置页，而不是继续加高弹窗。
+11. **AI 摘要用 claude 无头模式**：`summarize.ts` 用 `spawn('claude', ['-p'], { shell: process.platform === 'win32' })`，指令和会话文本（截断 20k 字符）都写进 stdin（`-p` 无参数，避免 shell 引号问题）；Windows 上 claude 是 `.cmd` 包装器，`spawn` 不能直接跑，必须 `shell:true`。消耗一次真实 token 调用、需 claude 在 PATH；60s 超时 kill；输出按 `摘要：`/`标签：` 两行解析，兜底取首行。`resolveClaudeCommand` 已从 SessionManager 抽成公共函数供 pty 用（`session-manager.ts`）。
+12. **sessionCreate 校验目录**：新建/拖放开会话前 `fs.statSync(cwd).isDirectory()` 校验，非目录抛错给渲染层。
+13. **拖放路径用 `webUtils.getPathForFile`**：Electron ≥32 已移除 `File.path`（43 里是 undefined），必须经 preload 暴露 `webUtils.getPathForFile(file)`（官方 pattern）；拖放监听挂在 window 的 **capture 阶段**，避免被 xterm 等子元素 stopPropagation 截断。
+14. **自动摘要会真实调用 claude**：每个会话结束（`index.ts` onExit）都会触发一次 `claude -p`（已有 summary 跳过），消耗 token、需 claude 在 PATH；想关掉就从 onExit 里删掉 `maybeAutoSummarize` 调用。`summarize.ts` 的 `runClaude` 是 `-p` 无参数 + stdin 输内容，Windows 走 `shell:true`。
 
 ## 7. 开发约定
 
@@ -165,7 +203,7 @@ src/
 
 ## 9. 建议下一步
 
-1. 历史列表实时刷新（watcher 事件推给渲染层，新会话结束即时出现）
+1. ~~历史列表实时刷新~~（已完成：watcher → `sessionsChanged` → 渲染层刷新）
 2. 详情视图 Markdown + 代码高亮
 3. 多选批量归档 / 导出
 4. 用量趋势与月度报表

@@ -2150,3 +2150,590 @@ button:active,
 .tab.dragging {
   opacity: 0.45;
 }
+
+/* ============ 最近目录新建菜单 ============ */
+.new-wrap {
+  position: relative;
+}
+
+.new-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 42px;
+  z-index: 20;
+  padding: 6px;
+  max-height: 320px;
+  overflow: auto;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+}
+
+.new-menu-label {
+  padding: 4px 8px;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.new-menu-empty {
+  padding: 8px;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.new-menu-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.new-menu-item:hover {
+  background: var(--accent-soft);
+}
+
+.new-menu-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.new-menu-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-faint);
+  font-size: 10px;
+}
+
+.new-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
+/* ============ 未激活标签活动提醒 ============ */
+.tab.has-activity {
+  color: var(--accent);
+}
+
+.tab.has-activity .tab-dot {
+  background: var(--warn);
+  animation: runningPulse 1s ease-out infinite;
+}
+
+/* ============ 拖放目录开会话 ============ */
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--accent);
+  background: var(--bg);
+  border: 2px dashed var(--accent-dim);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* ============ 命令面板 Ctrl+P ============ */
+.palette-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 15vh;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.palette {
+  width: 560px;
+  max-width: 90vw;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+}
+
+.palette input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+
+.palette-list {
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.palette-item.active {
+  background: var(--accent-soft);
+}
+
+.palette-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.palette-hint {
+  flex: none;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.palette-empty {
+  padding: 14px;
+  color: var(--text-faint);
+  text-align: center;
+  font-size: 12px;
+}
+
+/* ============ 会话摘要卡片 ============ */
+.summary-card {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--bg-raised);
+}
+
+/* ============ 会话行：标题+标签 / 摘要行 ============ */
+.session-main {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.session-title-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.session-tags {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.session-tags i {
+  font-style: normal;
+  font-size: 9px;
+  line-height: 14px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ============ 每日总结模态 ============ */
+.day-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.day-panel {
+  width: 640px;
+  max-width: 92vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+}
+
+.day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.day-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.day-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.day-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 16px;
+}
+
+.day-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.day-loading {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.day-empty {
+  padding: 30px 0;
+  color: var(--text-faint);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* 状态栏"今日总结"入口 */
+.status-day {
+  height: 20px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.status-day:hover {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* 总结模态：标签页 + 生成条 + 历史列表 */
+.day-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.day-tabs button {
+  height: 24px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.day-tabs button.active {
+  background: var(--bg-raised);
+  color: var(--text);
+}
+
+.day-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 200px;
+}
+
+.day-generate-bar {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 8px;
+}
+
+.day-generate-bar .welcome-btn {
+  height: 32px;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-group-label {
+  padding: 2px 4px;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-raised);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+
+.history-item:hover {
+  border-color: var(--accent-dim);
+}
+
+.history-key {
+  flex: none;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.history-preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* 右侧信息面板调宽 */
+.info-panel {
+  position: relative;
+}
+
+.info-resizer {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  z-index: 5;
+  cursor: col-resize;
+  transition: background 120ms ease;
+}
+
+.info-resizer:hover,
+body.resizing-info .info-resizer {
+  background: var(--accent-soft);
+}
+
+body.resizing-info {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* 总结日历 */
+.cal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cal-nav button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-inset);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.cal-nav button:hover {
+  border-color: var(--accent-dim);
+}
+
+.cal-month {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.cal-weekday {
+  padding: 2px 0;
+  color: var(--text-faint);
+  font-size: 10px;
+  text-align: center;
+}
+
+.cal-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-raised);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cal-cell.empty {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+}
+
+.cal-cell:hover:not(.empty) {
+  border-color: var(--accent-dim);
+}
+
+.cal-cell.selected {
+  border-color: var(--accent-dim);
+  background: var(--accent-soft);
+}
+
+.cal-cell.has-summary::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.cal-count {
+  position: absolute;
+  right: 4px;
+  bottom: 2px;
+  color: var(--text-faint);
+  font-size: 9px;
+}
+
+.cal-day-view {
+  min-height: 120px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-raised);
+}
+
+.cal-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.cal-day-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cal-day-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.cal-day-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.summary-text {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.summary-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.summary-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.summary-loading {
+  color: var(--text-muted);
+}

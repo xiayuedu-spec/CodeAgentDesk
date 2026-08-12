@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -21,6 +22,7 @@ import {
   RotateCcw,
   Search,
   Settings2,
+  Sparkles,
   Terminal,
   X,
 } from 'lucide-react';
@@ -31,6 +33,7 @@ import type {
   SessionDetailResult,
   SessionRecord,
   SessionUsage,
+  SummaryHistoryResult,
   ThemeName,
 } from '../shared/types';
 import { TerminalPane } from './components/TerminalPane';
@@ -46,6 +49,7 @@ interface SessionView {
   status: 'starting' | 'running' | 'ended';
   sessionId?: string;
   customName?: string;
+  activity?: boolean;
 }
 
 interface ContextMenuState {
@@ -54,6 +58,13 @@ interface ContextMenuState {
   archived: boolean;
   x: number;
   y: number;
+}
+
+interface PaletteItem {
+  key: string;
+  label: string;
+  hint?: string;
+  run: () => void;
 }
 
 const EMPTY_USAGE: SessionUsage = {
@@ -162,14 +173,57 @@ export default function App() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [borrowedIds, setBorrowedIds] = useState<string[]>([]);
   const [infoOpen, setInfoOpen] = useState(true);
+  const [infoWidth, setInfoWidth] = useState(260);
   const [sidebarWidth, setSidebarWidth] = useState(232);
   const [navIndex, setNavIndex] = useState(-1);
   const [loadingList, setLoadingList] = useState(true);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [recentDirs, setRecentDirs] = useState<string[]>([]);
+  const [newMenuOpen, setNewMenuOpen] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState('');
+  const [paletteIndex, setPaletteIndex] = useState(0);
+  const [summary, setSummary] = useState<{ summary: string; tags: string[] } | null>(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryTab, setSummaryTab] = useState<'day' | 'month' | 'calendar' | 'history'>('day');
+  const [calMonth, setCalMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [calDay, setCalDay] = useState<{ date: string; text: string; loading: boolean } | null>(
+    null,
+  );
+  const [dayText, setDayText] = useState('');
+  const [monthText, setMonthText] = useState('');
+  const [summarizing, setSummarizing] = useState(false);
+  const [summaryHistory, setSummaryHistory] = useState<SummaryHistoryResult>({
+    days: [],
+    months: [],
+  });
+  const [viewing, setViewing] = useState<{ title: string; text: string } | null>(null);
   const sidebarBodyRef = useRef<HTMLDivElement | null>(null);
   const sidebarWidthRef = useRef(232);
+  const infoWidthRef = useRef(260);
+  const activeIdRef = useRef<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const retiringRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    let cancelled = false;
+    window.codeagentdesk
+      .getRecentDirs()
+      .then((dirs) => {
+        if (!cancelled) setRecentDirs(dirs);
+      })
+      .catch(() => {
+        // 静默忽略。
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -288,6 +342,11 @@ export default function App() {
         event.preventDefault();
         setMode('search');
         searchInputRef.current?.focus();
+      } else if (event.key.toLowerCase() === 'p') {
+        event.preventDefault();
+        setPaletteQuery('');
+        setPaletteIndex(0);
+        setPaletteOpen(true);
       } else if (/^[1-9]$/.test(event.key)) {
         const target = sessions[Number(event.key) - 1];
         if (target) setActiveId(target.id);
@@ -374,12 +433,45 @@ export default function App() {
       );
       setError(message);
     });
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    const unsubscribeChanged = window.codeagentdesk.onSessionsChanged(() => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        void window.codeagentdesk
+          .listSessions()
+          .then((value) => setRecords(value))
+          .catch(() => {
+            // 静默忽略列表刷新失败。
+          });
+      }, 300);
+    });
+    const unsubscribeData = window.codeagentdesk.onSessionData(({ id }) => {
+      if (id === activeIdRef.current) return;
+      setSessions((previous) =>
+        previous.map((session) =>
+          session.id === id ? { ...session, activity: true } : session,
+        ),
+      );
+    });
     return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
       unsubscribeBound();
       unsubscribeExited();
       unsubscribeError();
+      unsubscribeChanged();
+      unsubscribeData();
     };
   }, []);
+
+  useEffect(() => {
+    activeIdRef.current = activeId;
+    if (!activeId) return;
+    setSessions((previous) =>
+      previous.map((session) =>
+        session.id === activeId ? { ...session, activity: false } : session,
+      ),
+    );
+  }, [activeId]);
 
   useEffect(() => {
     if (!menu) return;
@@ -398,23 +490,81 @@ export default function App() {
   }, [menu]);
 
   useEffect(() => {
+    if (!newMenuOpen) return;
+    const close = () => setNewMenuOpen(false);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setNewMenuOpen(false);
+    };
+    window.addEventListener('click', close);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [newMenuOpen]);
+
+  useEffect(() => {
+    const onDragOver = (event: DragEvent): void => {
+      if (event.dataTransfer?.types?.includes('Files')) {
+        event.preventDefault();
+        setDragOver(true);
+      }
+    };
+    const onDragLeave = (event: DragEvent): void => {
+      if (!event.relatedTarget) setDragOver(false);
+    };
+    const onDrop = (event: DragEvent): void => {
+      event.preventDefault();
+      setDragOver(false);
+      const file = event.dataTransfer?.files?.[0];
+      if (file) {
+        const dir = window.codeagentdesk.getPathForFile(file).trim();
+        if (dir) void handleNewSession(dir);
+      }
+    };
+    window.addEventListener('dragover', onDragOver, true);
+    window.addEventListener('dragleave', onDragLeave, true);
+    window.addEventListener('drop', onDrop, true);
+    return () => {
+      window.removeEventListener('dragover', onDragOver, true);
+      window.removeEventListener('dragleave', onDragLeave, true);
+      window.removeEventListener('drop', onDrop, true);
+    };
+  }, []);
+
+  useEffect(() => {
     setNavIndex(-1);
   }, [mode]);
 
-  async function handleNewSession(): Promise<void> {
-    const picked = await window.codeagentdesk.pickDirectory();
-    if (!picked.cwd) return;
-    const created = await window.codeagentdesk.createSession(picked.cwd);
-    setSessions((previous) => [
-      ...previous,
-      {
-        id: created.id,
-        cwd: created.cwd,
-        sequence: created.sequence,
-        status: 'starting',
-      },
-    ]);
-    setActiveId(created.id);
+  async function handleNewSession(cwd?: string): Promise<void> {
+    let target = cwd;
+    if (!target) {
+      const picked = await window.codeagentdesk.pickDirectory();
+      if (!picked.cwd) return;
+      target = picked.cwd;
+    }
+    setNewMenuOpen(false);
+    try {
+      const created = await window.codeagentdesk.createSession(target);
+      window.codeagentdesk
+        .getRecentDirs()
+        .then((dirs) => setRecentDirs(dirs))
+        .catch(() => {
+          // 静默忽略最近目录刷新失败。
+        });
+      setSessions((previous) => [
+        ...previous,
+        {
+          id: created.id,
+          cwd: created.cwd,
+          sequence: created.sequence,
+          status: 'starting',
+        },
+      ]);
+      setActiveId(created.id);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    }
   }
 
   async function refreshRecords(): Promise<void> {
@@ -438,6 +588,11 @@ export default function App() {
 
   async function handleSetTheme(theme: ThemeName): Promise<void> {
     const info = await window.codeagentdesk.setTheme(theme);
+    setClaudeInfo(info);
+  }
+
+  async function handleSetAutoSummarize(enabled: boolean): Promise<void> {
+    const info = await window.codeagentdesk.setAutoSummarize(enabled);
     setClaudeInfo(info);
   }
 
@@ -512,6 +667,8 @@ export default function App() {
 
   async function openDetailById(sessionId: string): Promise<void> {
     setDetailSessionId(sessionId);
+    setSummary(null);
+    setSummarizing(false);
     const result = await window.codeagentdesk.readSessionDetail(sessionId);
     setDetail(result);
   }
@@ -519,6 +676,117 @@ export default function App() {
   function closeDetail(): void {
     setDetailSessionId(null);
     setDetail(null);
+    setSummary(null);
+    setSummarizing(false);
+  }
+
+  async function handleSummarize(): Promise<void> {
+    if (!detailSessionId || summarizing) return;
+    setSummarizing(true);
+    const result = await window.codeagentdesk.summarizeSession(detailSessionId);
+    setSummarizing(false);
+    if (result.ok) {
+      setSummary({ summary: result.summary ?? '', tags: result.tags ?? [] });
+    } else {
+      setError(result.message ?? '生成摘要失败');
+    }
+  }
+
+  function openSummary(): void {
+    setSummaryOpen(true);
+    setViewing(null);
+    setSummaryTab('day');
+  }
+
+  async function loadSummaryHistory(): Promise<void> {
+    try {
+      const result = await window.codeagentdesk.summariesList();
+      setSummaryHistory(result);
+    } catch {
+      // 静默忽略。
+    }
+  }
+
+  async function viewHistoryItem(kind: 'day' | 'month', key: string): Promise<void> {
+    const result = await window.codeagentdesk.summariesGet(kind, key);
+    if (result.ok) {
+      setViewing({ title: `${key} ${kind === 'day' ? '每日总结' : '月度总结'}`, text: result.text ?? '' });
+    } else {
+      setError(result.message ?? '读取总结失败');
+    }
+  }
+
+  async function generateDaySummary(): Promise<void> {
+    if (summarizing) return;
+    setSummarizing(true);
+    setDayText('');
+    const result = await window.codeagentdesk.summarizeDay();
+    setSummarizing(false);
+    if (result.ok) {
+      setDayText(result.text ?? '');
+      void loadSummaryHistory();
+    } else {
+      setError(result.message ?? '生成今日总结失败');
+    }
+  }
+
+  async function generateMonthSummary(): Promise<void> {
+    if (summarizing) return;
+    setSummarizing(true);
+    setMonthText('');
+    const result = await window.codeagentdesk.summarizeMonth();
+    setSummarizing(false);
+    if (result.ok) {
+      setMonthText(result.text ?? '');
+      void loadSummaryHistory();
+    } else {
+      setError(result.message ?? '生成本月总结失败');
+    }
+  }
+
+  function todayKey(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+      now.getDate(),
+    ).padStart(2, '0')}`;
+  }
+
+  function shiftMonth(delta: number): void {
+    const [year, month] = calMonth.split('-').map(Number);
+    const next = new Date(year, month - 1 + delta, 1);
+    setCalMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`);
+  }
+
+  function buildCalendarCells(month: string): (string | null)[] {
+    const [year, monthNum] = month.split('-').map(Number);
+    const lead = new Date(year, monthNum - 1, 1).getDay();
+    const daysInMonth = new Date(year, monthNum, 0).getDate();
+    const cells: (string | null)[] = [];
+    for (let i = 0; i < lead; i += 1) cells.push(null);
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      cells.push(`${month}-${String(day).padStart(2, '0')}`);
+    }
+    return cells;
+  }
+
+  async function loadDayFor(date: string): Promise<void> {
+    setSelectedDay(date);
+    setCalDay({ date, text: '', loading: true });
+    // 直接查归档存储，不依赖可能过期的 summaryHistory 缓存。
+    const result = await window.codeagentdesk.summariesGet('day', date);
+    setCalDay({ date, text: result.ok ? result.text ?? '' : '', loading: false });
+  }
+
+  async function generateDayFor(date: string): Promise<void> {
+    setCalDay({ date, text: '', loading: true });
+    const result = await window.codeagentdesk.summarizeDay(date);
+    if (result.ok) {
+      setCalDay({ date, text: result.text ?? '', loading: false });
+      void loadSummaryHistory();
+    } else {
+      setCalDay({ date, text: '', loading: false });
+      setError(result.message ?? '生成失败');
+    }
   }
 
   async function exportFromDetail(): Promise<void> {
@@ -645,6 +913,25 @@ export default function App() {
     document.body.classList.add('resizing-sidebar');
   }
 
+  function startInfoResize(event: ReactMouseEvent): void {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = infoWidthRef.current;
+    const onMove = (ev: MouseEvent): void => {
+      const next = Math.min(480, Math.max(180, startWidth + (startX - ev.clientX)));
+      infoWidthRef.current = next;
+      setInfoWidth(next);
+    };
+    const onUp = (): void => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      document.body.classList.remove('resizing-info');
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    document.body.classList.add('resizing-info');
+  }
+
   function openNavItem(item: {
     kind: 'running' | 'history' | 'archived';
     id?: string;
@@ -673,6 +960,99 @@ export default function App() {
     } else if (event.key === 'Enter' && activeNav >= 0) {
       event.preventDefault();
       openNavItem(navItems[activeNav]);
+    }
+  }
+
+  function buildPaletteItems(): PaletteItem[] {
+    const items: PaletteItem[] = [
+      { key: 'new', label: '新建会话…', run: () => void handleNewSession() },
+    ];
+    for (const dir of recentDirs) {
+      items.push({
+        key: `dir:${dir}`,
+        label: `新建会话 → ${folderName(dir)}`,
+        hint: dir,
+        run: () => void handleNewSession(dir),
+      });
+    }
+    for (const record of historyRecords) {
+      items.push({
+        key: `h:${record.sessionId}`,
+        label: `恢复会话 → ${recordTitle(record)}`,
+        hint: record.cwd,
+        run: () => void openHistory(record),
+      });
+    }
+    for (const record of archivedRecords) {
+      items.push({
+        key: `a:${record.sessionId}`,
+        label: `打开归档 → ${recordTitle(record)}`,
+        hint: record.cwd,
+        run: () => void openArchivedSession(record),
+      });
+    }
+    items.push({
+      key: 'search',
+      label: '全文搜索…',
+      run: () => {
+        setMode('search');
+        searchInputRef.current?.focus();
+      },
+    });
+    if (activeSession?.sessionId) {
+      const sessionId = activeSession.sessionId;
+      items.push({
+        key: 'export',
+        label: '导出当前会话为 Markdown',
+        hint: activeSession.cwd,
+        run: () => {
+          void window.codeagentdesk.exportSessionMarkdown(sessionId).then((result) => {
+            if (!result.ok) setError(result.message ?? '导出失败');
+          });
+        },
+      });
+    }
+    for (const theme of THEMES) {
+      items.push({
+        key: `theme:${theme.name}`,
+        label: `切换主题 → ${theme.label}`,
+        run: () => void handleSetTheme(theme.name),
+      });
+    }
+    items.push({
+      key: 'day',
+      label: '生成今日总结',
+      run: openSummary,
+    });
+    items.push({
+      key: 'settings',
+      label: '打开设置',
+      run: () => setSettingsOpen(true),
+    });
+    return items;
+  }
+
+  function runPaletteItem(item: PaletteItem): void {
+    setPaletteOpen(false);
+    setPaletteQuery('');
+    item.run();
+  }
+
+  function onPaletteKeyDown(event: ReactKeyboardEvent): void {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (paletteFiltered.length) setPaletteIndex((i) => (i + 1) % paletteFiltered.length);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (paletteFiltered.length) {
+        setPaletteIndex((i) => (i - 1 + paletteFiltered.length) % paletteFiltered.length);
+      }
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      const item = paletteFiltered[paletteSafeIndex];
+      if (item) runPaletteItem(item);
+    } else if (event.key === 'Escape') {
+      setPaletteOpen(false);
     }
   }
 
@@ -724,6 +1104,32 @@ export default function App() {
   const activeNav = navItems.length ? Math.min(navIndex, navItems.length - 1) : -1;
   const navClass = (index: number): string => (activeNav === index ? ' nav-focus' : '');
 
+  const paletteItems = buildPaletteItems();
+  const paletteFiltered = paletteQuery.trim()
+    ? paletteItems.filter((item) =>
+        `${item.label} ${item.hint ?? ''}`
+          .toLowerCase()
+          .includes(paletteQuery.trim().toLowerCase()),
+      )
+    : paletteItems;
+  const paletteSafeIndex = paletteFiltered.length
+    ? Math.min(paletteIndex, paletteFiltered.length - 1)
+    : -1;
+
+  const sessionCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const record of records) {
+      const date = (record.updatedAt || '').slice(0, 10);
+      counts.set(date, (counts.get(date) ?? 0) + 1);
+    }
+    return counts;
+  }, [records]);
+
+  const summaryDayKeys = useMemo(
+    () => new Set(summaryHistory.days.map((item) => item.key)),
+    [summaryHistory],
+  );
+
   useEffect(() => {
     if (activeNav < 0) return;
     const element = sidebarBodyRef.current?.querySelector(`[data-nav-index="${activeNav}"]`);
@@ -758,6 +1164,12 @@ export default function App() {
 
   return (
     <div className="app">
+      {dragOver ? (
+        <div className="drop-overlay">
+          <FolderOpen size={30} strokeWidth={1.6} />
+          <span>释放以在此目录开会话</span>
+        </div>
+      ) : null}
       <TitleBar />
       <div className="app-body">
         <aside className="sidebar" style={{ width: sidebarWidth }}>
@@ -957,10 +1369,21 @@ export default function App() {
                               }}
                             >
                               <span className="session-dot ended" title="已结束" />
-                              <span className="session-title">{recordTitle(record)}</span>
-                              <span className="session-cwd" title={record.cwd || ''}>
-                                {record.cwd || '未知目录'}
-                              </span>
+                              <div className="session-main">
+                                <span className="session-title-line">
+                                  <span className="session-title">{recordTitle(record)}</span>
+                                  {record.tags?.length ? (
+                                    <span className="session-tags">
+                                      {record.tags.slice(0, 3).map((tag) => (
+                                        <i key={tag}>{tag}</i>
+                                      ))}
+                                    </span>
+                                  ) : null}
+                                </span>
+                                <span className="session-cwd" title={record.cwd || ''}>
+                                  {record.summary || record.cwd || '未知目录'}
+                                </span>
+                              </div>
                               {renderTime(record.updatedAt)}
                             </button>
                           )}
@@ -1022,10 +1445,50 @@ export default function App() {
         </div>
 
         <div className="sidebar-footer">
-          <button type="button" className="new-session" onClick={() => void handleNewSession()}>
-            <Plus size={16} />
-            <span>新建会话</span>
-          </button>
+          <div className="new-wrap">
+            <button
+              type="button"
+              className="new-session"
+              onClick={(event) => {
+                event.stopPropagation();
+                setNewMenuOpen((open) => !open);
+              }}
+            >
+              <Plus size={16} />
+              <span>新建会话</span>
+            </button>
+            {newMenuOpen ? (
+              <div className="new-menu" role="menu" onClick={(event) => event.stopPropagation()}>
+                <div className="new-menu-label">最近目录</div>
+                {recentDirs.length === 0 ? (
+                  <div className="new-menu-empty">暂无历史目录</div>
+                ) : (
+                  recentDirs.map((dir) => (
+                    <button
+                      key={dir}
+                      type="button"
+                      role="menuitem"
+                      className="new-menu-item"
+                      onClick={() => void handleNewSession(dir)}
+                    >
+                      <span className="new-menu-name">{folderName(dir)}</span>
+                      <span className="new-menu-path">{dir}</span>
+                    </button>
+                  ))
+                )}
+                <div className="new-menu-sep" />
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="new-menu-item"
+                  onClick={() => void handleNewSession()}
+                >
+                  <FolderOpen size={13} />
+                  <span>选择其他目录…</span>
+                </button>
+              </div>
+            ) : null}
+          </div>
           <div className="status-line">
             <span className={`status-dot ${appInfo ? 'ok' : 'pending'}`} />
             <span>{appInfo ? `v${appInfo.appVersion}` : '启动中'}</span>
@@ -1087,6 +1550,15 @@ export default function App() {
                     <RotateCcw size={14} />
                   </button>
                 </div>
+                <div className="settings-label">自动摘要</div>
+                <label className="settings-option">
+                  <input
+                    type="checkbox"
+                    checked={claudeInfo.config.autoSummarize === true}
+                    onChange={(event) => void handleSetAutoSummarize(event.target.checked)}
+                  />
+                  <span>会话结束后自动生成 AI 摘要</span>
+                </label>
               </div>
             ) : null}
           </div>
@@ -1105,7 +1577,7 @@ export default function App() {
               key={session.id}
               className={`tab ${session.id === activeId ? 'active' : ''}${
                 dragIndex === i ? ' dragging' : ''
-              }`}
+              }${session.activity ? ' has-activity' : ''}`}
               role="tab"
               aria-selected={session.id === activeId}
               tabIndex={0}
@@ -1185,7 +1657,10 @@ export default function App() {
           </button>
         </div>
 
-        <div className={`content ${infoOpen ? '' : 'info-collapsed'}`}>
+        <div
+          className={`content ${infoOpen ? '' : 'info-collapsed'}`}
+          style={infoOpen ? { gridTemplateColumns: `minmax(0, 1fr) ${infoWidth}px` } : undefined}
+        >
           {mode === 'search' ? (
             <div className="search-results" role="log">
               {searchResults.length === 0 ? (
@@ -1224,11 +1699,19 @@ export default function App() {
               {detail && detailSessionId ? (
                 <SessionDetail
                   detail={detail}
+                  summary={summary}
+                  summarizing={summarizing}
+                  onSummarize={() => void handleSummarize()}
                   onExport={() => void exportFromDetail()}
                   onClose={closeDetail}
                 />
               ) : activeSession ? (
                 <section className="info-panel" aria-label="会话状态">
+                  <div
+                    className="info-resizer"
+                    onMouseDown={startInfoResize}
+                    title="拖动调整宽度"
+                  />
                 <div className="info-item">
                   <span>状态</span>
                   <strong className={`status-text ${activeSession.status}`}>
@@ -1306,6 +1789,14 @@ export default function App() {
                         <span>打开历史会话</span>
                       </button>
                     ) : null}
+                    <button
+                      type="button"
+                      className="welcome-btn"
+                      onClick={openSummary}
+                    >
+                      <Sparkles size={16} />
+                      <span>今日总结</span>
+                    </button>
                   </div>
                   <div className="welcome-hint">
                     Ctrl+K 全局搜索 · Ctrl+T 新建会话 · Ctrl+1..9 切换标签
@@ -1319,12 +1810,317 @@ export default function App() {
         <footer className="status-bar">
           <span>{sessions.length} 会话</span>
           <span>{archivedRecords.length} 归档</span>
+          <button
+            type="button"
+            className="status-day"
+            title="生成今日总结"
+            onClick={openSummary}
+          >
+            今日总结
+          </button>
           <span className="status-bar-spacer" />
           <span>{claudeInfo ? folderName(claudeInfo.resolvedClaudeDir) : '…'}</span>
           <span>v{appInfo?.appVersion ?? '…'}</span>
           </footer>
         </main>
       </div>
+
+      {summaryOpen ? (
+        <div className="day-overlay" onClick={() => setSummaryOpen(false)}>
+          <div className="day-panel" onClick={(event) => event.stopPropagation()}>
+            {viewing ? (
+              <>
+                <div className="day-header">
+                  <span className="day-title">{viewing.title}</span>
+                  <div className="day-actions">
+                    <button
+                      type="button"
+                      className="icon-button"
+                      title="复制"
+                      onClick={() => void navigator.clipboard.writeText(viewing.text)}
+                    >
+                      <Copy size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-button"
+                      title="返回"
+                      onClick={() => setViewing(null)}
+                    >
+                      <FolderOpen size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-button"
+                      title="关闭"
+                      onClick={() => setSummaryOpen(false)}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div className="day-body">
+                  <pre className="day-text">{viewing.text}</pre>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="day-header">
+                  <div className="day-tabs" role="tablist" aria-label="总结类型">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={summaryTab === 'day'}
+                      className={summaryTab === 'day' ? 'active' : ''}
+                      onClick={() => setSummaryTab('day')}
+                    >
+                      今日
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={summaryTab === 'month'}
+                      className={summaryTab === 'month' ? 'active' : ''}
+                      onClick={() => setSummaryTab('month')}
+                    >
+                      月度
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={summaryTab === 'calendar'}
+                      className={summaryTab === 'calendar' ? 'active' : ''}
+                      onClick={() => {
+                        setSummaryTab('calendar');
+                        void loadDayFor(todayKey());
+                        void loadSummaryHistory();
+                      }}
+                    >
+                      日历
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={summaryTab === 'history'}
+                      className={summaryTab === 'history' ? 'active' : ''}
+                      onClick={() => {
+                        setSummaryTab('history');
+                        void loadSummaryHistory();
+                      }}
+                    >
+                      历史
+                    </button>
+                  </div>
+                  <div className="day-actions">
+                    <button
+                      type="button"
+                      className="icon-button"
+                      title="关闭"
+                      onClick={() => setSummaryOpen(false)}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div className="day-body">
+                  {summaryTab === 'day' ? (
+                    <div className="day-tab-content">
+                      {summarizing ? (
+                        <div className="day-loading">正在生成今日总结…（调用 claude 无头模式）</div>
+                      ) : dayText ? (
+                        <pre className="day-text">{dayText}</pre>
+                      ) : (
+                        <div className="day-empty">还没有生成今日总结</div>
+                      )}
+                      <div className="day-generate-bar">
+                        <button
+                          type="button"
+                          className="welcome-btn primary"
+                          onClick={() => void generateDaySummary()}
+                        >
+                          <Sparkles size={14} />
+                          <span>{dayText ? '重新生成' : '生成今日总结'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : summaryTab === 'month' ? (
+                    <div className="day-tab-content">
+                      {summarizing ? (
+                        <div className="day-loading">正在生成月度总结…（调用 claude 无头模式）</div>
+                      ) : monthText ? (
+                        <pre className="day-text">{monthText}</pre>
+                      ) : (
+                        <div className="day-empty">还没有生成月度总结</div>
+                      )}
+                      <div className="day-generate-bar">
+                        <button
+                          type="button"
+                          className="welcome-btn primary"
+                          onClick={() => void generateMonthSummary()}
+                        >
+                          <Sparkles size={14} />
+                          <span>{monthText ? '重新生成' : '生成本月总结'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : summaryTab === 'calendar' ? (
+                    <div className="cal-content">
+                      <div className="cal-nav">
+                        <button type="button" aria-label="上个月" onClick={() => shiftMonth(-1)}>
+                          ‹
+                        </button>
+                        <span className="cal-month">{calMonth}</span>
+                        <button type="button" aria-label="下个月" onClick={() => shiftMonth(1)}>
+                          ›
+                        </button>
+                      </div>
+                      <div className="cal-grid">
+                        {['日', '一', '二', '三', '四', '五', '六'].map((weekday) => (
+                          <div key={weekday} className="cal-weekday">
+                            {weekday}
+                          </div>
+                        ))}
+                        {buildCalendarCells(calMonth).map((date, i) =>
+                          date === null ? (
+                            <div key={`empty-${i}`} className="cal-cell empty" />
+                          ) : (
+                            <button
+                              key={date}
+                              type="button"
+                              className={`cal-cell${selectedDay === date ? ' selected' : ''}${
+                                summaryDayKeys.has(date) ? ' has-summary' : ''
+                              }`}
+                              onClick={() => void loadDayFor(date)}
+                            >
+                              <span className="cal-daynum">{Number(date.slice(8))}</span>
+                              {sessionCounts.get(date) ? (
+                                <span className="cal-count">{sessionCounts.get(date)}</span>
+                              ) : null}
+                            </button>
+                          ),
+                        )}
+                      </div>
+                      <div className="cal-day-view">
+                        {calDay ? (
+                          <>
+                            <div className="cal-day-head">
+                              <span className="cal-day-title">{calDay.date} 当日总结</span>
+                              {!calDay.loading && calDay.text ? (
+                                <div className="cal-day-actions">
+                                  <button
+                                    type="button"
+                                    className="icon-button"
+                                    title="复制"
+                                    onClick={() => void navigator.clipboard.writeText(calDay.text)}
+                                  >
+                                    <Copy size={14} />
+                                  </button>
+                                </div>
+                              ) : null}
+                            </div>
+                            {calDay.loading ? (
+                              <div className="day-loading">正在生成该日总结…</div>
+                            ) : calDay.text ? (
+                              <pre className="day-text">{calDay.text}</pre>
+                            ) : (
+                              <div className="cal-day-empty">
+                                <div className="day-empty">该日没有归档总结</div>
+                                <button
+                                  type="button"
+                                  className="welcome-btn primary"
+                                  onClick={() => void generateDayFor(calDay.date)}
+                                >
+                                  <Sparkles size={14} />
+                                  <span>找回当日总结</span>
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="day-empty">点击日历某天查看 / 找回当日总结</div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="history-list">
+                      {summaryHistory.months.length ? (
+                        <div className="history-group">
+                          <div className="history-group-label">月度总结</div>
+                          {summaryHistory.months.map((item) => (
+                            <button
+                              key={item.key}
+                              type="button"
+                              className="history-item"
+                              onClick={() => void viewHistoryItem('month', item.key)}
+                            >
+                              <span className="history-key">{item.key}</span>
+                              <span className="history-preview">{item.preview}</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                      {summaryHistory.days.length ? (
+                        <div className="history-group">
+                          <div className="history-group-label">每日总结</div>
+                          {summaryHistory.days.map((item) => (
+                            <button
+                              key={item.key}
+                              type="button"
+                              className="history-item"
+                              onClick={() => void viewHistoryItem('day', item.key)}
+                            >
+                              <span className="history-key">{item.key}</span>
+                              <span className="history-preview">{item.preview}</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                      {!summaryHistory.days.length && !summaryHistory.months.length ? (
+                        <div className="day-empty">还没有归档的总结</div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      {paletteOpen ? (
+        <div className="palette-overlay" onClick={() => setPaletteOpen(false)}>
+          <div className="palette" onClick={(event) => event.stopPropagation()}>
+            <input
+              autoFocus
+              value={paletteQuery}
+              onChange={(event) => {
+                setPaletteQuery(event.target.value);
+                setPaletteIndex(0);
+              }}
+              onKeyDown={onPaletteKeyDown}
+              placeholder="输入命令或搜索会话…（Ctrl+P）"
+              aria-label="命令面板"
+            />
+            <ul className="palette-list">
+              {paletteFiltered.length === 0 ? (
+                <li className="palette-empty">无匹配</li>
+              ) : (
+                paletteFiltered.map((item, i) => (
+                  <li
+                    key={item.key}
+                    className={`palette-item ${i === paletteSafeIndex ? 'active' : ''}`}
+                    onMouseEnter={() => setPaletteIndex(i)}
+                    onClick={() => runPaletteItem(item)}
+                  >
+                    <span className="palette-label">{item.label}</span>
+                    {item.hint ? <span className="palette-hint">{item.hint}</span> : null}
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        </div>
+      ) : null}
 
       {menu ? (
         <div

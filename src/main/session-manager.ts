@@ -5,7 +5,7 @@ import { spawn, type IPty } from 'node-pty';
 
 export interface SessionCallbacks {
   onData(id: string, data: string): void;
-  onExit(id: string, exitCode?: number): void;
+  onExit(id: string, exitCode?: number, sessionId?: string, cwd?: string): void;
   onBound(id: string, sessionId: string): void;
   onError(id: string, message: string): void;
 }
@@ -84,25 +84,6 @@ export class SessionManager {
     }
   }
 
-  private resolveClaudeCommand(): string {
-    if (process.platform !== 'win32') return 'claude';
-    const directories = (process.env.PATH ?? '').split(path.delimiter);
-    const candidates = ['claude.cmd', 'claude.exe', 'claude.bat', 'claude'];
-    for (const directory of directories) {
-      if (!directory) continue;
-      for (const name of candidates) {
-        const candidate = path.join(directory, name);
-        try {
-          fs.accessSync(candidate);
-          return candidate;
-        } catch {
-          // Try the next candidate.
-        }
-      }
-    }
-    return 'claude.cmd';
-  }
-
   private nextSequence(cwd: string): { sequence: number } {
     const key = normalizeCwd(cwd);
     const sequence = (this.sequences.get(key) ?? 0) + 1;
@@ -114,7 +95,7 @@ export class SessionManager {
     const id = randomUUID();
     let pty: IPty;
     try {
-      pty = spawn(this.resolveClaudeCommand(), args, {
+      pty = spawn(resolveClaudeCommand(), args, {
         name: 'xterm-256color',
         cols: 100,
         rows: 30,
@@ -133,8 +114,11 @@ export class SessionManager {
     this.sessions.set(id, { id, cwd, pty });
     pty.onData((data) => this.callbacks.onData(id, data));
     pty.onExit(({ exitCode }) => {
+      const session = this.sessions.get(id);
+      const sessionId = session?.sessionId;
+      const cwd = session?.cwd;
       this.sessions.delete(id);
-      this.callbacks.onExit(id, exitCode);
+      this.callbacks.onExit(id, exitCode, sessionId, cwd);
     });
 
     return { id };
@@ -143,4 +127,23 @@ export class SessionManager {
 
 function normalizeCwd(cwd: string): string {
   return process.platform === 'win32' ? cwd.toLowerCase() : cwd;
+}
+
+export function resolveClaudeCommand(): string {
+  if (process.platform !== 'win32') return 'claude';
+  const directories = (process.env.PATH ?? '').split(path.delimiter);
+  const candidates = ['claude.cmd', 'claude.exe', 'claude.bat', 'claude'];
+  for (const directory of directories) {
+    if (!directory) continue;
+    for (const name of candidates) {
+      const candidate = path.join(directory, name);
+      try {
+        fs.accessSync(candidate);
+        return candidate;
+      } catch {
+        // Try the next candidate.
+      }
+    }
+  }
+  return 'claude.cmd';
 }

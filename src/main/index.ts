@@ -11,6 +11,7 @@ import { readConfig, resolveClaudeHome } from './config';
 import { SessionManager } from './session-manager';
 import { SessionMetaStore } from './session-meta-store';
 import { SessionWatcher } from './session-watcher';
+import { maybeAutoSummarize } from './summarize';
 import { broadcast, createMainWindow } from './window-manager';
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
@@ -27,18 +28,29 @@ if (!hasSingleInstanceLock) {
   });
 
   void app.whenReady().then(() => {
+    const metaStore = SessionMetaStore.create();
     const sessions = new SessionManager({
       onData: (id, data) =>
         broadcast(IpcChannel.sessionData, { id, data } satisfies SessionDataEvent),
-      onExit: (id, exitCode) =>
-        broadcast(IpcChannel.sessionExited, { id, exitCode } satisfies SessionExitedEvent),
+      onExit: (id, exitCode, sessionId, cwd) => {
+        broadcast(IpcChannel.sessionExited, { id, exitCode } satisfies SessionExitedEvent);
+        // 会话结束后自动生成摘要（已有则跳过；等待文件落盘）
+        if (sessionId && cwd && readConfig().autoSummarize) {
+          setTimeout(() => {
+            void maybeAutoSummarize(sessionId, cwd, metaStore).catch(() => {
+              // 自动摘要失败静默忽略。
+            });
+          }, 2000);
+        }
+      },
       onBound: (id, sessionId) =>
         broadcast(IpcChannel.sessionBound, { id, sessionId } satisfies SessionBoundEvent),
       onError: (id, message) =>
         broadcast(IpcChannel.sessionError, { id, message } satisfies SessionErrorEvent),
     });
-    const watcher = new SessionWatcher(sessions);
-    const metaStore = SessionMetaStore.create();
+    const watcher = new SessionWatcher(sessions, () => {
+      broadcast(IpcChannel.sessionsChanged, undefined);
+    });
     const initialClaudeHome = resolveClaudeHome(readConfig());
 
     registerIpcHandlers(sessions, watcher, metaStore, () => {

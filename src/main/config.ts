@@ -11,6 +11,7 @@ export function readConfig(): AppConfig {
     return {
       claudeDir: typeof parsed.claudeDir === 'string' ? parsed.claudeDir : undefined,
       theme: normalizeTheme(parsed.theme),
+      autoSummarize: parsed.autoSummarize === true,
     };
   } catch {
     return {};

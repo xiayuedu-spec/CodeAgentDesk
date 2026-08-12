@@ -1,14 +1,20 @@
-import { Download, X } from 'lucide-react';
+import { Download, Sparkles, X } from 'lucide-react';
 import type { SessionDetailResult } from '../../shared/types';
 
 interface SessionDetailProps {
   detail: SessionDetailResult;
+  summary?: { summary: string; tags: string[] } | null;
+  summarizing?: boolean;
+  onSummarize?: () => void;
   onExport: () => void;
   onClose: () => void;
 }
 
 export function SessionDetail({
   detail,
+  summary,
+  summarizing,
+  onSummarize,
   onExport,
   onClose,
 }: SessionDetailProps) {
@@ -28,6 +34,15 @@ export function SessionDetail({
           </div>
         </div>
         <div className="detail-actions">
+          <button
+            type="button"
+            className="icon-button"
+            title="生成 AI 摘要与标签"
+            disabled={summarizing}
+            onClick={onSummarize}
+          >
+            <Sparkles size={16} />
+          </button>
           <button type="button" className="icon-button" title="导出 Markdown" onClick={onExport}>
             <Download size={16} />
           </button>
@@ -37,6 +52,23 @@ export function SessionDetail({
         </div>
       </header>
       <div className="detail-body">
+        {summarizing ? (
+          <div className="summary-card summary-loading">正在生成摘要…（调用 claude 无头模式）</div>
+        ) : null}
+        {!summarizing && summary?.summary ? (
+          <div className="summary-card">
+            <div className="summary-text">{summary.summary}</div>
+            {summary.tags.length ? (
+              <div className="summary-tags">
+                {summary.tags.map((tag) => (
+                  <span key={tag} className="summary-tag">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         {detail.entries.length === 0 ? (
           <div className="archive-empty">暂无内容</div>
         ) : (

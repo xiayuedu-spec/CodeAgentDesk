@@ -13,6 +13,7 @@ export type ThemeName = 'default' | 'mac' | 'green' | 'sepia' | 'amber' | 'mist'
 export interface AppConfig {
   claudeDir?: string;
   theme?: ThemeName;
+  autoSummarize?: boolean;
 }
 
 export interface ClaudeConfigInfo {
@@ -47,6 +48,8 @@ export interface SessionRecord {
   archived: boolean;
   archivedAt?: string;
   customName?: string;
+  summary?: string;
+  tags?: string[];
   startedAt: string;
   updatedAt: string;
 }
@@ -120,6 +123,35 @@ export interface RenameSessionResult {
   message?: string;
 }
 
+export interface SummarizeSessionResult {
+  ok: boolean;
+  summary?: string;
+  tags?: string[];
+  message?: string;
+}
+
+export interface DaySummarizeResult {
+  ok: boolean;
+  text?: string;
+  message?: string;
+}
+
+export interface SummaryMeta {
+  key: string;
+  preview: string;
+}
+
+export interface SummaryHistoryResult {
+  days: SummaryMeta[];
+  months: SummaryMeta[];
+}
+
+export interface SummaryGetResult {
+  ok: boolean;
+  text?: string;
+  message?: string;
+}
+
 export interface ArchiveSessionResult {
   ok: boolean;
   message?: string;
@@ -146,12 +178,15 @@ export interface SessionErrorEvent {
 }
 
 export interface CodeAgentDeskApi {
+  getPathForFile(file: File): string;
   getAppInfo(): Promise<AppInfo>;
   getClaudeConfig(): Promise<ClaudeConfigInfo>;
   setClaudeDir(dir: string | null): Promise<ClaudeConfigInfo>;
   setTheme(theme: ThemeName): Promise<ClaudeConfigInfo>;
+  setAutoSummarize(enabled: boolean): Promise<ClaudeConfigInfo>;
   pickClaudeDir(): Promise<PickClaudeDirResult>;
   listSessions(): Promise<SessionRecord[]>;
+  getRecentDirs(): Promise<string[]>;
   pickDirectory(): Promise<PickDirectoryResult>;
   createSession(cwd: string): Promise<CreateSessionResult>;
   resumeSession(sessionId: string, cwd: string): Promise<ResumeSessionResult>;
@@ -159,6 +194,11 @@ export interface CodeAgentDeskApi {
   archiveSession(sessionId: string, cwd: string): Promise<ArchiveSessionResult>;
   restoreArchivedSession(sessionId: string, cwd: string): Promise<RestoreSessionResult>;
   readSessionDetail(sessionId: string): Promise<SessionDetailResult>;
+  summarizeSession(sessionId: string): Promise<SummarizeSessionResult>;
+  summarizeDay(date?: string): Promise<DaySummarizeResult>;
+  summarizeMonth(month?: string): Promise<DaySummarizeResult>;
+  summariesList(): Promise<SummaryHistoryResult>;
+  summariesGet(kind: 'day' | 'month', key: string): Promise<SummaryGetResult>;
   exportSessionMarkdown(sessionId: string, cwd?: string): Promise<ExportResult>;
   readSessionText(sessionId: string): Promise<ReadSessionTextResult>;
   getUiState(): Promise<UiState>;
@@ -178,4 +218,5 @@ export interface CodeAgentDeskApi {
   onSessionExited(callback: (event: SessionExitedEvent) => void): () => void;
   onSessionBound(callback: (event: SessionBoundEvent) => void): () => void;
   onSessionError(callback: (event: SessionErrorEvent) => void): () => void;
+  onSessionsChanged(callback: () => void): () => void;
 }

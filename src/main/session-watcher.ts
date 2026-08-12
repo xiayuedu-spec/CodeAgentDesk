@@ -14,7 +14,10 @@ export class SessionWatcher {
   private watcher?: FSWatcher;
   private readonly pending = new Map<string, PendingSpawn>();
 
-  constructor(private readonly sessions: SessionManager) {}
+  constructor(
+    private readonly sessions: SessionManager,
+    private readonly onChanged?: () => void,
+  ) {}
 
   start(claudeHome: string): void {
     this.watcher?.close();
@@ -26,7 +29,15 @@ export class SessionWatcher {
         pollInterval: 100,
       },
     });
-    this.watcher.on('add', (file) => void this.handleFileAdded(file));
+    this.watcher.on('add', (file) => {
+      if (file.endsWith('.jsonl')) {
+        void this.handleFileAdded(file);
+        this.onChanged?.();
+      }
+    });
+    this.watcher.on('unlink', (file) => {
+      if (file.endsWith('.jsonl')) this.onChanged?.();
+    });
     this.watcher.on('error', () => {
       // TODO: route watcher errors into an app log.
     });

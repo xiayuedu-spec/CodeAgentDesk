@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import type {
   AppInfo,
   ArchiveSessionResult,
@@ -20,6 +20,10 @@ import type {
   SessionRecord,
   SearchResult,
   SessionUsage,
+  SummarizeSessionResult,
+  DaySummarizeResult,
+  SummaryHistoryResult,
+  SummaryGetResult,
   ThemeName,
   UiState,
 } from '../shared/types';
@@ -30,8 +34,11 @@ const CHANNELS = {
   configGet: 'config:get',
   configSetClaudeDir: 'config:set-claude-dir',
   configSetTheme: 'config:set-theme',
+  configSetAutoSummarize: 'config:set-auto-summarize',
   configPickClaudeDir: 'config:pick-claude-dir',
   sessionsList: 'sessions:list',
+  sessionsChanged: 'sessions:changed',
+  recentDirsGet: 'recent-dirs:get',
   sessionPickDirectory: 'session:pick-directory',
   sessionCreate: 'session:create',
   sessionResume: 'session:resume',
@@ -39,6 +46,11 @@ const CHANNELS = {
   sessionArchive: 'session:archive',
   archiveRestore: 'archive:restore',
   sessionDetail: 'session:detail',
+  sessionSummarize: 'session:summarize',
+  daySummarize: 'day:summarize',
+  monthSummarize: 'month:summarize',
+  summariesList: 'summaries:list',
+  summariesGet: 'summaries:get',
   sessionExport: 'session:export',
   sessionReadText: 'session:read-text',
   uiGetState: 'ui:get-state',
@@ -67,15 +79,19 @@ function subscribe<T>(channel: string, callback: (payload: T) => void): () => vo
 }
 
 const api: CodeAgentDeskApi = {
+  getPathForFile: (file) => webUtils.getPathForFile(file),
   getAppInfo: () => ipcRenderer.invoke(CHANNELS.appGetInfo) as Promise<AppInfo>,
   getClaudeConfig: () => ipcRenderer.invoke(CHANNELS.configGet) as Promise<ClaudeConfigInfo>,
   setClaudeDir: (dir) =>
     ipcRenderer.invoke(CHANNELS.configSetClaudeDir, dir) as Promise<ClaudeConfigInfo>,
   setTheme: (theme) =>
     ipcRenderer.invoke(CHANNELS.configSetTheme, theme) as Promise<ClaudeConfigInfo>,
+  setAutoSummarize: (enabled) =>
+    ipcRenderer.invoke(CHANNELS.configSetAutoSummarize, enabled) as Promise<ClaudeConfigInfo>,
   pickClaudeDir: () =>
     ipcRenderer.invoke(CHANNELS.configPickClaudeDir) as Promise<PickClaudeDirResult>,
   listSessions: () => ipcRenderer.invoke(CHANNELS.sessionsList) as Promise<SessionRecord[]>,
+  getRecentDirs: () => ipcRenderer.invoke(CHANNELS.recentDirsGet) as Promise<string[]>,
   pickDirectory: () =>
     ipcRenderer.invoke(CHANNELS.sessionPickDirectory) as Promise<PickDirectoryResult>,
   createSession: (cwd) =>
@@ -90,6 +106,15 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.archiveRestore, { sessionId, cwd }) as Promise<RestoreSessionResult>,
   readSessionDetail: (sessionId) =>
     ipcRenderer.invoke(CHANNELS.sessionDetail, sessionId) as Promise<SessionDetailResult>,
+  summarizeSession: (sessionId) =>
+    ipcRenderer.invoke(CHANNELS.sessionSummarize, sessionId) as Promise<SummarizeSessionResult>,
+  summarizeDay: (date?: string) =>
+    ipcRenderer.invoke(CHANNELS.daySummarize, date) as Promise<DaySummarizeResult>,
+  summarizeMonth: (month) =>
+    ipcRenderer.invoke(CHANNELS.monthSummarize, month) as Promise<DaySummarizeResult>,
+  summariesList: () => ipcRenderer.invoke(CHANNELS.summariesList) as Promise<SummaryHistoryResult>,
+  summariesGet: (kind, key) =>
+    ipcRenderer.invoke(CHANNELS.summariesGet, { kind, key }) as Promise<SummaryGetResult>,
   exportSessionMarkdown: (sessionId, cwd) =>
     ipcRenderer.invoke(CHANNELS.sessionExport, { sessionId, cwd }) as Promise<ExportResult>,
   readSessionText: (sessionId) =>
@@ -118,6 +143,7 @@ const api: CodeAgentDeskApi = {
   onSessionExited: (callback) => subscribe<SessionExitedEvent>(CHANNELS.sessionExited, callback),
   onSessionBound: (callback) => subscribe<SessionBoundEvent>(CHANNELS.sessionBound, callback),
   onSessionError: (callback) => subscribe<SessionErrorEvent>(CHANNELS.sessionError, callback),
+  onSessionsChanged: (callback) => subscribe<void>(CHANNELS.sessionsChanged, callback),
 };
 
 contextBridge.exposeInMainWorld('codeagentdesk', api);
