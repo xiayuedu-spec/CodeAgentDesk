@@ -12,6 +12,10 @@ Claude Code 统一窗口管理器（Electron + React + TypeScript）：并行运
 - 重命名、归档 / 恢复；归档会话可临时借出运行
 - token 用量 / 请求数统计（实时刷新）
 - Claude 目录可配置
+- 皮肤切换：深色默认 / Mac 浅色（左下角设置）
+- 自绘窗口标题栏与终端轻量 chrome（标题、状态、复制/详情）
+- 底部状态栏：会话数、归档数、Claude 目录、版本
+- 克制动效与右键菜单图标
 - 全局快捷键：`Ctrl+T` 新建、`Ctrl+W` 关闭、`Ctrl+K` 搜索、`Ctrl+1..9` 切标签
 - 终端内 `Ctrl+C` 复制 / `Ctrl+V` 粘贴，右键复制 / 粘贴
 
@@ -55,3 +59,4 @@ npm run dev
 - chokidar 固定 v4（v5 为纯 ESM，主进程 CommonJS 不兼容）
 - Claude TUI 全屏模式下终端滚轮由 claude 控制，历史内容请在“查看详情”中阅读
 - 交接与实现细节见 `agent.md`，产品设计见 `DESIGN.md`
+- 新增皮肤需同步 5 处（类型/配置/色卡/终端配色/CSS 变量），清单见 `agent.md`

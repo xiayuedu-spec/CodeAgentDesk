@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { BookOpen, Copy } from 'lucide-react';
 import '@xterm/xterm/css/xterm.css';
 
 interface TerminalPaneProps {
   id: string;
+  title: string;
+  status?: 'starting' | 'running' | 'ended';
   active: boolean;
+  onDetail?: () => void;
+  onCopy?: () => void;
 }
 
 interface TerminalMenuState {
@@ -13,13 +18,59 @@ interface TerminalMenuState {
   y: number;
 }
 
-export function TerminalPane({ id, active }: TerminalPaneProps) {
+interface TerminalPalette {
+  background: string;
+  foreground: string;
+  cursor: string;
+  selectionBackground: string;
+}
+
+const TERMINAL_THEMES: Record<string, TerminalPalette> = {
+  default: { background: '#0a0c0f', foreground: '#dfe3e8', cursor: '#2fbfae', selectionBackground: '#2f8579' },
+  mac: { background: '#fbfbfd', foreground: '#1d1d1f', cursor: '#0a84ff', selectionBackground: '#b8d4ff' },
+  green: { background: '#d5f1d9', foreground: '#2f4a35', cursor: '#2e8b57', selectionBackground: '#a5d8b0' },
+  sepia: { background: '#f7f0e2', foreground: '#3d3528', cursor: '#a67c1f', selectionBackground: '#e0d3b3' },
+  amber: { background: '#1a150d', foreground: '#d8c393', cursor: '#e0a64e', selectionBackground: '#3d3220' },
+  mist: { background: '#15181c', foreground: '#b4bcc3', cursor: '#58a0a8', selectionBackground: '#2a3438' },
+};
+
+function terminalTheme(skin: string): TerminalPalette {
+  return TERMINAL_THEMES[skin] ?? TERMINAL_THEMES.default;
+}
+
+export function TerminalPane({
+  id,
+  title,
+  status = 'ended',
+  active,
+  onDetail,
+  onCopy,
+}: TerminalPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
   const activeRef = useRef(active);
   const [hasSelection, setHasSelection] = useState(false);
   const [menu, setMenu] = useState<TerminalMenuState | null>(null);
+  const [skin, setSkin] = useState(() => document.documentElement.dataset.theme ?? 'default');
+
+  useEffect(() => {
+    const applySkin = () => setSkin(document.documentElement.dataset.theme ?? 'default');
+    const observer = new MutationObserver(applySkin);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+    applySkin();
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const terminal = terminalRef.current;
+    if (!terminal) return;
+    terminal.options.theme = terminalTheme(skin);
+    terminal.refresh(0, terminal.rows - 1);
+  }, [skin]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -30,12 +81,7 @@ export function TerminalPane({ id, active }: TerminalPaneProps) {
       scrollback: 10000,
       fontFamily: '"Cascadia Mono", Consolas, monospace',
       fontSize: 13,
-      theme: {
-        background: '#0a0c0f',
-        foreground: '#dfe3e8',
-        cursor: '#2fbfae',
-        selectionBackground: '#2f8579',
-      },
+      theme: terminalTheme(skin),
     });
     const fit = new FitAddon();
     terminal.loadAddon(fit);
@@ -177,7 +223,31 @@ export function TerminalPane({ id, active }: TerminalPaneProps) {
 
   return (
     <>
-      <div className="terminal-pane" ref={containerRef} />
+      <div className="terminal-pane">
+        <div className="terminal-chrome">
+          <span className={`terminal-status ${status}`} />
+          <span className="terminal-title">{title}</span>
+          <div className="terminal-chrome-actions">
+            <button
+              type="button"
+              className="icon-button"
+              title="复制内容"
+              onClick={onCopy}
+            >
+              <Copy size={14} />
+            </button>
+            <button
+              type="button"
+              className="icon-button"
+              title="查看详情"
+              onClick={onDetail}
+            >
+              <BookOpen size={14} />
+            </button>
+          </div>
+        </div>
+        <div className="terminal-host" ref={containerRef} />
+      </div>
       {menu ? (
         <div
           className="terminal-context-menu"

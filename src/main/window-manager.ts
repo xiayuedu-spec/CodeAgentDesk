@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron';
 import path from 'node:path';
-import type { IpcChannelName } from '../shared/ipc-contract';
+import { IpcChannel, type IpcChannelName } from '../shared/ipc-contract';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -11,6 +11,7 @@ export function createMainWindow(): BrowserWindow {
     minWidth: 960,
     minHeight: 600,
     title: 'CodeAgentDesk',
+    titleBarStyle: process.platform === 'win32' ? 'hidden' : 'default',
     backgroundColor: '#0e1014',
     show: false,
     webPreferences: {
@@ -22,6 +23,8 @@ export function createMainWindow(): BrowserWindow {
   });
 
   mainWindow = window;
+  window.on('maximize', () => broadcast(IpcChannel.windowMaximizedChanged, true));
+  window.on('unmaximize', () => broadcast(IpcChannel.windowMaximizedChanged, false));
   window.on('closed', () => {
     mainWindow = null;
   });

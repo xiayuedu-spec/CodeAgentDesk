@@ -1,0 +1,159 @@
+<style>
+  .direction-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:8px; }
+  .dir-card { border:1px solid var(--border); border-radius:14px; overflow:hidden; background:var(--bg-raised); cursor:pointer; }
+  .dir-card.selected { outline:2px solid var(--accent); }
+  .dir-label { padding:11px 14px; border-bottom:1px solid var(--border); font-size:13px; font-weight:650; }
+  .dir-note { padding:10px 14px 12px; color:var(--text-muted); font-size:11px; line-height:1.5; }
+  .stage { padding:16px; display:grid; place-items:center; }
+
+  /* ---------- shared window mockup ---------- */
+  .m { width:250px; height:306px; border-radius:11px; overflow:hidden; display:flex; flex-direction:column;
+       font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif; font-size:10px; }
+  .m * { box-sizing:border-box; margin:0; }
+  .m-tb { height:24px; display:flex; align-items:center; gap:6px; padding:0 10px; flex:none; }
+  .m-tb i { width:7px; height:7px; border-radius:50%; }
+  .m-tb span { font-weight:650; font-size:9.5px; }
+  .m-body { flex:1; display:flex; min-height:0; }
+  .m-side { width:88px; flex:none; padding:7px; display:flex; flex-direction:column; gap:5px; }
+  .m-search { height:16px; border-radius:4px; padding:0 6px; display:flex; align-items:center; font-size:8px; }
+  .m-group { font-size:7.5px; letter-spacing:.5px; margin-top:2px; opacity:.65; }
+  .m-item { height:27px; border-radius:5px; padding:3px 6px; display:flex; gap:5px; align-items:center; }
+  .m-item b { display:block; font-size:8.5px; font-weight:600; white-space:nowrap; overflow:hidden; }
+  .m-item i { display:block; font-style:normal; font-size:7.5px; white-space:nowrap; overflow:hidden; opacity:.55; }
+  .m-dot { width:6px; height:6px; border-radius:50%; flex:none; }
+  .m-dot.dim { opacity:.4; }
+  .m-main { flex:1; min-width:0; display:flex; flex-direction:column; padding:7px; gap:6px; }
+  .m-tabs { display:flex; gap:4px; }
+  .m-tab { height:18px; border-radius:5px; padding:0 6px; display:flex; align-items:center; gap:4px; font-size:8px; flex:1; }
+  .m-tab i { font-style:normal; opacity:.5; margin-left:auto; }
+  .m-term { flex:1; border-radius:7px; padding:7px; font-family:"Cascadia Mono",Consolas,monospace; font-size:8px; line-height:1.7; }
+  .m-term .p { color:#2fbfae; }
+  .m-usage { height:34px; border-radius:7px; display:flex; flex-direction:column; justify-content:center; gap:3px; padding:0 8px; }
+  .m-usage b { font-size:8px; font-weight:600; }
+  .m-usage i { font-style:normal; font-size:7px; opacity:.6; }
+
+  /* ---------- Direction A: refined teal ---------- */
+  .dir-a .m { background:#0b0d11; color:#e8ecf1; box-shadow:0 12px 28px rgba(0,0,0,.45); }
+  .dir-a .m-tb { background:#12151b; border-bottom:1px solid #20252e; }
+  .dir-a .m-tb i { background:linear-gradient(135deg,#34d3c0,#1f9c8e); }
+  .dir-a .m-side { background:#0e1014; }
+  .dir-a .m-search { background:#050608; border:1px solid #1d222b; }
+  .dir-a .m-group { color:#626b77; }
+  .dir-a .m-item { color:#e8ecf1; }
+  .dir-a .m-item.active { background:linear-gradient(180deg,rgba(52,211,192,.12),rgba(52,211,192,.05)); box-shadow:inset 2px 0 0 #34d3c0; }
+  .dir-a .m-item i { color:#8a919c; }
+  .dir-a .m-dot { background:#34d3c0; box-shadow:0 0 5px rgba(52,211,192,.6); }
+  .dir-a .m-tab { background:#050608; border:1px solid #1d222b; color:#9aa4b1; }
+  .dir-a .m-tab.active { background:linear-gradient(180deg,#1a1e27,#13161d); border-color:#1f9c8e; color:#e8ecf1; }
+  .dir-a .m-term { background:linear-gradient(180deg,#0a0c10,#07080b); border:1px solid #1d222b; color:#dfe3e8; }
+  .dir-a .m-usage { background:#101218; border:1px solid #1d222b; color:#e8ecf1; }
+  .dir-a .m-usage i { color:#9aa4b1; }
+
+  /* ---------- Direction B: minimal near-black ---------- */
+  .dir-b .m { background:#0b0b0e; color:#ececef; box-shadow:0 10px 24px rgba(0,0,0,.5); }
+  .dir-b .m-tb { background:#0e0e11; border-bottom:1px solid rgba(255,255,255,.07); }
+  .dir-b .m-tb i { background:#2fbfae; }
+  .dir-b .m-side { background:#0d0d10; border-right:1px solid rgba(255,255,255,.05); }
+  .dir-b .m-search { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:#8a8f98; }
+  .dir-b .m-group { color:#5c6166; }
+  .dir-b .m-item { color:#ececef; }
+  .dir-b .m-item.active { background:rgba(255,255,255,.055); }
+  .dir-b .m-item i { color:#6a6f76; }
+  .dir-b .m-dot { background:#2fbfae; }
+  .dir-b .m-tab { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); color:#8a8f98; }
+  .dir-b .m-tab.active { background:#16161a; border-color:rgba(255,255,255,.14); color:#ececef; }
+  .dir-b .m-term { background:#101013; border:1px solid rgba(255,255,255,.07); color:#d4d6da; }
+  .dir-b .m-usage { background:#121216; border:1px solid rgba(255,255,255,.07); color:#ececef; }
+  .dir-b .m-usage i { color:#6a6f76; }
+
+  /* ---------- Direction C: layered frosted ---------- */
+  .dir-c .m { background:#101018; color:#eef0f7; box-shadow:0 16px 40px rgba(0,0,0,.5); }
+  .dir-c .m-tb { background:rgba(255,255,255,.05); backdrop-filter:blur(10px); border-bottom:1px solid rgba(255,255,255,.1); }
+  .dir-c .m-tb i { background:linear-gradient(135deg,#7c8cff,#4f5ae0); box-shadow:0 0 8px rgba(124,140,255,.7); }
+  .dir-c .m-side { background:rgba(255,255,255,.03); border-right:1px solid rgba(255,255,255,.06); }
+  .dir-c .m-search { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); color:#a8aec8; }
+  .dir-c .m-group { color:#6d7391; }
+  .dir-c .m-item { color:#eef0f7; }
+  .dir-c .m-item.active { background:linear-gradient(90deg,rgba(124,140,255,.16),rgba(124,140,255,.04)); box-shadow:inset 2px 0 0 #7c8cff; }
+  .dir-c .m-item i { color:#8288a6; }
+  .dir-c .m-dot { background:#7c8cff; box-shadow:0 0 6px rgba(124,140,255,.7); }
+  .dir-c .m-tab { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); color:#a8aec8; }
+  .dir-c .m-tab.active { background:rgba(124,140,255,.12); border-color:rgba(124,140,255,.4); color:#eef0f7; box-shadow:0 2px 10px rgba(124,140,255,.18); }
+  .dir-c .m-term { background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.1); backdrop-filter:blur(6px); color:#d8dbea; }
+  .dir-c .m-usage { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); color:#eef0f7; }
+  .dir-c .m-usage i { color:#8288a6; }
+</style>
+
+<h2>三套「高级感」方向对比</h2>
+<p class="subtitle">同一个 CodeAgentDesk 窗口，三种视觉语言。点卡片选中你想要的，可多选。右边是每个方向的一句话说明。</p>
+
+<div class="direction-grid" data-multiselect>
+  <div class="dir-card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="stage"><div class="m dir-a">
+      <div class="m-tb"><i></i><span>CodeAgentDesk</span></div>
+      <div class="m-body">
+        <div class="m-side">
+          <div class="m-search">搜索会话</div>
+          <div class="m-group">当前会话</div>
+          <div class="m-item active"><span class="m-dot"></span><div><b>CodeAgentDesk #1</b><i>D:\ai\CodeAgentDesk</i></div></div>
+          <div class="m-item"><span class="m-dot"></span><div><b>设计文档 #2</b><i>D:\ai\docs</i></div></div>
+          <div class="m-group">历史会话</div>
+          <div class="m-item"><span class="m-dot dim"></span><div><b>重构搜索</b><i>D:\ai\CodeAgentDesk</i></div></div>
+        </div>
+        <div class="m-main">
+          <div class="m-tabs"><div class="m-tab active">● CodeAgentDesk #1 <i>×</i></div><div class="m-tab">● 设计文档 #2 <i>×</i></div></div>
+          <div class="m-term"><span class="p">❯</span> claude<br><span class="p">❯</span> 帮我重构搜索模块…</div>
+          <div class="m-usage"><b>会话状态 · 运行中</b><i>12 请求 · 3.2k in · 1.4k out</i></div>
+        </div>
+      </div>
+    </div></div>
+    <div class="dir-label">A · 精修现主题</div>
+    <div class="dir-note">保留青绿强调色，收紧间距/边框，微渐变表面。低风险、渐进式，仍是现在的底子。</div>
+  </div>
+
+  <div class="dir-card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="stage"><div class="m dir-b">
+      <div class="m-tb"><i></i><span>CodeAgentDesk</span></div>
+      <div class="m-body">
+        <div class="m-side">
+          <div class="m-search">搜索会话</div>
+          <div class="m-group">当前会话</div>
+          <div class="m-item active"><span class="m-dot"></span><div><b>CodeAgentDesk #1</b><i>D:\ai\CodeAgentDesk</i></div></div>
+          <div class="m-item"><span class="m-dot"></span><div><b>设计文档 #2</b><i>D:\ai\docs</i></div></div>
+          <div class="m-group">历史会话</div>
+          <div class="m-item"><span class="m-dot dim"></span><div><b>重构搜索</b><i>D:\ai\CodeAgentDesk</i></div></div>
+        </div>
+        <div class="m-main">
+          <div class="m-tabs"><div class="m-tab active">● CodeAgentDesk #1 <i>×</i></div><div class="m-tab">● 设计文档 #2 <i>×</i></div></div>
+          <div class="m-term"><span class="p">❯</span> claude<br><span class="p">❯</span> 帮我重构搜索模块…</div>
+          <div class="m-usage"><b>会话状态 · 运行中</b><i>12 请求 · 3.2k in · 1.4k out</i></div>
+        </div>
+      </div>
+    </div></div>
+    <div class="dir-label">B · 极简近黑（Linear/Codex 风）</div>
+    <div class="dir-note">近黑底 + 发丝线边框 + 单一强调色，零渐变零花哨。高级感来自克制与留白，最像现代开发者工具。</div>
+  </div>
+
+  <div class="dir-card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="stage"><div class="m dir-c">
+      <div class="m-tb"><i></i><span>CodeAgentDesk</span></div>
+      <div class="m-body">
+        <div class="m-side">
+          <div class="m-search">搜索会话</div>
+          <div class="m-group">当前会话</div>
+          <div class="m-item active"><span class="m-dot"></span><div><b>CodeAgentDesk #1</b><i>D:\ai\CodeAgentDesk</i></div></div>
+          <div class="m-item"><span class="m-dot"></span><div><b>设计文档 #2</b><i>D:\ai\docs</i></div></div>
+          <div class="m-group">历史会话</div>
+          <div class="m-item"><span class="m-dot dim"></span><div><b>重构搜索</b><i>D:\ai\CodeAgentDesk</i></div></div>
+        </div>
+        <div class="m-main">
+          <div class="m-tabs"><div class="m-tab active">● CodeAgentDesk #1 <i>×</i></div><div class="m-tab">● 设计文档 #2 <i>×</i></div></div>
+          <div class="m-term"><span class="p">❯</span> claude<br><span class="p">❯</span> 帮我重构搜索模块…</div>
+          <div class="m-usage"><b>会话状态 · 运行中</b><i>12 请求 · 3.2k in · 1.4k out</i></div>
+        </div>
+      </div>
+    </div></div>
+    <div class="dir-label">C · 层次玻璃（Frosted）</div>
+    <div class="dir-note">半透明/毛玻璃分层 + 光晕强调色（换了个偏紫的 accent）。更"设计感"，但容易做脏，需克制。</div>
+  </div>
+</div>

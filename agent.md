@@ -43,6 +43,7 @@ src/
 ├─ renderer/              # React + Vite
 │  ├─ App.tsx             # 主界面、模式切换、右键菜单
 │  └─ components/
+│     ├─ TitleBar.tsx     # 自绘窗口标题栏
 │     ├─ TerminalPane.tsx # xterm + 复制粘贴/滚轮
 │     └─ SessionDetail.tsx # 会话详情视图
 └─ shared/
@@ -68,7 +69,7 @@ src/
 
 ### 应用数据（Windows 为 %APPDATA%/codeagentdesk）
 
-- `config.json`：`{ "claudeDir": "..." }`
+- `config.json`：`{ "claudeDir": "...", "theme": "default" | "mac" | "green" | "sepia" | "amber" | "mist" }`
 - `session-meta.json`：`{ [sessionId]: { customName?, archived?, archivedAt?, archivedPath?, cwd? } }`
 - `ui-state.json`：`{ openSessionIds: [], activeSessionId? }`（自动恢复上次打开的标签）
 - `archive/<encodedDir>/<sessionId>.jsonl`：归档会话文件
@@ -94,9 +95,15 @@ src/
 - 全文搜索（返回可读的用户输入/Claude 输出，不带 JSON）
 - token 用量 / 请求数实时统计（3 秒刷新）
 - Claude 目录可配置（侧边栏齿轮）
+- 皮肤切换（左下角设置，3 列色卡紧凑弹窗）：深色默认 / Mac 浅色 / 护眼豆沙绿 / 暖纸米黄 / 琥珀夜间 / 柔雾深青；终端配色随主题联动，窗口底色同步
+- 自绘窗口标题栏（Windows 隐藏系统标题栏，自定义最小化/最大化/关闭，窗口底色随主题同步）
+- 终端轻量 chrome：标题、运行状态点、复制内容/查看详情按钮
+- 底部状态栏：会话数、归档数、Claude 目录、版本号
+- 克制动效（160ms 淡入）与右键菜单图标/分隔线
 - 全局快捷键：`Ctrl+T` 新建、`Ctrl+W` 关闭、`Ctrl+K` 搜索、`Ctrl+1..9` 切标签
 - 终端内 `Ctrl+C` 复制选中、`Ctrl+V` 粘贴、右键菜单复制/粘贴
 - 终端栈常驻挂载：关闭一个标签不会卸载其他会话的终端
+- 表面层次精修：面板内顶高光 + 柔和阴影、hover/焦点环（深色主题）
 
 ## 6. 已知坑与工作区补丁
 
@@ -108,6 +115,8 @@ src/
 6. **终端滚轮**：Claude TUI 用 alternate screen 时滚轮行为由 claude 自己决定；xterm 使用默认滚轮行为并设 `scrollback: 10000`。读历史对话以“会话详情视图”为准。
 7. **终端栈必须常驻挂载**：`App.tsx` 中终端栈在非搜索分支始终渲染，当前无激活会话（欢迎页）时只加 `.hidden`，详情打开时也只加 `.hidden`。关闭激活标签后若卸载其他终端，会导致其他标签的滚动记录丢失。
 8. **归档会话“借出”**：点击归档行 → 先把 JSONL 移回 projects 并 resume，但 UI 里仍标记归档并高亮；切到其他标签或关闭时自动移回归档目录；右键“恢复”才是永久取消归档。
+9. **自绘标题栏**：Windows 用 `titleBarStyle: 'hidden'` + `-webkit-app-region` 做拖拽区，窗口按钮走 `window:*` IPC；主题切换时通过 `window:set-background-color` 同步窗口底色，避免切换白闪。Mac 皮肤暂未做交通灯。
+10. **设置弹窗定位**：紧凑设置弹窗是 `position:absolute; left:0; right:auto; bottom:42px; width:300px`，从侧边栏齿轮向右展开，避免被侧边栏裁切。内容再变多时建议改回独立设置页，而不是继续加高弹窗。
 
 ## 7. 开发约定
 
@@ -115,6 +124,22 @@ src/
 - 新增 IPC 通道按顺序改四处：`shared/ipc-contract.ts` → `shared/types.ts` → `main/ipc.ts` → `preload/index.ts`（注意第 4 条的同步副本）。
 - 会话文件定位统一走 `ipc.ts` 里的 `locateSessionFile()`，不要各写各的路径。
 - 提交前至少跑 `npm run typecheck` 和 `npm run build`。
+
+### 主题系统约定（新增皮肤必看）
+
+新增一套皮肤需要同步以下 5 处，缺一处就会出现“文档说有、代码没有”或配色错乱：
+
+1. `src/shared/types.ts`：`ThemeName` 联合类型加新值
+2. `src/main/config.ts`：`normalizeTheme` 的 `allowed` 白名单加新值
+3. `src/renderer/App.tsx`：
+   - `THEME_BACKGROUND`（窗口底色）
+   - `THEME_SWATCHES`（设置弹窗色卡预览）
+   - `THEMES`（展示名称）
+4. `src/renderer/components/TerminalPane.tsx`：`TERMINAL_THEMES` 加终端配色
+5. `src/renderer/styles.css`：加 `:root[data-theme='<name>']` 变量块，必须包含
+   `--bg/--bg-raised/--bg-inset/--border/--border-strong/--text/--text-muted/--text-faint/--accent/--accent-dim/--accent-glow/--accent-glow-strong/--accent-soft/--accent-strong/--focus-ring/--selection/--warn/--danger`
+
+浅色皮肤（如 mac/green/sepia）还需要补 `hover` 用深色底色的覆盖规则，避免白色 rgba 在浅底上失效。硬编码主题色已全部收口为 CSS 变量，新增主题不要再写死 rgba。
 
 ## 8. 测试现状
 

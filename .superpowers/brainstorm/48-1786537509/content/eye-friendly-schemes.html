@@ -1,0 +1,183 @@
+<style>
+  .grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin-top:8px; }
+  .card { border:1px solid var(--border); border-radius:14px; overflow:hidden; background:var(--bg-raised); cursor:pointer; }
+  .card.selected { outline:2px solid var(--accent); }
+  .stage { padding:14px; display:grid; place-items:center; background:var(--bg-inset); }
+  .name { padding:10px 14px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:650; display:flex; justify-content:space-between; align-items:center; }
+  .tag { font-size:9px; font-weight:600; padding:2px 7px; border-radius:999px; background:var(--bg-inset); color:var(--text-muted); }
+  .desc { padding:9px 14px 11px; color:var(--text-muted); font-size:10.5px; line-height:1.55; }
+  .swatches { display:flex; gap:5px; margin-top:9px; }
+  .sw { width:20px; height:20px; border-radius:5px; border:1px solid rgba(0,0,0,.15); }
+
+  /* ---- base window mockup ---- */
+  .m { width:218px; height:266px; border-radius:10px; overflow:hidden; display:flex; flex-direction:column;
+       font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif; font-size:9px; box-shadow:0 14px 34px rgba(0,0,0,.38); }
+  .m * { box-sizing:border-box; margin:0; }
+  .m-tb { height:21px; display:flex; align-items:center; gap:5px; padding:0 8px; flex:none; border-bottom:1px solid; }
+  .m-tb i { width:6px; height:6px; border-radius:50%; }
+  .m-tb span { font-weight:650; font-size:8.5px; }
+  .m-b { flex:1; display:flex; min-height:0; }
+  .m-s { width:78px; flex:none; display:flex; flex-direction:column; gap:4px; padding:6px; border-right:1px solid; }
+  .m-s .q { height:15px; border-radius:4px; font-size:7px; display:flex; align-items:center; padding:0 5px; opacity:.8; }
+  .m-s .g { font-size:7px; letter-spacing:.4px; opacity:.6; margin-top:1px; }
+  .m-s .r { height:24px; border-radius:5px; padding:3px 6px; display:flex; gap:4px; align-items:center; }
+  .m-s .r.on { box-shadow:inset 2px 0 0 currentColor; }
+  .m-s .r b { display:block; font-size:7.5px; font-weight:600; white-space:nowrap; overflow:hidden; }
+  .m-s .r i { display:block; font-style:normal; font-size:6.5px; white-space:nowrap; overflow:hidden; opacity:.55; }
+  .m-s .d { width:5px; height:5px; border-radius:50%; flex:none; }
+  .m-m { flex:1; min-width:0; display:flex; flex-direction:column; padding:6px; gap:5px; }
+  .m-t { display:flex; gap:3px; }
+  .m-t span { flex:1; height:16px; border-radius:4px; display:flex; align-items:center; gap:3px; padding:0 5px; font-size:7px; }
+  .m-t span b { font-weight:600; }
+  .m-term { flex:1; border-radius:6px; padding:6px; font-family:"Cascadia Mono",Consolas,monospace; font-size:7px; line-height:1.7; border:1px solid; }
+  .m-term .p { font-weight:700; }
+
+  /* A 豆沙绿 */
+  .a .m { background:#C7EDCC; color:#2f4a35; }
+  .a .m-tb { background:#b9e4c0; border-color:#9ccfa6; }
+  .a .m-tb i { background:#2e8b57; }
+  .a .m-s { background:#bfe6c6; border-color:#a7d5b0; }
+  .a .m-s .q { background:#d5f1d9; }
+  .a .m-s .r.on { background:rgba(46,139,87,.14); }
+  .a .m-s .d { background:#2e8b57; }
+  .a .m-t span { background:#cfeed3; border:1px solid #9ccfa6; color:#4a6a50; }
+  .a .m-t span.on { background:#fff; border-color:#2e8b57; color:#2f4a35; }
+  .a .m-term { background:#d5f1d9; border-color:#9ccfa6; color:#33503b; }
+  .a .m-term .p { color:#2e8b57; }
+  .a .sw { background:#C7EDCC; } .a .sw:nth-child(2){background:#d5f1d9;} .a .sw:nth-child(3){background:#2f4a35;} .a .sw:nth-child(4){background:#2e8b57;}
+
+  /* B 暖纸米黄 */
+  .b .m { background:#f4ead8; color:#3d3528; }
+  .b .m-tb { background:#efe3cd; border-color:#d9c9a8; }
+  .b .m-tb i { background:#a67c1f; }
+  .b .m-s { background:#efe3cd; border-color:#dcccaa; }
+  .b .m-s .q { background:#faf5ea; }
+  .b .m-s .r.on { background:rgba(166,124,31,.14); }
+  .b .m-s .d { background:#a67c1f; }
+  .b .m-t span { background:#f7f0e2; border:1px solid #d9c9a8; color:#6e6250; }
+  .b .m-t span.on { background:#fff; border-color:#a67c1f; color:#3d3528; }
+  .b .m-term { background:#f7f0e2; border-color:#d9c9a8; color:#4a4132; }
+  .b .m-term .p { color:#a67c1f; }
+  .b .sw { background:#f4ead8; } .b .sw:nth-child(2){background:#faf5ea;} .b .sw:nth-child(3){background:#3d3528;} .b .sw:nth-child(4){background:#a67c1f;}
+
+  /* C 琥珀夜间 */
+  .c .m { background:#16120b; color:#e2cfa5; }
+  .c .m-tb { background:#1e1810; border-color:#332a1a; }
+  .c .m-tb i { background:#e0a64e; box-shadow:0 0 6px rgba(224,166,78,.7); }
+  .c .m-s { background:#19140c; border-color:#2c2414; }
+  .c .m-s .q { background:#100d08; }
+  .c .m-s .r.on { background:rgba(224,166,78,.13); }
+  .c .m-s .d { background:#e0a64e; }
+  .c .m-t span { background:#1a150d; border:1px solid #332a1a; color:#9d8a63; }
+  .c .m-t span.on { background:#241c10; border-color:#e0a64e; color:#e2cfa5; }
+  .c .m-term { background:#1a150d; border-color:#332a1a; color:#d8c393; }
+  .c .m-term .p { color:#e0a64e; }
+  .c .sw { background:#16120b; } .c .sw:nth-child(2){background:#241c10;} .c .sw:nth-child(3){background:#e2cfa5;} .c .sw:nth-child(4){background:#e0a64e;}
+
+  /* D 柔雾深青 */
+  .d .m { background:#131619; color:#c6cdd4; }
+  .d .m-tb { background:#1a1e22; border-color:#2a3036; }
+  .d .m-tb i { background:#58a0a8; }
+  .d .m-s { background:#171a1e; border-color:#262d33; }
+  .d .m-s .q { background:#101316; }
+  .d .m-s .r.on { background:rgba(88,160,168,.13); }
+  .d .m-s .d { background:#58a0a8; }
+  .d .m-t span { background:#15181c; border:1px solid #2a3036; color:#7d868f; }
+  .d .m-t span.on { background:#1d2226; border-color:#58a0a8; color:#c6cdd4; }
+  .d .m-term { background:#15181c; border-color:#2a3036; color:#b4bcc3; }
+  .d .m-term .p { color:#58a0a8; }
+  .d .sw { background:#131619; } .d .sw:nth-child(2){background:#1d2226;} .d .sw:nth-child(3){background:#c6cdd4;} .d .sw:nth-child(4){background:#58a0a8;}
+</style>
+
+<h2>四套护眼配色方案</h2>
+<p class="subtitle">针对「白色主题刺眼」给的方向。点卡片选中（可多选），告诉我选哪套，或要混搭。色板在每张卡片标题下。</p>
+
+<div class="grid" data-multiselect>
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="name">A · 豆沙绿 <span class="tag">经典护眼浅色</span></div>
+    <div class="stage"><div class="m a">
+      <div class="m-tb"><i></i><span>CodeAgentDesk</span></div>
+      <div class="m-b">
+        <div class="m-s">
+          <div class="q">搜索会话</div>
+          <div class="g">当前会话</div>
+          <div class="r on"><span class="d"></span><div><b>CodeAgentDesk #1</b><i>D:\ai\CodeAgentDesk</i></div></div>
+          <div class="r"><span class="d"></span><div><b>设计文档 #2</b><i>D:\ai\docs</i></div></div>
+        </div>
+        <div class="m-m">
+          <div class="m-t"><span class="on"><b>● #1</b></span><span><b>● #2</b></span></div>
+          <div class="m-term"><span class="p">❯</span> claude<br><span class="p">❯</span> 帮我重构…</div>
+        </div>
+      </div>
+    </div></div>
+    <div class="desc">绿豆沙色 #C7EDCC，最经典的「护眼色」——绿色光对眼压更友好，低蓝光浅色方案。
+      <div class="swatches"><span class="sw"></span><span class="sw"></span><span class="sw"></span><span class="sw"></span></div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="name">B · 暖纸米黄 <span class="tag">sepia 阅读色</span></div>
+    <div class="stage"><div class="m b">
+      <div class="m-tb"><i></i><span>CodeAgentDesk</span></div>
+      <div class="m-b">
+        <div class="m-s">
+          <div class="q">搜索会话</div>
+          <div class="g">当前会话</div>
+          <div class="r on"><span class="d"></span><div><b>CodeAgentDesk #1</b><i>D:\ai\CodeAgentDesk</i></div></div>
+          <div class="r"><span class="d"></span><div><b>设计文档 #2</b><i>D:\ai\docs</i></div></div>
+        </div>
+        <div class="m-m">
+          <div class="m-t"><span class="on"><b>● #1</b></span><span><b>● #2</b></span></div>
+          <div class="m-term"><span class="p">❯</span> claude<br><span class="p">❯</span> 帮我重构…</div>
+        </div>
+      </div>
+    </div></div>
+    <div class="desc">米黄暖纸 #F4EAD8，类似阅读器 sepia。去掉冷白、加重棕调，长时间盯不刺眼。
+      <div class="swatches"><span class="sw"></span><span class="sw"></span><span class="sw"></span><span class="sw"></span></div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="name">C · 琥珀夜间 <span class="tag">护眼深色</span></div>
+    <div class="stage"><div class="m c">
+      <div class="m-tb"><i></i><span>CodeAgentDesk</span></div>
+      <div class="m-b">
+        <div class="m-s">
+          <div class="q">搜索会话</div>
+          <div class="g">当前会话</div>
+          <div class="r on"><span class="d"></span><div><b>CodeAgentDesk #1</b><i>D:\ai\CodeAgentDesk</i></div></div>
+          <div class="r"><span class="d"></span><div><b>设计文档 #2</b><i>D:\ai\docs</i></div></div>
+        </div>
+        <div class="m-m">
+          <div class="m-t"><span class="on"><b>● #1</b></span><span><b>● #2</b></span></div>
+          <div class="m-term"><span class="p">❯</span> claude<br><span class="p">❯</span> 帮我重构…</div>
+        </div>
+      </div>
+    </div></div>
+    <div class="desc">近黑暖底 + 琥珀文字，f.lux/夜间阅读同款。暗光环境最护眼，几乎无蓝光。
+      <div class="swatches"><span class="sw"></span><span class="sw"></span><span class="sw"></span><span class="sw"></span></div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="d" onclick="toggleSelect(this)">
+    <div class="name">D · 柔雾深青 <span class="tag">柔和低对比</span></div>
+    <div class="stage"><div class="m d">
+      <div class="m-tb"><i></i><span>CodeAgentDesk</span></div>
+      <div class="m-b">
+        <div class="m-s">
+          <div class="q">搜索会话</div>
+          <div class="g">当前会话</div>
+          <div class="r on"><span class="d"></span><div><b>CodeAgentDesk #1</b><i>D:\ai\CodeAgentDesk</i></div></div>
+          <div class="r"><span class="d"></span><div><b>设计文档 #2</b><i>D:\ai\docs</i></div></div>
+        </div>
+        <div class="m-m">
+          <div class="m-t"><span class="on"><b>● #1</b></span><span><b>● #2</b></span></div>
+          <div class="m-term"><span class="p">❯</span> claude<br><span class="p">❯</span> 帮我重构…</div>
+        </div>
+      </div>
+    </div></div>
+    <div class="desc">比默认深色更柔：降低对比、提一点暖意、去掉刺眼的高亮白边，屏幕常开不累眼。
+      <div class="swatches"><span class="sw"></span><span class="sw"></span><span class="sw"></span><span class="sw"></span></div>
+    </div>
+  </div>
+</div>

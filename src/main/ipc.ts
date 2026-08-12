@@ -18,6 +18,7 @@ import type {
   SessionRecord,
   SearchResult,
   SessionUsage,
+  ThemeName,
   UiState,
 } from '../shared/types';
 import {
@@ -26,6 +27,7 @@ import {
   resolveClaudeHome,
   writeConfig,
 } from './config';
+import { getMainWindow } from './window-manager';
 import {
   findSessionFile,
   listSessions,
@@ -94,6 +96,14 @@ export function registerIpcHandlers(
     (_event, dir: string | null): ClaudeConfigInfo => {
       writeConfig({ claudeDir: dir ?? undefined });
       onClaudeDirChanged();
+      return readClaudeConfigInfo();
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.configSetTheme,
+    (_event, theme: ThemeName): ClaudeConfigInfo => {
+      writeConfig({ ...readConfig(), theme });
       return readClaudeConfigInfo();
     },
   );
@@ -310,6 +320,33 @@ export function registerIpcHandlers(
       openSessionIds: Array.isArray(state.openSessionIds) ? state.openSessionIds : [],
       activeSessionId: state.activeSessionId,
     });
+  });
+
+  ipcMain.handle(IpcChannel.windowMinimize, (): void => {
+    getMainWindow()?.minimize();
+  });
+
+  ipcMain.handle(IpcChannel.windowToggleMaximize, (): boolean => {
+    const window = getMainWindow();
+    if (!window) return false;
+    if (window.isMaximized()) {
+      window.unmaximize();
+    } else {
+      window.maximize();
+    }
+    return window.isMaximized();
+  });
+
+  ipcMain.handle(IpcChannel.windowIsMaximized, (): boolean => {
+    return getMainWindow()?.isMaximized() ?? false;
+  });
+
+  ipcMain.handle(IpcChannel.windowClose, (): void => {
+    getMainWindow()?.close();
+  });
+
+  ipcMain.handle(IpcChannel.windowSetBackgroundColor, (_event, color: string): void => {
+    getMainWindow()?.setBackgroundColor(color);
   });
 
   ipcMain.handle(

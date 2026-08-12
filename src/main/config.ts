@@ -2,13 +2,16 @@ import { app } from 'electron';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import type { AppConfig, ClaudeConfigInfo } from '../shared/types';
+import type { AppConfig, ClaudeConfigInfo, ThemeName } from '../shared/types';
 
 export function readConfig(): AppConfig {
   const file = configPath();
   try {
     const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as AppConfig;
-    return { claudeDir: typeof parsed.claudeDir === 'string' ? parsed.claudeDir : undefined };
+    return {
+      claudeDir: typeof parsed.claudeDir === 'string' ? parsed.claudeDir : undefined,
+      theme: normalizeTheme(parsed.theme),
+    };
   } catch {
     return {};
   }
@@ -35,4 +38,9 @@ export function readClaudeConfigInfo(): ClaudeConfigInfo {
 
 function configPath(): string {
   return path.join(app.getPath('userData'), 'config.json');
+}
+
+function normalizeTheme(value: unknown): ThemeName {
+  const allowed: readonly ThemeName[] = ['default', 'mac', 'green', 'sepia', 'amber', 'mist'];
+  return allowed.includes(value as ThemeName) ? (value as ThemeName) : 'default';
 }

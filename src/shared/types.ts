@@ -8,8 +8,11 @@ export interface AppInfo {
   startedAt: string;
 }
 
+export type ThemeName = 'default' | 'mac' | 'green' | 'sepia' | 'amber' | 'mist';
+
 export interface AppConfig {
   claudeDir?: string;
+  theme?: ThemeName;
 }
 
 export interface ClaudeConfigInfo {
@@ -146,6 +149,7 @@ export interface CodeAgentDeskApi {
   getAppInfo(): Promise<AppInfo>;
   getClaudeConfig(): Promise<ClaudeConfigInfo>;
   setClaudeDir(dir: string | null): Promise<ClaudeConfigInfo>;
+  setTheme(theme: ThemeName): Promise<ClaudeConfigInfo>;
   pickClaudeDir(): Promise<PickClaudeDirResult>;
   listSessions(): Promise<SessionRecord[]>;
   pickDirectory(): Promise<PickDirectoryResult>;
@@ -159,6 +163,12 @@ export interface CodeAgentDeskApi {
   readSessionText(sessionId: string): Promise<ReadSessionTextResult>;
   getUiState(): Promise<UiState>;
   saveUiState(state: UiState): Promise<void>;
+  minimizeWindow(): Promise<void>;
+  toggleMaximizeWindow(): Promise<boolean>;
+  isWindowMaximized(): Promise<boolean>;
+  closeWindow(): Promise<void>;
+  setWindowBackgroundColor(color: string): Promise<void>;
+  onWindowMaximizedChanged(callback: (maximized: boolean) => void): () => void;
   getSessionUsage(id: string): Promise<SessionUsage>;
   searchSessions(query: string): Promise<SearchResult[]>;
   writeSession(id: string, data: string): Promise<void>;

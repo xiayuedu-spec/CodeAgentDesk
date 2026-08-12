@@ -1,5 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
-import { FolderOpen, Plus, Search, Settings2, Terminal, X } from 'lucide-react';
+import {
+  Archive,
+  ArchiveRestore,
+  BookOpen,
+  Check,
+  Copy,
+  FolderOpen,
+  Link2,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  Settings2,
+  Terminal,
+  X,
+} from 'lucide-react';
 import type {
   AppInfo,
   ClaudeConfigInfo,
@@ -7,9 +22,11 @@ import type {
   SessionDetailResult,
   SessionRecord,
   SessionUsage,
+  ThemeName,
 } from '../shared/types';
 import { TerminalPane } from './components/TerminalPane';
 import { SessionDetail } from './components/SessionDetail';
+import { TitleBar } from './components/TitleBar';
 
 type Mode = 'sessions' | 'archive' | 'search';
 
@@ -36,6 +53,33 @@ const EMPTY_USAGE: SessionUsage = {
   outputTokens: 0,
   cacheReadTokens: 0,
   cacheCreationTokens: 0,
+};
+
+const THEME_BACKGROUND: Record<ThemeName, string> = {
+  default: '#08090c',
+  mac: '#ececef',
+  green: '#c7edcc',
+  sepia: '#f4ead8',
+  amber: '#16120b',
+  mist: '#131619',
+};
+
+const THEMES: { name: ThemeName; label: string }[] = [
+  { name: 'default', label: '深色默认' },
+  { name: 'mac', label: 'Mac 浅色' },
+  { name: 'green', label: '护眼豆沙绿' },
+  { name: 'sepia', label: '暖纸米黄' },
+  { name: 'amber', label: '琥珀夜间' },
+  { name: 'mist', label: '柔雾深青' },
+];
+
+const THEME_SWATCHES: Record<ThemeName, { bg: string; fg: string; accent: string }> = {
+  default: { bg: '#08090c', fg: '#e8ecf1', accent: '#34d3c0' },
+  mac: { bg: '#ececef', fg: '#1d1d1f', accent: '#0a84ff' },
+  green: { bg: '#c7edcc', fg: '#2f4a35', accent: '#2e8b57' },
+  sepia: { bg: '#f4ead8', fg: '#3d3528', accent: '#a67c1f' },
+  amber: { bg: '#16120b', fg: '#e2cfa5', accent: '#e0a64e' },
+  mist: { bg: '#131619', fg: '#c6cdd4', accent: '#58a0a8' },
 };
 
 function formatTime(value: string | undefined): string {
@@ -97,6 +141,12 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const theme = claudeInfo?.config.theme ?? 'default';
+    document.documentElement.dataset.theme = theme;
+    void window.codeagentdesk.setWindowBackgroundColor(THEME_BACKGROUND[theme]);
+  }, [claudeInfo]);
 
   useEffect(() => {
     let cancelled = false;
@@ -328,6 +378,11 @@ export default function App() {
     await refreshRecords();
   }
 
+  async function handleSetTheme(theme: ThemeName): Promise<void> {
+    const info = await window.codeagentdesk.setTheme(theme);
+    setClaudeInfo(info);
+  }
+
   async function handleCloseSession(id: string): Promise<void> {
     const session = sessions.find((item) => item.id === id);
     if (session?.sessionId && borrowedIds.includes(session.sessionId)) {
@@ -533,7 +588,18 @@ export default function App() {
           key={session.id}
           className={`terminal-slot ${session.id === activeId ? 'active' : ''}`}
         >
-          <TerminalPane id={session.id} active={!detailOpen && session.id === activeId} />
+          <TerminalPane
+            id={session.id}
+            title={formatSessionTitle(session)}
+            status={session.status}
+            active={!terminalStackHidden && session.id === activeId}
+            onDetail={() => {
+              if (session.sessionId) void openDetailById(session.sessionId);
+            }}
+            onCopy={() => {
+              if (session.sessionId) void copySessionText(session.sessionId);
+            }}
+          />
         </div>
       ))}
     </div>
@@ -541,7 +607,9 @@ export default function App() {
 
   return (
     <div className="app">
-      <aside className="sidebar">
+      <TitleBar />
+      <div className="app-body">
+        <aside className="sidebar">
         <div className="brand">
           <span className="brand-icon">
             <Terminal size={18} strokeWidth={1.8} />
@@ -781,32 +849,60 @@ export default function App() {
               <Settings2 size={16} />
             </button>
             {settingsOpen && claudeInfo ? (
-              <div className="settings-popover">
-                <div className="settings-label">Claude 目录</div>
-                <div className="settings-path" title={claudeInfo.resolvedClaudeDir}>
-                  {claudeInfo.resolvedClaudeDir}
+              <div className="settings-popover settings-popover-compact">
+                <div className="settings-label">皮肤</div>
+                <div className="theme-grid">
+                  {THEMES.map((item) => {
+                    const swatch = THEME_SWATCHES[item.name];
+                    const active = (claudeInfo.config.theme ?? 'default') === item.name;
+                    return (
+                      <button
+                        key={item.name}
+                        type="button"
+                        className={`theme-chip ${active ? 'active' : ''}`}
+                        onClick={() => void handleSetTheme(item.name)}
+                      >
+                        <span
+                          className="theme-chip-swatch"
+                          style={{ background: swatch.bg }}
+                        />
+                        <span className="theme-chip-label">{item.label}</span>
+                        {active ? (
+                          <Check size={12} className="theme-chip-check" />
+                        ) : null}
+                      </button>
+                    );
+                  })}
                 </div>
-                <button
-                  type="button"
-                  className="settings-action"
-                  onClick={() => void handlePickClaudeDir()}
-                >
-                  选择目录
-                </button>
-                <button
-                  type="button"
-                  className="settings-action"
-                  onClick={() => void handleResetClaudeDir()}
-                >
-                  恢复默认
-                </button>
+                <div className="settings-label">Claude 目录</div>
+                <div className="settings-row">
+                  <span className="settings-path" title={claudeInfo.resolvedClaudeDir}>
+                    {claudeInfo.resolvedClaudeDir}
+                  </span>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    title="选择目录"
+                    onClick={() => void handlePickClaudeDir()}
+                  >
+                    <FolderOpen size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    title="恢复默认"
+                    onClick={() => void handleResetClaudeDir()}
+                  >
+                    <RotateCcw size={14} />
+                  </button>
+                </div>
               </div>
             ) : null}
           </div>
         </div>
-      </aside>
+        </aside>
 
-      <main className="main">
+        <main className="main">
         <div className="tab-bar">
           {sessions.map((session) => (
             <div
@@ -995,7 +1091,15 @@ export default function App() {
             </>
           )}
         </div>
-      </main>
+        <footer className="status-bar">
+          <span>{sessions.length} 会话</span>
+          <span>{archivedRecords.length} 归档</span>
+          <span className="status-bar-spacer" />
+          <span>{claudeInfo ? folderName(claudeInfo.resolvedClaudeDir) : '…'}</span>
+          <span>v{appInfo?.appVersion ?? '…'}</span>
+          </footer>
+        </main>
+      </div>
 
       {menu ? (
         <div
@@ -1011,6 +1115,9 @@ export default function App() {
               setMenu(null);
             }}
           >
+            <span className="context-menu-icon">
+              <Pencil size={14} />
+            </span>
             重命名
           </button>
           <button
@@ -1021,6 +1128,9 @@ export default function App() {
               setMenu(null);
             }}
           >
+            <span className="context-menu-icon">
+              <Archive size={14} />
+            </span>
             归档
           </button>
           <button
@@ -1037,6 +1147,9 @@ export default function App() {
               setMenu(null);
             }}
           >
+            <span className="context-menu-icon">
+              <RotateCcw size={14} />
+            </span>
             恢复会话
           </button>
           <button
@@ -1047,6 +1160,9 @@ export default function App() {
               setMenu(null);
             }}
           >
+            <span className="context-menu-icon">
+              <BookOpen size={14} />
+            </span>
             查看详情
           </button>
           {menu.archived ? (
@@ -1058,9 +1174,13 @@ export default function App() {
                 setMenu(null);
               }}
             >
+              <span className="context-menu-icon">
+                <ArchiveRestore size={14} />
+              </span>
               恢复
             </button>
           ) : null}
+          <div className="context-menu-separator" />
           <button
             type="button"
             disabled={!menuSession}
@@ -1069,6 +1189,9 @@ export default function App() {
               setMenu(null);
             }}
           >
+            <span className="context-menu-icon">
+              <Copy size={14} />
+            </span>
             复制内容
           </button>
           <button
@@ -1078,6 +1201,9 @@ export default function App() {
               setMenu(null);
             }}
           >
+            <span className="context-menu-icon">
+              <Link2 size={14} />
+            </span>
             复制路径
           </button>
         </div>

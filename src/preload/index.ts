@@ -20,6 +20,7 @@ import type {
   SessionRecord,
   SearchResult,
   SessionUsage,
+  ThemeName,
   UiState,
 } from '../shared/types';
 
@@ -28,6 +29,7 @@ const CHANNELS = {
   appGetInfo: 'app:get-info',
   configGet: 'config:get',
   configSetClaudeDir: 'config:set-claude-dir',
+  configSetTheme: 'config:set-theme',
   configPickClaudeDir: 'config:pick-claude-dir',
   sessionsList: 'sessions:list',
   sessionPickDirectory: 'session:pick-directory',
@@ -41,6 +43,12 @@ const CHANNELS = {
   sessionReadText: 'session:read-text',
   uiGetState: 'ui:get-state',
   uiSaveState: 'ui:save-state',
+  windowMinimize: 'window:minimize',
+  windowToggleMaximize: 'window:toggle-maximize',
+  windowIsMaximized: 'window:is-maximized',
+  windowClose: 'window:close',
+  windowSetBackgroundColor: 'window:set-background-color',
+  windowMaximizedChanged: 'window:maximized-changed',
   sessionUsage: 'session:usage',
   searchQuery: 'search:query',
   sessionWrite: 'session:write',
@@ -63,6 +71,8 @@ const api: CodeAgentDeskApi = {
   getClaudeConfig: () => ipcRenderer.invoke(CHANNELS.configGet) as Promise<ClaudeConfigInfo>,
   setClaudeDir: (dir) =>
     ipcRenderer.invoke(CHANNELS.configSetClaudeDir, dir) as Promise<ClaudeConfigInfo>,
+  setTheme: (theme) =>
+    ipcRenderer.invoke(CHANNELS.configSetTheme, theme) as Promise<ClaudeConfigInfo>,
   pickClaudeDir: () =>
     ipcRenderer.invoke(CHANNELS.configPickClaudeDir) as Promise<PickClaudeDirResult>,
   listSessions: () => ipcRenderer.invoke(CHANNELS.sessionsList) as Promise<SessionRecord[]>,
@@ -86,6 +96,15 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.sessionReadText, sessionId) as Promise<ReadSessionTextResult>,
   getUiState: () => ipcRenderer.invoke(CHANNELS.uiGetState) as Promise<UiState>,
   saveUiState: (state) => ipcRenderer.invoke(CHANNELS.uiSaveState, state) as Promise<void>,
+  minimizeWindow: () => ipcRenderer.invoke(CHANNELS.windowMinimize) as Promise<void>,
+  toggleMaximizeWindow: () =>
+    ipcRenderer.invoke(CHANNELS.windowToggleMaximize) as Promise<boolean>,
+  isWindowMaximized: () => ipcRenderer.invoke(CHANNELS.windowIsMaximized) as Promise<boolean>,
+  closeWindow: () => ipcRenderer.invoke(CHANNELS.windowClose) as Promise<void>,
+  setWindowBackgroundColor: (color) =>
+    ipcRenderer.invoke(CHANNELS.windowSetBackgroundColor, color) as Promise<void>,
+  onWindowMaximizedChanged: (callback) =>
+    subscribe<boolean>(CHANNELS.windowMaximizedChanged, callback),
   getSessionUsage: (id) =>
     ipcRenderer.invoke(CHANNELS.sessionUsage, id) as Promise<SessionUsage>,
   searchSessions: (query) =>

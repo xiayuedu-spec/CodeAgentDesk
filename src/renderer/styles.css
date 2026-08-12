@@ -10,6 +10,12 @@
   --text-faint: #5c636d;
   --accent: #2fbfae;
   --accent-dim: #1f8579;
+  --accent-glow: rgba(47, 191, 174, 0.4);
+  --accent-glow-strong: rgba(47, 191, 174, 0.7);
+  --accent-soft: rgba(47, 191, 174, 0.14);
+  --accent-strong: #35c8b6;
+  --focus-ring: rgba(47, 191, 174, 0.5);
+  --selection: rgba(47, 191, 174, 0.28);
   --warn: #d9a441;
   --danger: #e05d5d;
   --mono: "Cascadia Mono", Consolas, "Courier New", monospace;
@@ -74,7 +80,7 @@ input {
   width: 26px;
   height: 26px;
   color: var(--accent);
-  background: rgba(47, 191, 174, 0.12);
+  background: var(--accent-soft);
   border-radius: 6px;
 }
 
@@ -189,7 +195,7 @@ input {
 
 .status-dot.ok {
   background: var(--accent);
-  box-shadow: 0 0 6px rgba(47, 191, 174, 0.7);
+  box-shadow: 0 0 6px var(--accent-glow-strong);
 }
 
 .main {
@@ -392,7 +398,7 @@ input {
 .session-dot.running,
 .tab-dot.running {
   background: var(--accent);
-  box-shadow: 0 0 6px rgba(47, 191, 174, 0.7);
+  box-shadow: 0 0 6px var(--accent-glow-strong);
 }
 
 .session-dot.ended,
@@ -768,6 +774,750 @@ input {
   cursor: default;
 }
 
+:root[data-theme='mac'] {
+  --bg: #ececef;
+  --bg-raised: #f6f6f8;
+  --bg-inset: #ffffff;
+  --border: #d8d8de;
+  --border-strong: #c2c2ca;
+  --text: #1d1d1f;
+  --text-muted: #6e6e73;
+  --text-faint: #9a9aa0;
+  --accent: #0a84ff;
+  --accent-dim: #5e9eff;
+  --warn: #ff9f0a;
+  --danger: #ff3b30;
+  --accent-glow: rgba(10, 132, 255, 0.35);
+  --accent-glow-strong: rgba(10, 132, 255, 0.6);
+  --accent-soft: rgba(10, 132, 255, 0.12);
+  --accent-strong: #0a84ff;
+  --focus-ring: rgba(10, 132, 255, 0.5);
+  --selection: rgba(10, 132, 255, 0.24);
+}
+
+:root[data-theme='mac'] .brand-icon {
+  background: var(--accent-soft);
+}
+
+:root[data-theme='mac'] .status-dot.ok,
+:root[data-theme='mac'] .session-dot.running,
+:root[data-theme='mac'] .tab-dot.running {
+  box-shadow: 0 0 6px var(--accent-glow-strong);
+}
+
+/* ---- polish ---- */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 6px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--selection);
+}
+
+.brand-icon {
+  box-shadow: inset 0 0 0 1px var(--accent-soft);
+}
+
+.search-box,
+.new-session,
+.icon-button,
+.settings-action,
+.context-menu button,
+.terminal-context-menu button,
+.tab,
+.session-row,
+.mode-switch button,
+.settings-option,
+.tool-card summary {
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.search-box:focus-within {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.mode-switch button.active {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.session-row.active {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.session-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.session-row.active:hover {
+  background: var(--accent-soft);
+}
+
+.tab.active {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+}
+
+.terminal-surface,
+.info-panel,
+.session-detail,
+.search-results,
+.archive-detail {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.12),
+    0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.context-menu,
+.terminal-context-menu,
+.settings-popover {
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.18),
+    0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.settings-option:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tool-card summary:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: 1px;
+}
+
+:root[data-theme='mac'] ::selection {
+  background: var(--selection);
+}
+
+:root[data-theme='mac'] .brand-icon {
+  box-shadow: inset 0 0 0 1px var(--focus-ring);
+}
+
+:root[data-theme='mac'] .search-box:focus-within {
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+:root[data-theme='mac'] .sidebar {
+  box-shadow: 1px 0 0 rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme='mac'] .tab-bar {
+  background: #f2f2f4;
+}
+
+:root[data-theme='mac'] .tab.active {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme='mac'] .session-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme='mac'] .session-row.active:hover {
+  background: var(--accent-soft);
+}
+
+:root[data-theme='mac'] .mode-switch button.active {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+:root[data-theme='mac'] .terminal-surface,
+:root[data-theme='mac'] .info-panel,
+:root[data-theme='mac'] .session-detail,
+:root[data-theme='mac'] .search-results,
+:root[data-theme='mac'] .archive-detail {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 10px 28px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme='mac'] .context-menu,
+:root[data-theme='mac'] .terminal-context-menu,
+:root[data-theme='mac'] .settings-popover {
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.1),
+    0 18px 40px rgba(0, 0, 0, 0.16);
+}
+
+:root[data-theme='mac'] .settings-option:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* ---- premium ---- */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 30px;
+  flex: none;
+  padding: 0 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.status-bar-spacer {
+  flex: 1;
+}
+
+.status-bar span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand {
+  height: 52px;
+}
+
+.brand-icon {
+  border-radius: 7px;
+}
+
+.group-label {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.new-session {
+  border: 0;
+  background: linear-gradient(180deg, var(--accent-strong), var(--accent-dim));
+  color: #f5fffd;
+  box-shadow:
+    0 2px 8px var(--accent-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.new-session:not(:disabled):hover {
+  border-color: transparent;
+  color: #f5fffd;
+  filter: brightness(1.05);
+  box-shadow:
+    0 4px 12px var(--accent-glow-strong),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.icon-button,
+.tab,
+.session-row {
+  border-radius: 7px;
+}
+
+.mode-switch {
+  border-radius: 8px;
+}
+
+.mode-switch button {
+  border-radius: 5px;
+}
+
+.chat-entry {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 8px;
+  background: var(--bg-raised);
+}
+
+.chat-entry.assistant {
+  border-left-color: var(--accent);
+}
+
+.chat-entry.user {
+  border-left-color: var(--warn);
+}
+
+.chat-text {
+  font-size: 12px;
+}
+
+@keyframes runningPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--accent-glow);
+  }
+  50% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+
+.session-dot.running,
+.tab-dot.running {
+  animation: runningPulse 2.4s ease-out infinite;
+}
+
+body,
+.sidebar,
+.main,
+.tab-bar,
+.status-bar,
+.info-panel,
+.terminal-surface,
+.terminal-pane,
+.session-detail,
+.search-results,
+.archive-detail,
+.session-row,
+.tab,
+.context-menu,
+.settings-popover,
+.terminal-context-menu {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+:root[data-theme='mac'] .new-session {
+  background: linear-gradient(180deg, #0a84ff, #0a6fe0);
+  color: #ffffff;
+  box-shadow:
+    0 2px 8px var(--accent-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+:root[data-theme='mac'] .new-session:not(:disabled):hover {
+  color: #ffffff;
+  filter: brightness(1.05);
+  box-shadow:
+    0 4px 12px var(--accent-glow-strong),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+:root[data-theme='mac'] .status-bar {
+  background: #f2f2f4;
+}
+
+@keyframes runningPulseMac {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--accent-glow);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(10, 132, 255, 0);
+  }
+}
+
+:root[data-theme='mac'] .session-dot.running,
+:root[data-theme='mac'] .tab-dot.running {
+  animation: runningPulseMac 2.4s ease-out infinite;
+}
+
+/* ---- premium dark ---- */
+
+:root[data-theme='default'] {
+  --bg: #08090c;
+  --bg-raised: #101218;
+  --bg-inset: #050608;
+  --border: #1d222b;
+  --border-strong: #2b323d;
+  --text: #e8ecf1;
+  --text-muted: #9aa4b1;
+  --text-faint: #626b77;
+  --accent: #34d3c0;
+  --accent-dim: #1f9c8e;
+  --warn: #e0a94f;
+  --danger: #f0635e;
+  --accent-glow: rgba(52, 211, 192, 0.35);
+  --accent-glow-strong: rgba(52, 211, 192, 0.6);
+  --accent-soft: rgba(52, 211, 192, 0.1);
+  --accent-strong: #35c8b6;
+  --focus-ring: rgba(52, 211, 192, 0.5);
+  --selection: rgba(52, 211, 192, 0.3);
+}
+
+:root[data-theme='default'] .sidebar {
+  background: linear-gradient(180deg, #12141a 0%, #0d0f14 100%);
+}
+
+:root[data-theme='default'] .main {
+  background: linear-gradient(180deg, #0b0d11 0%, var(--bg) 100%);
+}
+
+:root[data-theme='default'] .terminal-surface,
+:root[data-theme='default'] .terminal-pane {
+  background: linear-gradient(180deg, #0a0c10 0%, #07080b 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+:root[data-theme='default'] .info-panel {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 12px 32px rgba(0, 0, 0, 0.22);
+}
+
+:root[data-theme='default'] .tab-bar {
+  background: linear-gradient(180deg, #13161d 0%, #101218 100%);
+}
+
+:root[data-theme='default'] .tab.active {
+  background: linear-gradient(180deg, #1a1e27 0%, #13161d 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme='default'] .session-row.active {
+  background: linear-gradient(180deg, var(--accent-soft), transparent);
+}
+
+:root[data-theme='default'] .brand-icon {
+  background: linear-gradient(180deg, var(--accent-soft), transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px var(--focus-ring);
+}
+
+:root[data-theme='default'] .search-box,
+:root[data-theme='default'] .mode-switch,
+:root[data-theme='default'] .new-session,
+:root[data-theme='default'] .icon-button,
+:root[data-theme='default'] .settings-path {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+:root[data-theme='default'] .status-bar {
+  background: linear-gradient(180deg, #101218 0%, #0c0e13 100%);
+}
+
+:root[data-theme='default'] .context-menu,
+:root[data-theme='default'] .terminal-context-menu,
+:root[data-theme='default'] .settings-popover {
+  background: linear-gradient(180deg, #171a21 0%, #12141a 100%);
+}
+
+:root[data-theme='default'] ::selection {
+  background: var(--selection);
+}
+
+/* ---- custom titlebar & terminal chrome ---- */
+
+.app {
+  flex-direction: column;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  flex: none;
+  padding-left: 12px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.titlebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.titlebar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.titlebar-controls {
+  display: flex;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-button {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.titlebar-button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+.titlebar-button.close:hover {
+  background: #e81123;
+  color: #ffffff;
+}
+
+.terminal-pane {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.terminal-chrome {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  flex: none;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+.terminal-status {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.terminal-status.running {
+  background: var(--accent);
+  animation: runningPulse 2.4s ease-out infinite;
+}
+
+.terminal-status.starting {
+  background: var(--warn);
+}
+
+.terminal-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.terminal-chrome-actions {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.terminal-chrome .icon-button {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+}
+
+.terminal-chrome .icon-button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+.terminal-host {
+  flex: 1;
+  min-height: 0;
+  padding: 6px;
+}
+
+:root[data-theme='mac'] .titlebar,
+:root[data-theme='mac'] .terminal-chrome {
+  background: #f2f2f4;
+}
+
+:root[data-theme='mac'] .titlebar-button:hover,
+:root[data-theme='mac'] .terminal-chrome .icon-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme='mac'] .titlebar-dot {
+  background: linear-gradient(135deg, #0a84ff, #5e9eff);
+  box-shadow: 0 0 8px var(--accent-glow-strong);
+}
+
+:root[data-theme='mac'] .terminal-status.running {
+  animation: runningPulseMac 2.4s ease-out infinite;
+}
+
+/* ---- restrained motion ---- */
+
+.session-detail,
+.search-results,
+.terminal-stack,
+.context-menu,
+.terminal-context-menu,
+.settings-popover {
+  animation: viewIn 160ms ease;
+}
+
+@keyframes viewIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- context menu icons ---- */
+
+.context-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.context-menu-icon {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  flex: none;
+  color: var(--text-muted);
+}
+
+.context-menu-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
+/* ---- compact settings popover ---- */
+
+.settings-popover-compact {
+  width: 300px;
+  left: 0;
+  right: auto;
+  bottom: 42px;
+  padding: 10px;
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.theme-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  min-width: 0;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 10px;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.theme-chip:hover {
+  border-color: var(--accent-dim);
+}
+
+.theme-chip.active {
+  border-color: var(--accent);
+  color: var(--text);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.theme-chip-swatch {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 50%;
+}
+
+.theme-chip-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-chip-check {
+  flex: none;
+  color: var(--accent);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-row .settings-path {
+  flex: 1;
+  margin: 0;
+}
+
 .session-detail {
   display: flex;
   flex-direction: column;
@@ -877,4 +1627,146 @@ input {
   font-family: var(--mono);
   font-size: 11px;
   line-height: 1.6;
+}
+
+/* ============ 精修 A·6：表面层次 ============ */
+.terminal-surface,
+.info-panel,
+.terminal-pane,
+.session-detail,
+.search-results,
+.archive-detail {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    0 1px 2px rgba(0, 0, 0, 0.34),
+    0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.session-row:hover {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+/* ============ 护眼配色主题（豆沙绿 / 暖纸 / 琥珀夜 / 柔雾） ============ */
+
+:root[data-theme='green'] {
+  color-scheme: light;
+  --bg: #c7edcc;
+  --bg-raised: #bfe6c6;
+  --bg-inset: #d5f1d9;
+  --border: #9ccfa6;
+  --border-strong: #82bd8e;
+  --text: #2f4a35;
+  --text-muted: #5d7a63;
+  --text-faint: #7f9885;
+  --accent: #2e8b57;
+  --accent-dim: #237044;
+  --accent-glow: rgba(46, 139, 87, 0.35);
+  --accent-glow-strong: rgba(46, 139, 87, 0.6);
+  --accent-soft: rgba(46, 139, 87, 0.14);
+  --accent-strong: #3ba55d;
+  --focus-ring: rgba(46, 139, 87, 0.5);
+  --selection: rgba(46, 139, 87, 0.25);
+  --warn: #b8860b;
+  --danger: #c0392b;
+}
+
+:root[data-theme='sepia'] {
+  color-scheme: light;
+  --bg: #f4ead8;
+  --bg-raised: #efe3cd;
+  --bg-inset: #faf5ea;
+  --border: #d9c9a8;
+  --border-strong: #c2ab7e;
+  --text: #3d3528;
+  --text-muted: #6e6250;
+  --text-faint: #948876;
+  --accent: #a67c1f;
+  --accent-dim: #8a6416;
+  --accent-glow: rgba(166, 124, 31, 0.3);
+  --accent-glow-strong: rgba(166, 124, 31, 0.55);
+  --accent-soft: rgba(166, 124, 31, 0.14);
+  --accent-strong: #c08f2e;
+  --focus-ring: rgba(166, 124, 31, 0.5);
+  --selection: rgba(166, 124, 31, 0.25);
+  --warn: #b8860b;
+  --danger: #c2503e;
+}
+
+:root[data-theme='amber'] {
+  color-scheme: dark;
+  --bg: #16120b;
+  --bg-raised: #1e1810;
+  --bg-inset: #100d08;
+  --border: #332a1a;
+  --border-strong: #4a3b22;
+  --text: #e2cfa5;
+  --text-muted: #9d8a63;
+  --text-faint: #6b5c3f;
+  --accent: #e0a64e;
+  --accent-dim: #b9842f;
+  --accent-glow: rgba(224, 166, 78, 0.35);
+  --accent-glow-strong: rgba(224, 166, 78, 0.6);
+  --accent-soft: rgba(224, 166, 78, 0.14);
+  --accent-strong: #f0b95e;
+  --focus-ring: rgba(224, 166, 78, 0.5);
+  --selection: rgba(224, 166, 78, 0.26);
+  --warn: #e0a64e;
+  --danger: #e07b5e;
+}
+
+:root[data-theme='mist'] {
+  color-scheme: dark;
+  --bg: #131619;
+  --bg-raised: #1a1e22;
+  --bg-inset: #101316;
+  --border: #2a3036;
+  --border-strong: #3a424b;
+  --text: #c6cdd4;
+  --text-muted: #7d868f;
+  --text-faint: #55606a;
+  --accent: #58a0a8;
+  --accent-dim: #3f7f87;
+  --accent-glow: rgba(88, 160, 168, 0.35);
+  --accent-glow-strong: rgba(88, 160, 168, 0.6);
+  --accent-soft: rgba(88, 160, 168, 0.14);
+  --accent-strong: #6fb7bd;
+  --focus-ring: rgba(88, 160, 168, 0.5);
+  --selection: rgba(88, 160, 168, 0.26);
+  --warn: #c9a35a;
+  --danger: #d06a6a;
+}
+
+/* 浅色主题（豆沙绿/暖纸）：hover 用深色底，避免白色 rgba 在浅底上失效 */
+:root[data-theme='green'] .session-row:hover,
+:root[data-theme='green'] .settings-option:hover,
+:root[data-theme='green'] .tool-card summary:hover,
+:root[data-theme='sepia'] .session-row:hover,
+:root[data-theme='sepia'] .settings-option:hover,
+:root[data-theme='sepia'] .tool-card summary:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* 浅色主题面板阴影更轻，内高光偏白 */
+:root[data-theme='green'] .terminal-surface,
+:root[data-theme='green'] .info-panel,
+:root[data-theme='green'] .terminal-pane,
+:root[data-theme='green'] .session-detail,
+:root[data-theme='green'] .search-results,
+:root[data-theme='green'] .archive-detail,
+:root[data-theme='sepia'] .terminal-surface,
+:root[data-theme='sepia'] .info-panel,
+:root[data-theme='sepia'] .terminal-pane,
+:root[data-theme='sepia'] .session-detail,
+:root[data-theme='sepia'] .search-results,
+:root[data-theme='sepia'] .archive-detail {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 10px 26px rgba(0, 0, 0, 0.08);
 }

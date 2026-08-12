@@ -1,0 +1,139 @@
+<style>
+  .ba { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:8px; }
+  .ba-wrap { border:1px solid var(--border); border-radius:14px; overflow:hidden; background:var(--bg-raised); }
+  .ba-head { padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; font-weight:650; display:flex; justify-content:space-between; align-items:center; }
+  .ba-tag { font-size:10px; font-weight:600; padding:2px 8px; border-radius:999px; background:var(--bg-inset); color:var(--text-muted); }
+  .ba-tag.win { background:rgba(47,191,174,.14); color:var(--accent); }
+  .stage2 { padding:18px; display:grid; place-items:center; }
+  .changes { margin-top:18px; border:1px solid var(--border); border-radius:14px; background:var(--bg-raised); padding:6px 14px 8px; }
+  .changes h3 { font-size:12px; margin:10px 0 4px; color:var(--text); }
+  .changes li { font-size:11.5px; color:var(--text-muted); line-height:1.7; }
+
+  /* ---- base window ---- */
+  .m { width:272px; height:326px; border-radius:11px; overflow:hidden; display:flex; flex-direction:column;
+       font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif; }
+  .m * { box-sizing:border-box; margin:0; }
+  .m-tb { height:24px; display:flex; align-items:center; gap:6px; padding:0 10px; flex:none; }
+  .m-tb i { width:7px; height:7px; border-radius:50%; }
+  .m-tb span { font-weight:650; font-size:9.5px; }
+  .m-body { flex:1; display:flex; min-height:0; }
+  .m-side { width:92px; flex:none; display:flex; flex-direction:column; }
+  .m-main { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .m-term { flex:1; border-radius:7px; margin:7px; padding:7px; font-family:"Cascadia Mono",Consolas,monospace; font-size:8px; line-height:1.7; }
+  .m-term .p { color:#2fbfae; }
+  .m-usage { height:32px; border-radius:7px; margin:0 7px 7px; display:flex; flex-direction:column; justify-content:center; gap:3px; padding:0 8px; }
+  .m-usage b { font-size:8px; font-weight:600; }
+  .m-usage i { font-style:normal; font-size:7px; opacity:.6; }
+
+  /* ---- CURRENT (before) ---- */
+  .cur .m { background:#08090c; color:#e8ecf1; box-shadow:0 12px 28px rgba(0,0,0,.5); }
+  .cur .m-tb { background:#101218; border-bottom:1px solid #1d222b; }
+  .cur .m-tb i { background:linear-gradient(135deg,#34d3c0,#1f9c8e); box-shadow:0 0 7px rgba(47,191,174,.5); }
+  .cur .m-side { background:linear-gradient(180deg,#12141a,#0d0f14); border-right:1px solid #1d222b; }
+  .cur .brand { display:flex; align-items:center; gap:5px; height:26px; padding:0 8px; border-bottom:1px solid #1d222b; font-size:9px; font-weight:650; }
+  .cur .brand i { width:13px; height:13px; border-radius:4px; background:linear-gradient(180deg,rgba(52,211,192,.25),rgba(52,211,192,.1)); }
+  .cur .search { height:16px; margin:7px; border-radius:4px; background:#050608; border:1px solid #1d222b; font-size:8px; padding:0 6px; display:flex; align-items:center; color:#626b77; }
+  .cur .modes { display:grid; grid-template-columns:1fr 1fr 1fr; gap:2px; margin:0 7px 6px; padding:2px; background:#050608; border:1px solid #1d222b; border-radius:5px; }
+  .cur .modes span { text-align:center; font-size:7px; color:#626b77; border-radius:3px; padding:2px 0; }
+  .cur .modes span.on { background:#101218; color:#e8ecf1; }
+  .cur .grp { font-size:7.5px; color:#626b77; padding:5px 8px 2px; letter-spacing:.4px; }
+  .cur .row { padding:3px 8px; display:flex; gap:5px; align-items:center; }
+  .cur .row b { display:block; font-size:8px; font-weight:600; white-space:nowrap; overflow:hidden; }
+  .cur .row i { display:block; font-style:normal; font-size:6.5px; white-space:nowrap; overflow:hidden; opacity:.5; }
+  .cur .dot { width:6px; height:6px; border-radius:50%; background:#34d3c0; box-shadow:0 0 5px rgba(52,211,192,.6); flex:none; }
+  .cur .dot.dim { background:#626b77; box-shadow:none; }
+  .cur .row.active { background:rgba(52,211,192,.09); border-radius:4px; box-shadow:inset 2px 0 0 #34d3c0; }
+  .cur .tabs { display:flex; gap:4px; padding:7px 7px 3px; }
+  .cur .tabs span { flex:1; height:17px; border-radius:4px; background:#050608; border:1px solid #1d222b; display:flex; align-items:center; gap:4px; padding:0 5px; font-size:7.5px; color:#9aa4b1; }
+  .cur .tabs span.on { background:#13161d; border-color:#1f9c8e; color:#e8ecf1; }
+  .cur .usage2 { height:30px; margin:7px; border-radius:7px; background:#101218; border:1px solid #1d222b; padding:0 8px; display:flex; flex-direction:column; justify-content:center; gap:3px; }
+  .cur .usage2 b { font-size:8px; }
+  .cur .usage2 i { font-style:normal; font-size:7px; opacity:.6; }
+  .cur .m-term { background:linear-gradient(180deg,#0a0c10,#07080b); border:1px solid #1d222b; color:#dfe3e8; }
+
+  /* ---- REFINED A (after) ---- */
+  .a2 .m { background:#0a0c10; color:#eef1f6; box-shadow:0 16px 36px rgba(0,0,0,.55); }
+  .a2 .m-tb { background:#11141b; border-bottom:1px solid #1e242f; }
+  .a2 .m-tb i { background:linear-gradient(135deg,#3ee0cb,#1f9c8e); box-shadow:0 0 8px rgba(62,224,203,.55); }
+  .a2 .m-side { background:#0d0f14; border-right:1px solid #1a1f28; }
+  .a2 .m-search { height:17px; margin:8px; border-radius:5px; background:rgba(255,255,255,.03); border:1px solid #1e242f; font-size:8px; padding:0 7px; display:flex; align-items:center; color:#5c636d; }
+  .a2 .pg { display:flex; align-items:center; gap:4px; padding:6px 10px 3px; font-size:8px; font-weight:700; letter-spacing:.6px; color:#5c636d; text-transform:uppercase; }
+  .a2 .pg em { font-style:normal; margin-left:auto; font-size:7px; font-weight:600; color:#3a414d; background:#161b24; border-radius:99px; padding:0 5px; }
+  .a2 .row { padding:4px 8px; margin:1px 6px; display:flex; gap:6px; align-items:center; border-radius:6px; }
+  .a2 .row b { display:block; font-size:8.5px; font-weight:600; white-space:nowrap; overflow:hidden; }
+  .a2 .row i { display:block; font-style:normal; font-size:7px; white-space:nowrap; overflow:hidden; color:#4c5563; }
+  .a2 .dot { width:6px; height:6px; border-radius:50%; background:#34d3c0; box-shadow:0 0 5px rgba(52,211,192,.65); flex:none; }
+  .a2 .dot.dim { background:#3a414d; box-shadow:none; }
+  .a2 .row.active { background:linear-gradient(90deg,rgba(52,211,192,.12),rgba(52,211,192,.03)); box-shadow:inset 2px 0 0 #34d3c0; }
+  .a2 .tabs { display:flex; gap:3px; padding:8px 8px 2px; }
+  .a2 .tabs span { flex:1; height:19px; border-radius:6px 6px 0 0; border:1px solid transparent; border-bottom-color:#1a1f28; display:flex; align-items:center; gap:5px; padding:0 7px; font-size:8px; color:#8a919c; position:relative; }
+  .a2 .tabs span.on { background:#0d0f14; color:#eef1f6; }
+  .a2 .tabs span.on::before { content:""; position:absolute; top:-1px; left:8px; right:8px; height:2px; border-radius:2px; background:#34d3c0; }
+  .a2 .tabs span i { font-style:normal; margin-left:auto; opacity:0; font-size:8px; }
+  .a2 .tabs span:hover i { opacity:.6; }
+  .a2 .m-term { background:#0d0f14; border:1px solid #1a1f28; margin:7px 8px; padding:9px; color:#dfe4ec; }
+  .a2 .m-usage { height:26px; margin:0 8px 8px; background:transparent; border:1px dashed #1a1f28; flex-direction:row; align-items:center; justify-content:center; gap:6px; color:#4c5563; font-size:7.5px; }
+</style>
+
+<h2>「现在」vs「精修后 A」</h2>
+<p class="subtitle">同一青绿强调色，右侧是把「高级感」落到实处后的变化。看完说哪几条要留、哪条不要。</p>
+
+<div class="ba">
+  <div class="ba-wrap">
+    <div class="ba-head"><span>现在</span><span class="ba-tag">current</span></div>
+    <div class="stage2"><div class="m cur">
+      <div class="m-tb"><i></i><span>CodeAgentDesk</span></div>
+      <div class="m-body">
+        <div class="m-side">
+          <div class="brand"><i></i><span>CodeAgentDesk</span></div>
+          <div class="search">搜索会话</div>
+          <div class="modes"><span class="on">会话</span><span>归档</span><span>搜索</span></div>
+          <div class="grp">当前会话</div>
+          <div class="row active"><span class="dot"></span><div><b>CodeAgentDesk #1</b><i>D:\ai\CodeAgentDesk</i></div></div>
+          <div class="row"><span class="dot"></span><div><b>设计文档 #2</b><i>D:\ai\docs</i></div></div>
+          <div class="grp">历史会话</div>
+          <div class="row"><span class="dot dim"></span><div><b>重构搜索</b><i>D:\ai\CodeAgentDesk</i></div></div>
+        </div>
+        <div class="m-main">
+          <div class="tabs"><span class="on">● #1 ×</span><span>● #2 ×</span></div>
+          <div class="m-term"><span class="p">❯</span> claude<br><span class="p">❯</span> 重构搜索模块…</div>
+          <div class="usage2"><b>会话状态 · 运行中</b><i>12 请求 · 3.2k in · 1.4k out</i></div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="ba-wrap">
+    <div class="ba-head"><span>精修后 A</span><span class="ba-tag win">refined</span></div>
+    <div class="stage2"><div class="m a2">
+      <div class="m-tb"><i></i><span>CodeAgentDesk</span></div>
+      <div class="m-body">
+        <div class="m-side">
+          <div class="m-search">搜索会话</div>
+          <div class="pg">CodeAgentDesk <em>3</em></div>
+          <div class="row active"><span class="dot"></span><div><b>重构搜索模块</b><i>~/ai/CodeAgentDesk</i></div></div>
+          <div class="row"><span class="dot"></span><div><b>设计文档</b><i>~/ai/docs</i></div></div>
+          <div class="pg">其他 <em>1</em></div>
+          <div class="row"><span class="dot dim"></span><div><b>排期讨论</b><i>~/ai/misc</i></div></div>
+        </div>
+        <div class="m-main">
+          <div class="tabs"><span class="on">● 重构搜索模块 <i>×</i></span><span>● 设计文档 <i>×</i></span></div>
+          <div class="m-term"><span class="p">❯</span> claude<br><span class="p">❯</span> 重构搜索模块，要点…</div>
+          <div class="m-usage">12 请求 · 3.2k in · 1.4k out</div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<div class="changes">
+  <h3>精修清单（右侧的变化点）</h3>
+  <ul>
+    <li><b>1 · 会话标题用 ai-title</b>：显示「重构搜索模块」而非「CodeAgentDesk #1」</li>
+    <li><b>2 · 侧边栏按项目分组</b>：项目名做小标题 + 会话数角标，可折叠</li>
+    <li><b>3 · 路径缩短</b>：`D:\ai\CodeAgentDesk` → `~/ai/CodeAgentDesk`，不再截断成乱码</li>
+    <li><b>4 · 标签栏贴顶无边框</b>：激活标签顶部加青色高亮线，关闭 × 只在 hover 出现</li>
+    <li><b>5 · 用量面板轻量化</b>：从常驻 260px 列收成一行精简数据，给终端让空间</li>
+    <li><b>6 · 表面层次</b>：面板内高光 + 柔和阴影，hover/焦点环更精致</li>
+  </ul>
+</div>
