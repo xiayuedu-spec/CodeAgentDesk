@@ -75,19 +75,6 @@ export default function App() {
   } = ui;
   const search = useSearch(setError);
   const { mode, setMode, query, setQuery, searchResults } = search;
-  const palette = usePalette(buildPaletteItems);
-  const {
-    paletteItems,
-    paletteOpen,
-    setPaletteOpen,
-    paletteQuery,
-    setPaletteQuery,
-    setPaletteIndex,
-    openPalette,
-    paletteSafeIndex,
-    onPaletteKeyDown,
-    runPaletteItem,
-  } = palette;
   const summaryState = useSummary(setError);
   const {
     summary,
@@ -981,6 +968,21 @@ export default function App() {
       records.find((record) => record.sessionId === menu.sessionId) ??
       null
     : null;
+
+  // 命令面板依赖上述派生数据（buildPaletteItems 引用 historyRecords/activeSession 等），须在其后调用。
+  const palette = usePalette(buildPaletteItems);
+  const {
+    paletteItems,
+    paletteOpen,
+    setPaletteOpen,
+    paletteQuery,
+    setPaletteQuery,
+    setPaletteIndex,
+    openPalette,
+    paletteSafeIndex,
+    onPaletteKeyDown,
+    runPaletteItem,
+  } = palette;
 
   // 分组是会话管理的核心容器：运行中 + 历史会话都按组归类（运行中在前），分组区块默认在上方。
   // 未分组的会话分别回落到"当前会话 / 历史会话"区块，不单独建"未分组"区块。
