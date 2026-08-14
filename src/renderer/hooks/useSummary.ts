@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { SummaryHistoryResult } from '../../shared/types';
 
-export type SummaryTab = 'day' | 'month' | 'calendar' | 'history';
+export type SummaryTab = 'day' | 'week' | 'month' | 'calendar' | 'history';
 
 interface CalDayState {
   date: string;
@@ -21,10 +21,12 @@ export function useSummary(reportError: (message: string) => void) {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [calDay, setCalDay] = useState<CalDayState | null>(null);
   const [dayText, setDayText] = useState('');
+  const [weekText, setWeekText] = useState('');
   const [monthText, setMonthText] = useState('');
   const [summarizing, setSummarizing] = useState(false);
   const [summaryHistory, setSummaryHistory] = useState<SummaryHistoryResult>({
     days: [],
+    weeks: [],
     months: [],
   });
   const [viewing, setViewing] = useState<{ title: string; text: string } | null>(null);
@@ -43,13 +45,11 @@ export function useSummary(reportError: (message: string) => void) {
     }
   }
 
-  async function viewHistoryItem(kind: 'day' | 'month', key: string): Promise<void> {
+  async function viewHistoryItem(kind: 'day' | 'week' | 'month', key: string): Promise<void> {
     const result = await window.codeagentdesk.summariesGet(kind, key);
     if (result.ok) {
-      setViewing({
-        title: `${key} ${kind === 'day' ? '每日总结' : '月度总结'}`,
-        text: result.text ?? '',
-      });
+      const label = kind === 'day' ? '每日总结' : kind === 'week' ? '周报' : '月度总结';
+      setViewing({ title: `${key} ${label}`, text: result.text ?? '' });
     } else {
       reportError(result.message ?? '读取总结失败');
     }
@@ -66,6 +66,20 @@ export function useSummary(reportError: (message: string) => void) {
       void loadSummaryHistory();
     } else {
       reportError(result.message ?? '生成今日总结失败');
+    }
+  }
+
+  async function generateWeekSummary(): Promise<void> {
+    if (summarizing) return;
+    setSummarizing(true);
+    setWeekText('');
+    const result = await window.codeagentdesk.summarizeWeek();
+    setSummarizing(false);
+    if (result.ok) {
+      setWeekText(result.text ?? '');
+      void loadSummaryHistory();
+    } else {
+      reportError(result.message ?? '生成本周总结失败');
     }
   }
 
@@ -139,6 +153,7 @@ export function useSummary(reportError: (message: string) => void) {
     selectedDay,
     calDay,
     dayText,
+    weekText,
     monthText,
     summarizing,
     setSummarizing,
@@ -149,6 +164,7 @@ export function useSummary(reportError: (message: string) => void) {
     loadSummaryHistory,
     viewHistoryItem,
     generateDaySummary,
+    generateWeekSummary,
     generateMonthSummary,
     todayKey,
     shiftMonth,

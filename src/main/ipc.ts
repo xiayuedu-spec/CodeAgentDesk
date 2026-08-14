@@ -48,7 +48,7 @@ import {
 } from './session-library';
 import { buildMarkdown } from './export';
 import { getRecentDirs, recordRecentDir } from './recent-dirs';
-import { summarizeDayText, summarizeMonthText, summarizeSession } from './summarize';
+import { summarizeDayText, summarizeMonthText, summarizeSession, summarizeWeekText } from './summarize';
 import { getSummaryText, listSummaries, saveSummary, type SummaryKind } from './summary-store';
 import { readUiState, writeUiState } from './ui-state';
 import type { GroupStore } from './group-store';
@@ -451,9 +451,27 @@ export function registerIpcHandlers(
   );
 
   ipcMain.handle(
+    IpcChannel.weekSummarize,
+    async (): Promise<DaySummarizeResult> => {
+      const claudeHome = resolveClaudeHome(readConfig());
+      const [monday, sunday] = currentWeekRange();
+      const combined = await collectRangeText(claudeHome, metaStore, monday, sunday);
+      if (!combined.trim()) return { ok: false, message: `本周（${monday} 起）没有可总结的会话` };
+      try {
+        const text = await summarizeWeekText(combined);
+        saveSummary('week', monday, text);
+        return { ok: true, text };
+      } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : String(error) };
+      }
+    },
+  );
+
+  ipcMain.handle(
     IpcChannel.summariesList,
     async (): Promise<SummaryHistoryResult> => ({
       days: listSummaries('day'),
+      weeks: listSummaries('week'),
       months: listSummaries('month'),
     }),
   );
@@ -596,6 +614,22 @@ export function registerIpcHandlers(
     watcher.clearPending(id);
     sessions.close(id);
   });
+}
+
+/** 当前自然周（周一 ~ 周日）的起止日期，YYYY-MM-DD。 */
+function currentWeekRange(): [string, string] {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sunday
+  const diff = day === 0 ? -6 : 1 - day; // 距本周一的偏移
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diff);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const fmt = (d: Date): string =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+      d.getDate(),
+    ).padStart(2, '0')}`;
+  return [fmt(monday), fmt(sunday)];
 }
 
 /** 收集 [from, to] 日期区间内所有会话的可读文本（按会话分段）。 */

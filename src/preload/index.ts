@@ -58,6 +58,7 @@ const CHANNELS = {
   sessionDetail: 'session:detail',
   sessionSummarize: 'session:summarize',
   daySummarize: 'day:summarize',
+  weekSummarize: 'week:summarize',
   monthSummarize: 'month:summarize',
   summariesList: 'summaries:list',
   summariesGet: 'summaries:get',
@@ -131,6 +132,8 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.sessionSummarize, sessionId) as Promise<SummarizeSessionResult>,
   summarizeDay: (date?: string) =>
     ipcRenderer.invoke(CHANNELS.daySummarize, date) as Promise<DaySummarizeResult>,
+  summarizeWeek: () =>
+    ipcRenderer.invoke(CHANNELS.weekSummarize) as Promise<DaySummarizeResult>,
   summarizeMonth: (month) =>
     ipcRenderer.invoke(CHANNELS.monthSummarize, month) as Promise<DaySummarizeResult>,
   summariesList: () => ipcRenderer.invoke(CHANNELS.summariesList) as Promise<SummaryHistoryResult>,

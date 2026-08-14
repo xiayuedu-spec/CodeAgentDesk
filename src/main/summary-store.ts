@@ -2,7 +2,7 @@ import { app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export type SummaryKind = 'day' | 'month';
+export type SummaryKind = 'day' | 'week' | 'month';
 
 interface SummaryRecord {
   text: string;
@@ -11,12 +11,13 @@ interface SummaryRecord {
 
 interface SummaryFile {
   days: Record<string, SummaryRecord>;
+  weeks: Record<string, SummaryRecord>;
   months: Record<string, SummaryRecord>;
 }
 
 export function saveSummary(kind: SummaryKind, key: string, text: string): void {
   const all = load();
-  const bucket = kind === 'day' ? all.days : all.months;
+  const bucket = kind === 'day' ? all.days : kind === 'week' ? all.weeks : all.months;
   bucket[key] = { text, updatedAt: new Date().toISOString() };
   fs.mkdirSync(path.dirname(summariesPath()), { recursive: true });
   fs.writeFileSync(summariesPath(), JSON.stringify(all, null, 2), 'utf8');
@@ -42,10 +43,11 @@ function load(): SummaryFile {
     const parsed = JSON.parse(raw) as Partial<SummaryFile>;
     return {
       days: parsed.days ?? {},
+      weeks: parsed.weeks ?? {},
       months: parsed.months ?? {},
     };
   } catch {
-    return { days: {}, months: {} };
+    return { days: {}, weeks: {}, months: {} };
   }
 }
 

@@ -176,6 +176,7 @@ export interface SummaryMeta {
 
 export interface SummaryHistoryResult {
   days: SummaryMeta[];
+  weeks: SummaryMeta[];
   months: SummaryMeta[];
 }
 
@@ -241,9 +242,10 @@ export interface CodeAgentDeskApi {
   readSessionDetail(sessionId: string): Promise<SessionDetailResult>;
   summarizeSession(sessionId: string): Promise<SummarizeSessionResult>;
   summarizeDay(date?: string): Promise<DaySummarizeResult>;
+  summarizeWeek(): Promise<DaySummarizeResult>;
   summarizeMonth(month?: string): Promise<DaySummarizeResult>;
   summariesList(): Promise<SummaryHistoryResult>;
-  summariesGet(kind: 'day' | 'month', key: string): Promise<SummaryGetResult>;
+  summariesGet(kind: 'day' | 'week' | 'month', key: string): Promise<SummaryGetResult>;
   exportSessionMarkdown(sessionId: string, cwd?: string): Promise<ExportResult>;
   readSessionText(sessionId: string): Promise<ReadSessionTextResult>;
   getUiState(): Promise<UiState>;

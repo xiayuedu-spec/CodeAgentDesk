@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { Copy, FolderOpen, Sparkles, X } from 'lucide-react';
 import type { SummaryHistoryResult } from '../../shared/types';
+import type { SummaryTab } from '../hooks/useSummary';
 
-export type SummaryTab = 'day' | 'month' | 'calendar' | 'history';
+export type { SummaryTab }; // 供调用方引用统一类型
 
 interface CalDayState {
   date: string;
@@ -13,6 +14,7 @@ interface CalDayState {
 export interface SummaryModalState {
   summaryTab: SummaryTab;
   dayText: string;
+  weekText: string;
   monthText: string;
   summarizing: boolean;
   summaryHistory: SummaryHistoryResult;
@@ -28,12 +30,13 @@ export interface SummaryModalActions {
   close: () => void;
   setViewing: (viewing: { title: string; text: string } | null) => void;
   generateDay: () => void;
+  generateWeek: () => void;
   generateMonth: () => void;
   loadDay: (date: string) => void;
   generateDayFor: (date: string) => void;
   shiftMonth: (delta: number) => void;
   loadHistory: () => void;
-  viewHistoryItem: (kind: 'day' | 'month', key: string) => void;
+  viewHistoryItem: (kind: 'day' | 'week' | 'month', key: string) => void;
   buildCells: (month: string) => (string | null)[];
   todayKey: () => string;
 }
@@ -47,6 +50,7 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
   const {
     summaryTab,
     dayText,
+    weekText,
     monthText,
     summarizing,
     summaryHistory,
@@ -61,6 +65,7 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
     close,
     setViewing,
     generateDay,
+    generateWeek,
     generateMonth,
     loadDay,
     generateDayFor,
@@ -125,6 +130,15 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
                 <button
                   type="button"
                   role="tab"
+                  aria-selected={summaryTab === 'week'}
+                  className={summaryTab === 'week' ? 'active' : ''}
+                  onClick={() => setSummaryTab('week')}
+                >
+                  周报
+                </button>
+                <button
+                  type="button"
+                  role="tab"
                   aria-selected={summaryTab === 'month'}
                   className={summaryTab === 'month' ? 'active' : ''}
                   onClick={() => setSummaryTab('month')}
@@ -181,6 +195,26 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
                     >
                       <Sparkles size={14} />
                       <span>{dayText ? '重新生成' : '生成今日总结'}</span>
+                    </button>
+                  </div>
+                </div>
+              ) : summaryTab === 'week' ? (
+                <div className="day-tab-content">
+                  {summarizing ? (
+                    <div className="day-loading">正在生成本周总结…（调用 claude 无头模式）</div>
+                  ) : weekText ? (
+                    <pre className="day-text">{weekText}</pre>
+                  ) : (
+                    <div className="day-empty">还没有生成周报</div>
+                  )}
+                  <div className="day-generate-bar">
+                    <button
+                      type="button"
+                      className="welcome-btn primary"
+                      onClick={() => void generateWeek()}
+                    >
+                      <Sparkles size={14} />
+                      <span>{weekText ? '重新生成' : '生成本周总结'}</span>
                     </button>
                   </div>
                 </div>
@@ -284,6 +318,22 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
                 </div>
               ) : (
                 <div className="history-list">
+                  {summaryHistory.weeks.length ? (
+                    <div className="history-group">
+                      <div className="history-group-label">周报</div>
+                      {summaryHistory.weeks.map((item) => (
+                        <button
+                          key={item.key}
+                          type="button"
+                          className="history-item"
+                          onClick={() => void viewHistoryItem('week', item.key)}
+                        >
+                          <span className="history-key">{item.key}</span>
+                          <span className="history-preview">{item.preview}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                   {summaryHistory.months.length ? (
                     <div className="history-group">
                       <div className="history-group-label">月度总结</div>
@@ -316,7 +366,9 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
                       ))}
                     </div>
                   ) : null}
-                  {!summaryHistory.days.length && !summaryHistory.months.length ? (
+                  {!summaryHistory.days.length &&
+                  !summaryHistory.weeks.length &&
+                  !summaryHistory.months.length ? (
                     <div className="day-empty">还没有归档的总结</div>
                   ) : null}
                 </div>

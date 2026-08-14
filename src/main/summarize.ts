@@ -83,6 +83,14 @@ export async function summarizeMonthText(text: string): Promise<string> {
   return output.trim();
 }
 
+export async function summarizeWeekText(text: string): Promise<string> {
+  const instruction =
+    '请根据与 Claude Code 的交互会话记录，生成一份本周总结（Markdown）：\n' +
+    '## 本周完成\n按项目归纳本周完成的主要工作\n## 难点与解决\n## 遗留 / 下周计划\n简洁、要点式。\n\n--- 会话记录（截断）---\n';
+  const output = await runClaude(instruction + text.slice(-MAX_DAY_INPUT));
+  return output.trim();
+}
+
 function parseSummary(output: string): SummaryResult {
   let summary = '';
   let tags: string[] = [];

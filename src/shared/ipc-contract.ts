@@ -23,6 +23,7 @@ export const IpcChannel = {
   sessionDetail: 'session:detail',
   sessionSummarize: 'session:summarize',
   daySummarize: 'day:summarize',
+  weekSummarize: 'week:summarize',
   monthSummarize: 'month:summarize',
   summariesList: 'summaries:list',
   summariesGet: 'summaries:get',
