@@ -1,7 +1,8 @@
 import { useMemo, type ReactNode } from 'react';
-import { Copy, FolderOpen, Sparkles, X } from 'lucide-react';
+import { Copy, FolderOpen, RotateCcw, Sparkles, X } from 'lucide-react';
 import type { SummaryHistoryResult } from '../../shared/types';
 import type { SummaryTab } from '../hooks/useSummary';
+import { MarkdownText } from './MarkdownText';
 
 export type { SummaryTab }; // 供调用方引用统一类型
 
@@ -24,24 +25,29 @@ export interface SummaryModalState {
   calMonth: string;
   selectedDay: string | null;
   calDay: CalDayState | null;
-  viewing: { title: string; text: string } | null;
+  viewing: { title: string; text: string; kind: 'day' | 'week' | 'month'; key: string } | null;
   sessionCounts: Map<string, number>;
-  editing: 'day' | 'week' | 'month' | null;
+  editing: 'day' | 'week' | 'month' | 'cal' | null;
   draft: string;
 }
 
 export interface SummaryModalActions {
   setSummaryTab: (tab: SummaryTab) => void;
   close: () => void;
-  setViewing: (viewing: { title: string; text: string } | null) => void;
+  setViewing: (
+    viewing: { title: string; text: string; kind: 'day' | 'week' | 'month'; key: string } | null,
+  ) => void;
   generateDay: () => void;
   generateWeek: () => void;
   shiftWeek: (delta: number) => void;
   generateMonth: () => void;
   setDraft: (text: string) => void;
-  startEdit: (kind: 'day' | 'week' | 'month') => void;
+  startEdit: (kind: 'day' | 'week' | 'month', text?: string) => void;
   cancelEdit: () => void;
-  saveEdit: (kind: 'day' | 'week' | 'month') => void;
+  saveEdit: (kind: 'day' | 'week' | 'month', key?: string) => void;
+  regenerateViewing: () => void;
+  startEditCal: () => void;
+  saveEditCal: () => void;
   loadDay: (date: string) => void;
   generateDayFor: (date: string) => void;
   shiftMonth: (delta: number) => void;
@@ -87,6 +93,9 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
     startEdit,
     cancelEdit,
     saveEdit,
+    regenerateViewing,
+    startEditCal,
+    saveEditCal,
     loadDay,
     generateDayFor,
     shiftMonth,
@@ -151,7 +160,7 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
         </>
       ) : text ? (
         <>
-          <pre className="day-text">{text}</pre>
+          <MarkdownText text={text} />
           <div className="day-generate-bar">
             <button type="button" className="welcome-btn" onClick={() => startEdit(kind)}>
               编辑
@@ -208,7 +217,52 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
               </div>
             </div>
             <div className="day-body">
-              <pre className="day-text">{viewing.text}</pre>
+              {summarizing ? (
+                <div className="day-loading">正在重新生成…（调用 claude 无头模式）</div>
+              ) : editing === viewing.kind ? (
+                <>
+                  <textarea
+                    className="summary-editor"
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    placeholder="编辑总结内容…"
+                    aria-label="编辑总结内容"
+                  />
+                  <div className="day-generate-bar">
+                    <button type="button" className="welcome-btn" onClick={cancelEdit}>
+                      取消
+                    </button>
+                    <button
+                      type="button"
+                      className="welcome-btn primary"
+                      onClick={() => void saveEdit(viewing.kind, viewing.key)}
+                    >
+                      保存
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <MarkdownText text={viewing.text} />
+                  <div className="day-generate-bar">
+                    <button
+                      type="button"
+                      className="welcome-btn"
+                      onClick={() => startEdit(viewing.kind, viewing.text)}
+                    >
+                      编辑
+                    </button>
+                    <button
+                      type="button"
+                      className="welcome-btn primary"
+                      onClick={() => void regenerateViewing()}
+                    >
+                      <RotateCcw size={14} />
+                      重新生成
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </>
         ) : (
@@ -350,7 +404,7 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
                       <>
                         <div className="cal-day-head">
                           <span className="cal-day-title">{calDay.date} 当日总结</span>
-                          {!calDay.loading && calDay.text ? (
+                          {!calDay.loading ? (
                             <div className="cal-day-actions">
                               <button
                                 type="button"
@@ -360,13 +414,51 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
                               >
                                 <Copy size={14} />
                               </button>
+                              <button
+                                type="button"
+                                className="icon-button"
+                                title="编辑"
+                                onClick={startEditCal}
+                              >
+                                <Sparkles size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                className="icon-button"
+                                title="重新生成"
+                                onClick={() => void generateDayFor(calDay.date)}
+                              >
+                                <RotateCcw size={13} />
+                              </button>
                             </div>
                           ) : null}
                         </div>
                         {calDay.loading ? (
                           <div className="day-loading">正在生成该日总结…</div>
+                        ) : editing === 'cal' ? (
+                          <>
+                            <textarea
+                              className="summary-editor"
+                              value={draft}
+                              onChange={(event) => setDraft(event.target.value)}
+                              placeholder="编辑总结内容…"
+                              aria-label="编辑总结内容"
+                            />
+                            <div className="day-generate-bar">
+                              <button type="button" className="welcome-btn" onClick={cancelEdit}>
+                                取消
+                              </button>
+                              <button
+                                type="button"
+                                className="welcome-btn primary"
+                                onClick={() => void saveEditCal()}
+                              >
+                                保存
+                              </button>
+                            </div>
+                          </>
                         ) : calDay.text ? (
-                          <pre className="day-text">{calDay.text}</pre>
+                          <MarkdownText text={calDay.text} />
                         ) : (
                           <div className="cal-day-empty">
                             <div className="day-empty">该日没有归档总结</div>

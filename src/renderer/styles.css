@@ -3097,3 +3097,97 @@ button:active:not(:disabled),
   border-color: var(--accent-dim);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
+/* ---- Markdown 渲染（总结内容） ---- */
+.markdown-text {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.markdown-text h1,
+.markdown-text h2,
+.markdown-text h3 {
+  margin: 14px 0 8px;
+  color: var(--text);
+  font-weight: 650;
+  line-height: 1.4;
+}
+.markdown-text h1:first-child,
+.markdown-text h2:first-child,
+.markdown-text h3:first-child {
+  margin-top: 0;
+}
+.markdown-text h1 {
+  font-size: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+.markdown-text h2 {
+  font-size: 14px;
+}
+.markdown-text h3 {
+  font-size: 13px;
+}
+.markdown-text p {
+  margin: 6px 0;
+}
+.markdown-text ul,
+.markdown-text ol {
+  margin: 6px 0;
+  padding-left: 22px;
+}
+.markdown-text li {
+  margin: 3px 0;
+}
+.markdown-text code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.markdown-text pre.md-code {
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-inset);
+  overflow: auto;
+}
+.markdown-text pre.md-code code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.markdown-text blockquote {
+  margin: 8px 0;
+  padding: 4px 12px;
+  border-left: 3px solid var(--accent-dim);
+  background: color-mix(in srgb, var(--accent-soft) 30%, transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--text-muted);
+}
+.markdown-text blockquote p {
+  margin: 2px 0;
+}
+.markdown-text hr {
+  margin: 12px 0;
+  border: 0;
+  height: 1px;
+  background: var(--border);
+}
+.markdown-text a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.markdown-text a:hover {
+  text-decoration: underline;
+}
+.markdown-text strong {
+  font-weight: 650;
+}

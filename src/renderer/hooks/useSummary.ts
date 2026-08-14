@@ -55,8 +55,13 @@ export function useSummary(reportError: (message: string) => void) {
     weeks: [],
     months: [],
   });
-  const [viewing, setViewing] = useState<{ title: string; text: string } | null>(null);
-  const [editing, setEditing] = useState<'day' | 'week' | 'month' | null>(null);
+  const [viewing, setViewing] = useState<{
+    title: string;
+    text: string;
+    kind: 'day' | 'week' | 'month';
+    key: string;
+  } | null>(null);
+  const [editing, setEditing] = useState<'day' | 'week' | 'month' | 'cal' | null>(null);
   const [draft, setDraft] = useState('');
 
   function openSummary(): void {
@@ -91,7 +96,7 @@ export function useSummary(reportError: (message: string) => void) {
     const result = await window.codeagentdesk.summariesGet(kind, key);
     if (result.ok) {
       const label = kind === 'day' ? '每日总结' : kind === 'week' ? '周报' : '月度总结';
-      setViewing({ title: `${key} ${label}`, text: result.text ?? '' });
+      setViewing({ title: `${key} ${label}`, text: result.text ?? '', kind, key });
     } else {
       reportError(result.message ?? '读取总结失败');
     }
@@ -144,9 +149,11 @@ export function useSummary(reportError: (message: string) => void) {
       });
   }
 
-  /** 进入编辑：以当前文本为草稿。 */
-  function startEdit(kind: 'day' | 'week' | 'month'): void {
-    const current = kind === 'day' ? dayText : kind === 'week' ? weekText : monthText;
+  /** 进入编辑：以当前文本为草稿（可显式指定，用于查看详情的任意条目）。 */
+  function startEdit(kind: 'day' | 'week' | 'month', text?: string): void {
+    const current =
+      text ??
+      (kind === 'day' ? dayText : kind === 'week' ? weekText : monthText);
     setEditing(kind);
     setDraft(current);
   }
@@ -156,22 +163,78 @@ export function useSummary(reportError: (message: string) => void) {
     setDraft('');
   }
 
-  /** 保存手动编辑：覆盖到 summaries.json 对应维度与 key。 */
-  async function saveEdit(kind: 'day' | 'week' | 'month'): Promise<void> {
+  /** 保存手动编辑：覆盖到 summaries.json 对应维度与 key（key 缺省为当前维度）。 */
+  async function saveEdit(
+    kind: 'day' | 'week' | 'month',
+    keyOverride?: string,
+  ): Promise<void> {
     const key =
-      kind === 'day'
+      keyOverride ??
+      (kind === 'day'
         ? todayKey()
         : kind === 'week'
           ? weekStart
-          : new Date().toISOString().slice(0, 7);
+          : new Date().toISOString().slice(0, 7));
     const result = await window.codeagentdesk.saveSummaryText(kind, key, draft);
     if (!result.ok) {
       reportError(result.message ?? '保存失败');
       return;
     }
-    if (kind === 'day') setDayText(draft);
-    else if (kind === 'week') setWeekText(draft);
-    else setMonthText(draft);
+    const text = draft;
+    if (kind === 'day' && key === todayKey()) setDayText(text);
+    else if (kind === 'week' && key === weekStart) setWeekText(text);
+    else if (kind === 'month' && key === new Date().toISOString().slice(0, 7)) setMonthText(text);
+    setViewing((v) => (v && v.kind === kind && v.key === key ? { ...v, text } : v));
+    setEditing(null);
+    setDraft('');
+    void loadSummaryHistory();
+  }
+
+  /** 重新生成查看详情中的总结（历史条目，按 kind/key 定位）。 */
+  async function regenerateViewing(): Promise<void> {
+    if (!viewing || summarizing) return;
+    setSummarizing(true);
+    const result =
+      viewing.kind === 'day'
+        ? await window.codeagentdesk.summarizeDay(viewing.key)
+        : viewing.kind === 'week'
+          ? await window.codeagentdesk.summarizeWeek(viewing.key)
+          : await window.codeagentdesk.summarizeMonth(viewing.key);
+    setSummarizing(false);
+    if (result.ok) {
+      const text = result.text ?? '';
+      setViewing((v) => (v ? { ...v, text } : v));
+      if (viewing.kind === 'day' && viewing.key === todayKey()) setDayText(text);
+      else if (viewing.kind === 'week' && viewing.key === weekStart) setWeekText(text);
+      else if (
+        viewing.kind === 'month' &&
+        viewing.key === new Date().toISOString().slice(0, 7)
+      ) {
+        setMonthText(text);
+      }
+      void loadSummaryHistory();
+    } else {
+      reportError(result.message ?? '重新生成失败');
+    }
+  }
+
+  /** 日历选中日的总结：进入编辑。 */
+  function startEditCal(): void {
+    if (!calDay) return;
+    setEditing('cal');
+    setDraft(calDay.text);
+  }
+
+  /** 日历选中日的总结：保存编辑。 */
+  async function saveEditCal(): Promise<void> {
+    if (!calDay) return;
+    const result = await window.codeagentdesk.saveSummaryText('day', calDay.date, draft);
+    if (!result.ok) {
+      reportError(result.message ?? '保存失败');
+      return;
+    }
+    setCalDay({ date: calDay.date, text: draft, loading: false });
+    if (calDay.date === todayKey()) setDayText(draft);
     setEditing(null);
     setDraft('');
     void loadSummaryHistory();
@@ -263,6 +326,9 @@ export function useSummary(reportError: (message: string) => void) {
     startEdit,
     cancelEdit,
     saveEdit,
+    regenerateViewing,
+    startEditCal,
+    saveEditCal,
     openSummary,
     loadSummaryHistory,
     viewHistoryItem,
