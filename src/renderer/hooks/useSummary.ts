@@ -61,6 +61,20 @@ export function useSummary(reportError: (message: string) => void) {
     setSummaryOpen(true);
     setViewing(null);
     setSummaryTab('day');
+    // 预载已生成的总结：生成中途关闭弹窗 / 应用重启后再打开，已完成的内容直接展示。
+    void preloadSummaryTexts();
+  }
+
+  /** 拉取今日 / 当前周 / 本月已归档的总结文本。 */
+  async function preloadSummaryTexts(): Promise<void> {
+    const day = await window.codeagentdesk.summariesGet('day', todayKey()).catch(() => null);
+    if (day?.ok) setDayText(day.text ?? '');
+    const week = await window.codeagentdesk.summariesGet('week', weekStart).catch(() => null);
+    if (week?.ok) setWeekText(week.text ?? '');
+    const month = await window.codeagentdesk
+      .summariesGet('month', new Date().toISOString().slice(0, 7))
+      .catch(() => null);
+    if (month?.ok) setMonthText(month.text ?? '');
   }
 
   async function loadSummaryHistory(): Promise<void> {

@@ -3067,3 +3067,14 @@ button:active:not(:disabled),
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
+/* 日历：该周已生成周报 → 周日格子左下角小方块标记 */
+.cal-cell.has-week-report .cal-week-report {
+  position: absolute;
+  left: 3px;
+  bottom: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--accent);
+  box-shadow: 0 0 4px var(--accent-glow);
+}

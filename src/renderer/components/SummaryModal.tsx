@@ -88,6 +88,21 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
     () => new Set(summaryHistory.days.map((item) => item.key)),
     [summaryHistory],
   );
+  const summaryWeekKeys = useMemo(
+    () => new Set(summaryHistory.weeks.map((item) => item.key)),
+    [summaryHistory],
+  );
+
+  /** 某日期所在周的周一（YYYY-MM-DD），用于匹配周报 key。 */
+  function mondayKeyForDate(dateStr: string): string {
+    const d = new Date(`${dateStr}T00:00:00`);
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+      d.getDate(),
+    ).padStart(2, '0')}`;
+  }
 
   return (
     <div className="day-overlay" onClick={close}>
@@ -275,8 +290,12 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
                         {weekday}
                       </div>
                     ))}
-                    {buildCells(calMonth).map((date, i) =>
-                      date === null ? (
+                    {buildCells(calMonth).map((date, i) => {
+                      const isSunday =
+                        date !== null && new Date(`${date}T00:00:00`).getDay() === 0;
+                      const hasWeekReport =
+                        date !== null && summaryWeekKeys.has(mondayKeyForDate(date));
+                      return date === null ? (
                         <div key={`empty-${i}`} className="cal-cell empty" />
                       ) : (
                         <button
@@ -284,16 +303,19 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
                           type="button"
                           className={`cal-cell${selectedDay === date ? ' selected' : ''}${
                             summaryDayKeys.has(date) ? ' has-summary' : ''
-                          }`}
+                          }${isSunday && hasWeekReport ? ' has-week-report' : ''}`}
                           onClick={() => void loadDay(date)}
                         >
                           <span className="cal-daynum">{Number(date.slice(8))}</span>
                           {sessionCounts.get(date) ? (
                             <span className="cal-count">{sessionCounts.get(date)}</span>
                           ) : null}
+                          {isSunday && hasWeekReport ? (
+                            <span className="cal-week-report" title="该周已生成周报" />
+                          ) : null}
                         </button>
-                      ),
-                    )}
+                      );
+                    })}
                   </div>
                   <div className="cal-day-view">
                     {calDay ? (
