@@ -2827,3 +2827,42 @@ button:active, .tab:active, .session-row:active {
   background: color-mix(in srgb, var(--danger) 14%, transparent);
   color: var(--danger);
 }
+/* ---- 搜索结果跳转：命中行按钮化 + 详情高亮 ---- */
+.search-hit {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.chat-entry.highlight {
+  box-shadow: 0 0 0 1px var(--accent-dim);
+  border-radius: 8px;
+  background: var(--accent-soft);
+}
+.chat-entry.highlight .chat-text {
+  background: transparent;
+}
+
+/* ---- 用量趋势弹窗 ---- */
+.usage-trend-panel {
+  width: 680px;
+}
+.usage-trend-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.usage-trend-axis {
+  fill: var(--text-faint);
+  font-size: 9px;
+  font-family: var(--mono);
+}
+.usage-trend-legend {
+  justify-content: center;
+}
+.usage-trend-total {
+  margin-left: 8px;
+  color: var(--text-faint);
+}

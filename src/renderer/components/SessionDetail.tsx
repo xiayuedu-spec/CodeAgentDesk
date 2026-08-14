@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Download, Sparkles, X } from 'lucide-react';
 import type { SessionDetailResult } from '../../shared/types';
 
@@ -5,6 +6,7 @@ interface SessionDetailProps {
   detail: SessionDetailResult;
   summary?: { summary: string; tags: string[] } | null;
   summarizing?: boolean;
+  highlightQuery?: string;
   onSummarize?: () => void;
   onExport: () => void;
   onClose: () => void;
@@ -14,10 +16,31 @@ export function SessionDetail({
   detail,
   summary,
   summarizing,
+  highlightQuery,
   onSummarize,
   onExport,
   onClose,
 }: SessionDetailProps) {
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+
+  // 从搜索结果跳转：定位并高亮包含命中文本的首个会话条目。
+  useEffect(() => {
+    const query = (highlightQuery ?? '').trim().toLowerCase();
+    const container = bodyRef.current;
+    if (!query || !container) return;
+    const entries = container.querySelectorAll<HTMLElement>('.chat-entry');
+    let target: HTMLElement | null = null;
+    for (const entry of entries) {
+      if ((entry.textContent ?? '').toLowerCase().includes(query)) {
+        target = entry;
+        break;
+      }
+    }
+    if (!target) return;
+    target.classList.add('highlight');
+    target.scrollIntoView({ block: 'center' });
+  }, [highlightQuery, detail.sessionId]);
+
   const toolPreview = (value: string): string => {
     const singleLine = value.replace(/\s+/g, ' ').trim();
     return singleLine.length > 80 ? `${singleLine.slice(0, 80)}…` : singleLine;
@@ -51,7 +74,7 @@ export function SessionDetail({
           </button>
         </div>
       </header>
-      <div className="detail-body">
+      <div className="detail-body" ref={bodyRef}>
         {summarizing ? (
           <div className="summary-card summary-loading">正在生成摘要…（调用 claude 无头模式）</div>
         ) : null}

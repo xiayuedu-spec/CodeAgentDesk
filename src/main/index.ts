@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, Notification } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import { IpcChannel } from '../shared/ipc-contract';
@@ -51,8 +51,25 @@ if (!hasSingleInstanceLock) {
     const sessions = new SessionManager({
       onData: (id, data) =>
         broadcast(IpcChannel.sessionData, { id, data } satisfies SessionDataEvent),
-      onExit: (id, exitCode) => {
+      onExit: (id, exitCode, sessionId, cwd) => {
         broadcast(IpcChannel.sessionExited, { id, exitCode } satisfies SessionExitedEvent);
+        // 系统通知：会话结束 / 异常退出（点击聚焦窗口）。
+        if (Notification.isSupported()) {
+          const name = cwd ? path.basename(cwd) : '会话';
+          const abnormal = typeof exitCode === 'number' && exitCode !== 0;
+          const notification = new Notification({
+            title: `CodeAgentDesk · ${name}`,
+            body: abnormal ? `会话已异常退出（代码 ${exitCode}）` : '会话运行结束',
+          });
+          notification.on('click', () => {
+            const [window] = BrowserWindow.getAllWindows();
+            if (window) {
+              if (window.isMinimized()) window.restore();
+              window.focus();
+            }
+          });
+          notification.show();
+        }
       },
       onBound: (id, sessionId) =>
         broadcast(IpcChannel.sessionBound, { id, sessionId } satisfies SessionBoundEvent),

@@ -23,6 +23,7 @@ import type {
   SessionRecord,
   SearchResult,
   SessionUsage,
+  UsageTrendDay,
   SummarizeSessionResult,
   DaySummarizeResult,
   SummaryHistoryResult,
@@ -71,6 +72,7 @@ const CHANNELS = {
   windowSetBackgroundColor: 'window:set-background-color',
   windowMaximizedChanged: 'window:maximized-changed',
   sessionUsage: 'session:usage',
+  usageTrend: 'usage:trend',
   searchQuery: 'search:query',
   sessionWrite: 'session:write',
   sessionResize: 'session:resize',
@@ -151,6 +153,8 @@ const api: CodeAgentDeskApi = {
     subscribe<boolean>(CHANNELS.windowMaximizedChanged, callback),
   getSessionUsage: (id) =>
     ipcRenderer.invoke(CHANNELS.sessionUsage, id) as Promise<SessionUsage>,
+  getUsageTrend: (days) =>
+    ipcRenderer.invoke(CHANNELS.usageTrend, days) as Promise<UsageTrendDay[]>,
   searchSessions: (query) =>
     ipcRenderer.invoke(CHANNELS.searchQuery, query) as Promise<SearchResult[]>,
   writeSession: (id, data) =>

@@ -57,6 +57,9 @@ const LazyCommandPalette = lazy(() =>
 const LazySummaryModal = lazy(() =>
   import('./components/SummaryModal').then((module) => ({ default: module.SummaryModal })),
 );
+const LazyUsageTrendModal = lazy(() =>
+  import('./components/UsageTrendModal').then((module) => ({ default: module.UsageTrendModal })),
+);
 
 export default function App() {
   const ui = useUiState();
@@ -110,6 +113,7 @@ export default function App() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
   const [detail, setDetail] = useState<SessionDetailResult | null>(null);
+  const [detailQuery, setDetailQuery] = useState('');
   const [usage, setUsage] = useState<SessionUsage>(EMPTY_USAGE);
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -135,6 +139,7 @@ export default function App() {
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<Set<string>>(new Set());
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
+  const [usageTrendOpen, setUsageTrendOpen] = useState(false);
   const sidebarBodyRef = useRef<HTMLDivElement | null>(null);
   const sidebarWidthRef = useRef(232);
   const infoWidthRef = useRef(260);
@@ -743,8 +748,9 @@ export default function App() {
     if (!result.ok) setError(result.message ?? '注销失败');
   }
 
-  async function openDetailById(sessionId: string): Promise<void> {
+  async function openDetailById(sessionId: string, snippet?: string): Promise<void> {
     setDetailSessionId(sessionId);
+    setDetailQuery(snippet ?? '');
     setSummary(null);
     setSummarizing(false);
     const result = await window.codeagentdesk.readSessionDetail(sessionId);
@@ -754,6 +760,7 @@ export default function App() {
   function closeDetail(): void {
     setDetailSessionId(null);
     setDetail(null);
+    setDetailQuery('');
     setSummary(null);
     setSummarizing(false);
   }
@@ -1004,6 +1011,11 @@ export default function App() {
       key: 'day',
       label: '生成今日总结',
       run: openSummary,
+    });
+    items.push({
+      key: 'usage',
+      label: 'Token 用量趋势',
+      run: () => setUsageTrendOpen(true),
     });
     items.push({
       key: 'settings',
@@ -1370,6 +1382,7 @@ export default function App() {
               results={searchResults}
               query={query}
               onOpen={(result) => void openSearchResult(result)}
+              onOpenHit={(result, hit) => void openDetailById(result.sessionId, hit.snippet)}
             />
           ) : (
             <>
@@ -1380,6 +1393,7 @@ export default function App() {
                     detail={detail}
                     summary={summary}
                     summarizing={summarizing}
+                    highlightQuery={detailQuery}
                     onSummarize={() => void handleSummarize()}
                     onExport={() => void exportFromDetail()}
                     onClose={closeDetail}
@@ -1410,6 +1424,7 @@ export default function App() {
           claudeDirName={claudeInfo ? folderName(claudeInfo.resolvedClaudeDir) : '…'}
           version={appInfo?.appVersion ?? '…'}
           onOpenSummary={openSummary}
+          onOpenUsageTrend={() => setUsageTrendOpen(true)}
         />
         </main>
       </div>
@@ -1444,6 +1459,12 @@ export default function App() {
               todayKey,
             }}
           />
+        </Suspense>
+      ) : null}
+
+      {usageTrendOpen ? (
+        <Suspense fallback={null}>
+          <LazyUsageTrendModal onClose={() => setUsageTrendOpen(false)} />
         </Suspense>
       ) : null}
 

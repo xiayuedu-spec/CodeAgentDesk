@@ -27,6 +27,7 @@ import type {
   SummaryGetResult,
   ThemeName,
   UiState,
+  UsageTrendDay,
 } from '../shared/types';
 import {
   readClaudeConfigInfo,
@@ -37,6 +38,7 @@ import {
 import { getMainWindow } from './window-manager';
 import {
   findSessionFile,
+  getUsageTrend,
   listSessions,
   readChatEntries,
   readSessionDetail,
@@ -565,6 +567,14 @@ export function registerIpcHandlers(
       );
       if (!fs.existsSync(filePath)) return emptyUsage();
       return readSessionUsage(filePath);
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.usageTrend,
+    async (_event, days: number): Promise<UsageTrendDay[]> => {
+      const safeDays = Number.isFinite(days) ? Math.min(90, Math.max(7, Math.floor(days))) : 14;
+      return getUsageTrend(resolveClaudeHome(readConfig()), metaStore, safeDays);
     },
   );
 

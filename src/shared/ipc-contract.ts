@@ -37,6 +37,7 @@ export const IpcChannel = {
   windowSetBackgroundColor: 'window:set-background-color',
   windowMaximizedChanged: 'window:maximized-changed',
   sessionUsage: 'session:usage',
+  usageTrend: 'usage:trend',
   searchQuery: 'search:query',
   sessionWrite: 'session:write',
   sessionResize: 'session:resize',

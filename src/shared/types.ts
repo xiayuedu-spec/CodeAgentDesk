@@ -143,6 +143,14 @@ export interface SessionUsage {
   cacheCreationTokens: number;
 }
 
+export interface UsageTrendDay {
+  date: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+}
+
 export interface RenameSessionResult {
   ok: boolean;
   message?: string;
@@ -247,6 +255,7 @@ export interface CodeAgentDeskApi {
   setWindowBackgroundColor(color: string): Promise<void>;
   onWindowMaximizedChanged(callback: (maximized: boolean) => void): () => void;
   getSessionUsage(id: string): Promise<SessionUsage>;
+  getUsageTrend(days: number): Promise<UsageTrendDay[]>;
   searchSessions(query: string): Promise<SearchResult[]>;
   writeSession(id: string, data: string): Promise<void>;
   resizeSession(id: string, cols: number, rows: number): Promise<void>;

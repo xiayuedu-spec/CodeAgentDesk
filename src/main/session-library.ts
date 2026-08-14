@@ -380,6 +380,68 @@ function emptyUsageValue(): SessionUsage {
   return { requests: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0 };
 }
 
+export interface UsageTrendDay {
+  date: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+}
+
+/** 按天聚合最近 N 天的 token 用量（复用 readSessionUsage 的增量缓存，只对变化文件重读）。 */
+export async function getUsageTrend(
+  claudeHome: string,
+  metaStore: SessionMetaStore,
+  days: number,
+): Promise<UsageTrendDay[]> {
+  const records = await listSessions(claudeHome, metaStore);
+  const since = new Date();
+  since.setDate(since.getDate() - (days - 1));
+  since.setHours(0, 0, 0, 0);
+  const sinceKey = `${since.getFullYear()}-${String(since.getMonth() + 1).padStart(2, '0')}-${String(
+    since.getDate(),
+  ).padStart(2, '0')}`;
+
+  const byDate = new Map<
+    string,
+    { input: number; output: number; cacheRead: number; cacheCreation: number }
+  >();
+  for (const record of records) {
+    const date = (record.updatedAt || '').slice(0, 10);
+    if (!date || date < sinceKey) continue;
+    try {
+      const usage = await readSessionUsage(record.filePath);
+      if (usage.requests === 0) continue;
+      const entry = byDate.get(date) ?? { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 };
+      entry.input += usage.inputTokens;
+      entry.output += usage.outputTokens;
+      entry.cacheRead += usage.cacheReadTokens;
+      entry.cacheCreation += usage.cacheCreationTokens;
+      byDate.set(date, entry);
+    } catch {
+      // 跳过无法读取的会话。
+    }
+  }
+
+  const result: UsageTrendDay[] = [];
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const day = new Date();
+    day.setDate(day.getDate() - i);
+    const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(
+      day.getDate(),
+    ).padStart(2, '0')}`;
+    const entry = byDate.get(key);
+    result.push({
+      date: key,
+      inputTokens: entry?.input ?? 0,
+      outputTokens: entry?.output ?? 0,
+      cacheReadTokens: entry?.cacheRead ?? 0,
+      cacheCreationTokens: entry?.cacheCreation ?? 0,
+    });
+  }
+  return result;
+}
+
 interface UsageSnapshot {
   input: number;
   output: number;
