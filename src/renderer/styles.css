@@ -2866,3 +2866,175 @@ button:active, .tab:active, .session-row:active {
   margin-left: 8px;
   color: var(--text-faint);
 }
+/* ================================================================
+   v3 视觉精修：排版 / 层次 / 质感 / 动效（全部基于主题变量，主题安全）
+   ================================================================ */
+
+/* ---- 1. 字体与排版：更现代的字体栈 + 微调字距 ---- */
+:root {
+  --sans: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI",
+    "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+}
+body {
+  letter-spacing: 0.2px;
+}
+.welcome-title,
+.detail-title,
+.day-title,
+.palette-label,
+.group-name,
+.session-title {
+  letter-spacing: 0.1px;
+}
+
+/* ---- 2. 主区背景：顶部 accent 柔光，增加空间层次 ---- */
+.main {
+  background:
+    radial-gradient(900px 420px at 75% -12%, var(--accent-soft), transparent 65%),
+    radial-gradient(700px 300px at 15% 110%, var(--accent-soft), transparent 60%),
+    var(--bg);
+}
+
+/* ---- 3. 动效统一：更顺滑的缓动曲线 ---- */
+.tab,
+.session-row,
+.icon-button,
+.group-header,
+.welcome-btn,
+.context-menu button,
+.search-hit,
+.theme-chip,
+.history-item,
+.status-day {
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ---- 4. 面板质感：顶部内高光 + 双层柔和阴影 ---- */
+.info-panel,
+.terminal-pane,
+.session-detail,
+.search-results {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--border) 55%, transparent),
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 14px 36px rgba(0, 0, 0, 0.14);
+}
+
+/* ---- 5. 弹层入场动画：淡入 + 轻微上浮 ---- */
+.context-menu,
+.settings-popover,
+.group-manage-popover,
+.new-menu,
+.palette,
+.day-panel,
+.usage-trend-panel {
+  animation: popIn 150ms cubic-bezier(0.2, 0, 0, 1);
+}
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- 6. 激活态发光增强 ---- */
+.tab.active {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent-soft),
+    0 2px 14px var(--accent-glow);
+}
+.session-row.active {
+  box-shadow:
+    inset 2px 0 0 var(--accent),
+    0 1px 6px rgba(0, 0, 0, 0.12);
+}
+.mode-switch button.active {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px var(--border),
+    inset 0 1px 0 color-mix(in srgb, var(--accent-soft) 70%, transparent);
+}
+
+/* ---- 7. 欢迎页：渐变标题 + 图标强化 ---- */
+.welcome-title {
+  background: linear-gradient(90deg, var(--text), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.welcome-sub {
+  color: var(--text-muted);
+}
+.welcome-icon {
+  box-shadow:
+    inset 0 0 0 1px var(--accent-soft),
+    0 6px 24px var(--accent-glow);
+}
+
+/* ---- 8. 滚动条与选中色细节 ---- */
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent-dim);
+}
+::selection {
+  background: var(--selection);
+  border-radius: 2px;
+}
+
+/* ---- 9. 焦点环精修：accent 柔光圈 ---- */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+/* ---- 10. 搜索框 / 输入框聚焦光晕 ---- */
+.search-box:focus-within,
+.session-rename-input:focus {
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ---- 11. 标签徽章 / 计数胶囊细节 ---- */
+.session-tags i,
+.group-count,
+.usage-badge,
+.summary-tag {
+  letter-spacing: 0.2px;
+}
+
+/* ---- 12. 标题栏品牌点发光 ---- */
+.titlebar-dot {
+  box-shadow:
+    0 0 8px var(--accent-glow),
+    0 0 18px var(--accent-glow);
+}
+
+/* ---- 13. 按钮按压反馈（更明显） ---- */
+button:active:not(:disabled),
+.tab:active,
+.session-row:active {
+  transform: scale(0.97);
+}
+
+/* ---- 14. 信息面板 / 状态行细节 ---- */
+.info-item {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+.status-text.running {
+  text-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* ---- 15. 终端 chrome 顶部高光 ---- */
+.terminal-chrome {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--border) 50%, transparent);
+}
+/* default 主题保留原有深色渐变，同时获得统一光晕 */
+:root[data-theme='default'] .main {
+  background:
+    radial-gradient(900px 420px at 75% -12%, var(--accent-soft), transparent 65%),
+    linear-gradient(180deg, #0b0d11 0%, var(--bg) 100%);
+}
