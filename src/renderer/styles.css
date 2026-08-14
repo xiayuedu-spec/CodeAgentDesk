@@ -3038,3 +3038,32 @@ button:active:not(:disabled),
     radial-gradient(900px 420px at 75% -12%, var(--accent-soft), transparent 65%),
     linear-gradient(180deg, #0b0d11 0%, var(--bg) 100%);
 }
+/* 周报导航 */
+.week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.week-nav button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-inset);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+.week-nav button:hover {
+  border-color: var(--accent-dim);
+}
+.week-range {
+  min-width: 140px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}

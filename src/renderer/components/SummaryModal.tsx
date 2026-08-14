@@ -15,6 +15,9 @@ export interface SummaryModalState {
   summaryTab: SummaryTab;
   dayText: string;
   weekText: string;
+  weekStart: string;
+  weekRangeLabel: string;
+  isCurrentWeek: boolean;
   monthText: string;
   summarizing: boolean;
   summaryHistory: SummaryHistoryResult;
@@ -31,6 +34,7 @@ export interface SummaryModalActions {
   setViewing: (viewing: { title: string; text: string } | null) => void;
   generateDay: () => void;
   generateWeek: () => void;
+  shiftWeek: (delta: number) => void;
   generateMonth: () => void;
   loadDay: (date: string) => void;
   generateDayFor: (date: string) => void;
@@ -51,6 +55,9 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
     summaryTab,
     dayText,
     weekText,
+    weekStart,
+    weekRangeLabel,
+    isCurrentWeek,
     monthText,
     summarizing,
     summaryHistory,
@@ -66,6 +73,7 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
     setViewing,
     generateDay,
     generateWeek,
+    shiftWeek,
     generateMonth,
     loadDay,
     generateDayFor,
@@ -200,12 +208,24 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
                 </div>
               ) : summaryTab === 'week' ? (
                 <div className="day-tab-content">
+                  <div className="week-nav">
+                    <button type="button" aria-label="上一周" onClick={() => shiftWeek(-1)}>
+                      ‹
+                    </button>
+                    <span className="week-range" title={`周起始 ${weekStart}`}>
+                      {weekRangeLabel}
+                      {isCurrentWeek ? '（本周）' : ''}
+                    </span>
+                    <button type="button" aria-label="下一周" onClick={() => shiftWeek(1)}>
+                      ›
+                    </button>
+                  </div>
                   {summarizing ? (
-                    <div className="day-loading">正在生成本周总结…（调用 claude 无头模式）</div>
+                    <div className="day-loading">正在生成周报…（调用 claude 无头模式）</div>
                   ) : weekText ? (
                     <pre className="day-text">{weekText}</pre>
                   ) : (
-                    <div className="day-empty">还没有生成周报</div>
+                    <div className="day-empty">该周还没有周报</div>
                   )}
                   <div className="day-generate-bar">
                     <button
@@ -214,7 +234,7 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
                       onClick={() => void generateWeek()}
                     >
                       <Sparkles size={14} />
-                      <span>{weekText ? '重新生成' : '生成本周总结'}</span>
+                      <span>{weekText ? '重新生成' : isCurrentWeek ? '生成本周总结' : '生成该周总结'}</span>
                     </button>
                   </div>
                 </div>

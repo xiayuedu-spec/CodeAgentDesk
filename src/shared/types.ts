@@ -242,7 +242,7 @@ export interface CodeAgentDeskApi {
   readSessionDetail(sessionId: string): Promise<SessionDetailResult>;
   summarizeSession(sessionId: string): Promise<SummarizeSessionResult>;
   summarizeDay(date?: string): Promise<DaySummarizeResult>;
-  summarizeWeek(): Promise<DaySummarizeResult>;
+  summarizeWeek(weekStart?: string): Promise<DaySummarizeResult>;
   summarizeMonth(month?: string): Promise<DaySummarizeResult>;
   summariesList(): Promise<SummaryHistoryResult>;
   summariesGet(kind: 'day' | 'week' | 'month', key: string): Promise<SummaryGetResult>;

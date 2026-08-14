@@ -452,11 +452,11 @@ export function registerIpcHandlers(
 
   ipcMain.handle(
     IpcChannel.weekSummarize,
-    async (): Promise<DaySummarizeResult> => {
+    async (_event, weekStart?: string): Promise<DaySummarizeResult> => {
       const claudeHome = resolveClaudeHome(readConfig());
-      const [monday, sunday] = currentWeekRange();
+      const [monday, sunday] = weekRangeFor(weekStart);
       const combined = await collectRangeText(claudeHome, metaStore, monday, sunday);
-      if (!combined.trim()) return { ok: false, message: `本周（${monday} 起）没有可总结的会话` };
+      if (!combined.trim()) return { ok: false, message: `${monday} 周没有可总结的会话` };
       try {
         const text = await summarizeWeekText(combined);
         saveSummary('week', monday, text);
@@ -616,20 +616,20 @@ export function registerIpcHandlers(
   });
 }
 
-/** 当前自然周（周一 ~ 周日）的起止日期，YYYY-MM-DD。 */
-function currentWeekRange(): [string, string] {
-  const now = new Date();
-  const day = now.getDay(); // 0 = Sunday
+/** 周一起始日期（YYYY-MM-DD，缺省为本周一）所在自然周的起止日期。 */
+function weekRangeFor(monday?: string): [string, string] {
+  const base = monday ? new Date(`${monday}T00:00:00`) : new Date();
+  const day = base.getDay(); // 0 = Sunday
   const diff = day === 0 ? -6 : 1 - day; // 距本周一的偏移
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diff);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
+  const start = new Date(base);
+  start.setDate(base.getDate() + diff);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
   const fmt = (d: Date): string =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
       d.getDate(),
     ).padStart(2, '0')}`;
-  return [fmt(monday), fmt(sunday)];
+  return [fmt(start), fmt(end)];
 }
 
 /** 收集 [from, to] 日期区间内所有会话的可读文本（按会话分段）。 */

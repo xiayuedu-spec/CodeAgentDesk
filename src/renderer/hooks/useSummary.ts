@@ -9,6 +9,29 @@ interface CalDayState {
   loading: boolean;
 }
 
+function formatDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate(),
+  ).padStart(2, '0')}`;
+}
+
+/** 某日期所在周的周一。 */
+function mondayOf(date: Date): string {
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const d = new Date(date);
+  d.setDate(date.getDate() + diff);
+  return formatDate(d);
+}
+
+/** 周一起始日期对应的"周一 ~ 周日"展示标签。 */
+function formatWeekRange(monday: string): string {
+  const start = new Date(`${monday}T00:00:00`);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return `${monday.slice(5)} ~ ${formatDate(end).slice(5)}`;
+}
+
 /** 总结弹窗（今日/月度/日历/历史）的完整状态与逻辑。 */
 export function useSummary(reportError: (message: string) => void) {
   const [summary, setSummary] = useState<{ summary: string; tags: string[] } | null>(null);
@@ -22,6 +45,9 @@ export function useSummary(reportError: (message: string) => void) {
   const [calDay, setCalDay] = useState<CalDayState | null>(null);
   const [dayText, setDayText] = useState('');
   const [weekText, setWeekText] = useState('');
+  const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
+  const [weekRangeLabel, setWeekRangeLabel] = useState(() => formatWeekRange(mondayOf(new Date())));
+  const [isCurrentWeek, setIsCurrentWeek] = useState(true);
   const [monthText, setMonthText] = useState('');
   const [summarizing, setSummarizing] = useState(false);
   const [summaryHistory, setSummaryHistory] = useState<SummaryHistoryResult>({
@@ -73,7 +99,7 @@ export function useSummary(reportError: (message: string) => void) {
     if (summarizing) return;
     setSummarizing(true);
     setWeekText('');
-    const result = await window.codeagentdesk.summarizeWeek();
+    const result = await window.codeagentdesk.summarizeWeek(weekStart);
     setSummarizing(false);
     if (result.ok) {
       setWeekText(result.text ?? '');
@@ -81,6 +107,25 @@ export function useSummary(reportError: (message: string) => void) {
     } else {
       reportError(result.message ?? '生成本周总结失败');
     }
+  }
+
+  /** 切换到相邻周：更新范围标签并加载该周已有的周报。 */
+  function shiftWeek(delta: number): void {
+    const d = new Date(`${weekStart}T00:00:00`);
+    d.setDate(d.getDate() + delta * 7);
+    const next = mondayOf(d);
+    setWeekStart(next);
+    setWeekRangeLabel(formatWeekRange(next));
+    setIsCurrentWeek(next === mondayOf(new Date()));
+    setWeekText('');
+    window.codeagentdesk
+      .summariesGet('week', next)
+      .then((result) => {
+        if (result.ok) setWeekText(result.text ?? '');
+      })
+      .catch(() => {
+        // 静默忽略加载失败。
+      });
   }
 
   async function generateMonthSummary(): Promise<void> {
@@ -154,6 +199,9 @@ export function useSummary(reportError: (message: string) => void) {
     calDay,
     dayText,
     weekText,
+    weekStart,
+    weekRangeLabel,
+    isCurrentWeek,
     monthText,
     summarizing,
     setSummarizing,
@@ -165,6 +213,7 @@ export function useSummary(reportError: (message: string) => void) {
     viewHistoryItem,
     generateDaySummary,
     generateWeekSummary,
+    shiftWeek,
     generateMonthSummary,
     todayKey,
     shiftMonth,
