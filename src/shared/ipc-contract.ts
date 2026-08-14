@@ -18,6 +18,7 @@ export const IpcChannel = {
   sessionResume: 'session:resume',
   sessionRename: 'session:rename',
   sessionArchive: 'session:archive',
+  sessionDelete: 'session:delete',
   archiveRestore: 'archive:restore',
   sessionDetail: 'session:detail',
   sessionSummarize: 'session:summarize',

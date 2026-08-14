@@ -90,6 +90,16 @@ export class SessionMetaStore {
     }
   }
 
+  /** 彻底移除某会话的元数据（归档删除时调用）。 */
+  remove(sessionId: string): void {
+    const all = this.all();
+    if (sessionId in all) {
+      delete all[sessionId];
+      this.version += 1;
+      this.save(all);
+    }
+  }
+
   get(sessionId: string): SessionMeta {
     // 返回浅拷贝，避免调用方意外改动共享数据。
     return { ...(this.all()[sessionId] ?? {}) };

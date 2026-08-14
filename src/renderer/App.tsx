@@ -132,6 +132,8 @@ export default function App() {
   const [moveMenu, setMoveMenu] = useState<MoveMenuState | null>(null);
   const [moveNewOpen, setMoveNewOpen] = useState(false);
   const [moveNewName, setMoveNewName] = useState('');
+  const [selectedArchiveIds, setSelectedArchiveIds] = useState<Set<string>>(new Set());
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const sidebarBodyRef = useRef<HTMLDivElement | null>(null);
   const sidebarWidthRef = useRef(232);
   const infoWidthRef = useRef(260);
@@ -501,6 +503,37 @@ export default function App() {
   async function refreshRecords(): Promise<void> {
     const value = await window.codeagentdesk.listSessions();
     setRecords(value);
+  }
+
+  function toggleArchiveSelect(sessionId: string): void {
+    setSelectedArchiveIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(sessionId)) next.delete(sessionId);
+      else next.add(sessionId);
+      return next;
+    });
+    setConfirmingDelete(false);
+  }
+
+  function toggleSelectAllArchived(): void {
+    setSelectedArchiveIds((previous) => {
+      if (previous.size > 0 && previous.size === archivedRecords.length) return new Set();
+      return new Set(archivedRecords.map((record) => record.sessionId));
+    });
+    setConfirmingDelete(false);
+  }
+
+  async function handleDeleteArchived(): Promise<void> {
+    const ids = [...selectedArchiveIds];
+    if (ids.length === 0) return;
+    const result = await window.codeagentdesk.deleteSessions(ids);
+    setConfirmingDelete(false);
+    setSelectedArchiveIds(new Set());
+    if (!result.ok) {
+      setError(result.message ?? '删除失败');
+      return;
+    }
+    await refreshRecords();
   }
 
   async function refreshGroups(): Promise<void> {
@@ -1152,6 +1185,8 @@ export default function App() {
     ungroupedHistory,
     rowIndexByKey,
     navClass,
+    selectedArchiveIds,
+    confirmingDelete,
   };
   const sidebarBodyActions = {
     setMode,
@@ -1174,6 +1209,10 @@ export default function App() {
     toggleGroupCollapse,
     toggleSectionCollapse,
     openGroupMenu,
+    toggleArchiveSelect,
+    toggleSelectAllArchived,
+    handleDeleteArchived,
+    setConfirmingDelete,
   };
   const sidebarFooterData = {
     appInfo,

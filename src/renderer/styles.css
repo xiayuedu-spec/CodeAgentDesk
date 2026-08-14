@@ -2749,3 +2749,64 @@ button:active, .tab:active, .session-row:active {
   }
 }
 
+
+/* ---- 归档会话多选删除 ---- */
+.archive-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px 6px;
+}
+.archive-toolbar-btn {
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+.archive-toolbar-btn:hover {
+  border-color: var(--accent-dim);
+  color: var(--text);
+}
+.archive-toolbar-btn.danger {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+  color: var(--danger);
+}
+.archive-toolbar-btn.danger:hover {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+.archive-toolbar-btn.danger.confirming {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #ffffff;
+}
+.archive-selected-count {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+.archive-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--radius-md);
+}
+.archive-row.checked {
+  background: var(--accent-soft);
+}
+.archive-check {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin: 0 4px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.archive-row-main {
+  flex: 1;
+  min-width: 0;
+}

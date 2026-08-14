@@ -35,6 +35,8 @@ interface SidebarBodyData {
   ungroupedHistory: SessionRecord[];
   rowIndexByKey: Map<string, number>;
   navClass: (index: number) => string;
+  selectedArchiveIds: Set<string>;
+  confirmingDelete: boolean;
 }
 
 interface SidebarBodyActions {
@@ -55,6 +57,10 @@ interface SidebarBodyActions {
   toggleGroupCollapse: (key: string) => void;
   toggleSectionCollapse: (key: 'current' | 'history') => void;
   openGroupMenu: (id: string, name: string, x: number, y: number) => void;
+  toggleArchiveSelect: (sessionId: string) => void;
+  toggleSelectAllArchived: () => void;
+  handleDeleteArchived: () => void;
+  setConfirmingDelete: (confirming: boolean) => void;
 }
 
 export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions: SidebarBodyActions }) {
@@ -76,6 +82,8 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
     ungroupedHistory,
     rowIndexByKey,
     navClass,
+    selectedArchiveIds,
+    confirmingDelete,
   } = data;
   const {
     setMode,
@@ -95,6 +103,10 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
     toggleGroupCollapse,
     toggleSectionCollapse,
     openGroupMenu,
+    toggleArchiveSelect,
+    toggleSelectAllArchived,
+    handleDeleteArchived,
+    setConfirmingDelete,
   } = actions;
 
   const renderRunningRow = (session: SessionView, rowIndex: number): ReactNode => (
@@ -409,34 +421,75 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
               <span>暂无归档</span>
             </div>
           ) : (
-            <ul className="session-list">
-              {archivedRecords.map((record, k) => (
-                <li key={record.sessionId}>
+            <>
+              <div className="archive-toolbar">
+                <button
+                  type="button"
+                  className="archive-toolbar-btn"
+                  onClick={toggleSelectAllArchived}
+                >
+                  {selectedArchiveIds.size > 0 && selectedArchiveIds.size === archivedRecords.length
+                    ? '取消全选'
+                    : '全选'}
+                </button>
+                {selectedArchiveIds.size > 0 ? (
                   <button
                     type="button"
-                    className={`session-row ${
-                      sessions.some(
-                        (session) =>
-                          session.sessionId === record.sessionId && session.id === activeId,
-                      ) || detailSessionId === record.sessionId
-                        ? 'active'
-                        : ''
-                    }${navClass(k)}`}
-                    data-nav-index={k}
-                    onClick={() => void openArchivedSession(record)}
-                    onContextMenu={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      openContextMenu(record.sessionId, record.cwd, true, event.clientX, event.clientY);
+                    className={`archive-toolbar-btn danger${confirmingDelete ? ' confirming' : ''}`}
+                    onClick={() => {
+                      if (!confirmingDelete) {
+                        setConfirmingDelete(true);
+                        return;
+                      }
+                      void handleDeleteArchived();
                     }}
                   >
-                    <span className="session-dot ended" title="已结束" />
-                    <span className="session-title">{recordTitle(record)}</span>
-                    <span className="session-cwd">{record.cwd || '未知目录'}</span>
+                    {confirmingDelete ? `确认删除 ${selectedArchiveIds.size} 个？` : '删除'}
                   </button>
-                </li>
-              ))}
-            </ul>
+                ) : null}
+                {selectedArchiveIds.size > 0 ? (
+                  <span className="archive-selected-count">{selectedArchiveIds.size} 已选</span>
+                ) : null}
+              </div>
+              <ul className="session-list">
+                {archivedRecords.map((record, k) => {
+                  const checked = selectedArchiveIds.has(record.sessionId);
+                  return (
+                    <li key={record.sessionId} className={`archive-row${checked ? ' checked' : ''}`}>
+                      <input
+                        type="checkbox"
+                        className="archive-check"
+                        aria-label={`选择 ${recordTitle(record)}`}
+                        checked={checked}
+                        onChange={() => toggleArchiveSelect(record.sessionId)}
+                      />
+                      <button
+                        type="button"
+                        className={`session-row archive-row-main ${
+                          sessions.some(
+                            (session) =>
+                              session.sessionId === record.sessionId && session.id === activeId,
+                          ) || detailSessionId === record.sessionId
+                            ? 'active'
+                            : ''
+                        }${navClass(k)}`}
+                        data-nav-index={k}
+                        onClick={() => void openArchivedSession(record)}
+                        onContextMenu={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          openContextMenu(record.sessionId, record.cwd, true, event.clientX, event.clientY);
+                        }}
+                      >
+                        <span className="session-dot ended" title="已结束" />
+                        <span className="session-title">{recordTitle(record)}</span>
+                        <span className="session-cwd">{record.cwd || '未知目录'}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )
         ) : (
           <div className="empty-state">

@@ -182,6 +182,12 @@ export interface ArchiveSessionResult {
   message?: string;
 }
 
+export interface DeleteSessionsResult {
+  ok: boolean;
+  deleted?: string[];
+  message?: string;
+}
+
 export interface SessionDataEvent {
   id: string;
   data: string;
@@ -216,6 +222,7 @@ export interface CodeAgentDeskApi {
   deleteGroup(id: string): Promise<GroupOpResult>;
   setGroupColor(id: string, color: string): Promise<GroupOpResult>;
   setSessionGroup(sessionId: string, groupId: string | null): Promise<GroupOpResult>;
+  deleteSessions(sessionIds: string[]): Promise<DeleteSessionsResult>;
   getRecentDirs(): Promise<string[]>;
   pickDirectory(): Promise<PickDirectoryResult>;
   createSession(cwd: string): Promise<CreateSessionResult>;

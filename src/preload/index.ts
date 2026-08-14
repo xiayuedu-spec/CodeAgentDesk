@@ -5,6 +5,7 @@ import type {
   ClaudeConfigInfo,
   CodeAgentDeskApi,
   CreateSessionResult,
+  DeleteSessionsResult,
   ExportResult,
   GroupOpResult,
   GroupRecord,
@@ -51,6 +52,7 @@ const CHANNELS = {
   sessionResume: 'session:resume',
   sessionRename: 'session:rename',
   sessionArchive: 'session:archive',
+  sessionDelete: 'session:delete',
   archiveRestore: 'archive:restore',
   sessionDetail: 'session:detail',
   sessionSummarize: 'session:summarize',
@@ -117,6 +119,8 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.sessionRename, { sessionId, name }) as Promise<RenameSessionResult>,
   archiveSession: (sessionId, cwd) =>
     ipcRenderer.invoke(CHANNELS.sessionArchive, { sessionId, cwd }) as Promise<ArchiveSessionResult>,
+  deleteSessions: (sessionIds) =>
+    ipcRenderer.invoke(CHANNELS.sessionDelete, { sessionIds }) as Promise<DeleteSessionsResult>,
   restoreArchivedSession: (sessionId, cwd) =>
     ipcRenderer.invoke(CHANNELS.archiveRestore, { sessionId, cwd }) as Promise<RestoreSessionResult>,
   readSessionDetail: (sessionId) =>

@@ -22,6 +22,7 @@ import type {
   SessionUsage,
   SummarizeSessionResult,
   DaySummarizeResult,
+  DeleteSessionsResult,
   SummaryHistoryResult,
   SummaryGetResult,
   ThemeName,
@@ -327,6 +328,42 @@ export function registerIpcHandlers(
       }
       metaStore.restore(sessionId);
       return { ok: true };
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.sessionDelete,
+    async (_event, payload: { sessionIds: string[] }): Promise<DeleteSessionsResult> => {
+      const ids = Array.isArray(payload.sessionIds)
+        ? payload.sessionIds.filter((item): item is string => typeof item === 'string' && Boolean(item.trim()))
+        : [];
+      if (ids.length === 0) return { ok: false, message: '没有选择要删除的会话' };
+      const archiveRoot = path.join(app.getPath('userData'), 'archive');
+      const deleted: string[] = [];
+      for (const sessionId of ids) {
+        // 借出运行中的归档会话不能删除（JSONL 在 projects 下）。
+        if (sessions.findBySessionId(sessionId)) continue;
+        const meta = metaStore.get(sessionId);
+        let filePath =
+          meta.archivedPath && fs.existsSync(meta.archivedPath) ? meta.archivedPath : '';
+        if (!filePath) {
+          const found = await findSessionFile(archiveRoot, sessionId);
+          if (found) filePath = found;
+        }
+        if (filePath) {
+          try {
+            fs.rmSync(filePath, { force: true });
+          } catch {
+            continue; // 单个删除失败不影响其他会话。
+          }
+        }
+        metaStore.remove(sessionId);
+        deleted.push(sessionId);
+      }
+      if (deleted.length === 0) {
+        return { ok: false, message: '没有可删除的会话（运行中的已跳过）' };
+      }
+      return { ok: true, deleted };
     },
   );
 
