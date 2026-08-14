@@ -8,20 +8,26 @@ export interface KnowledgeItem {
   preview: string;
 }
 
-interface KnowledgeRecord {
+export interface KnowledgeMeta {
   text: string;
   updatedAt: string;
+  /** 生成时处理过的会话指纹（sessionId → updatedAt），用于增量更新判断。 */
+  sessionIds: Record<string, string>;
 }
 
-type KnowledgeMap = Record<string, KnowledgeRecord>;
+type KnowledgeMap = Record<string, KnowledgeMeta>;
 
 function knowledgePath(): string {
   return path.join(app.getPath('userData'), 'knowledge.json');
 }
 
-export function saveKnowledge(key: string, text: string): void {
+export function saveKnowledge(key: string, text: string, sessionIds?: Record<string, string>): void {
   const all = load();
-  all[key] = { text, updatedAt: new Date().toISOString() };
+  all[key] = {
+    text,
+    updatedAt: new Date().toISOString(),
+    sessionIds: sessionIds ?? all[key]?.sessionIds ?? {},
+  };
   fs.mkdirSync(path.dirname(knowledgePath()), { recursive: true });
   fs.writeFileSync(knowledgePath(), JSON.stringify(all, null, 2), 'utf8');
 }
@@ -37,6 +43,10 @@ export function listKnowledge(): KnowledgeItem[] {
     }));
 }
 
+export function getKnowledgeMeta(key: string): KnowledgeMeta | null {
+  return load()[key] ?? null;
+}
+
 export function getKnowledgeText(key: string): string | undefined {
   return load()[key]?.text;
 }
@@ -45,7 +55,12 @@ function load(): KnowledgeMap {
   try {
     const raw = fs.readFileSync(knowledgePath(), 'utf8');
     const parsed = JSON.parse(raw) as KnowledgeMap;
-    return typeof parsed === 'object' && parsed ? parsed : {};
+    if (typeof parsed !== 'object' || !parsed) return {};
+    // 兼容旧数据（无 sessionIds 字段）。
+    for (const record of Object.values(parsed)) {
+      if (!record.sessionIds) record.sessionIds = {};
+    }
+    return parsed;
   } catch {
     return {};
   }

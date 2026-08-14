@@ -3594,3 +3594,13 @@ body,
   color: var(--warn);
   font-size: 12px;
 }
+/* 知识库提示信息（成功/中性） */
+.knowledge-info {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent-soft) 55%, transparent);
+  color: var(--accent);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}

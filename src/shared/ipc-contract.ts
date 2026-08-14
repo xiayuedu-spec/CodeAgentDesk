@@ -32,6 +32,7 @@ export const IpcChannel = {
   knowledgeList: 'knowledge:list',
   knowledgeGet: 'knowledge:get',
   knowledgeSave: 'knowledge:save',
+  knowledgeExport: 'knowledge:export',
   sessionExport: 'session:export',
   sessionReadText: 'session:read-text',
   uiGetState: 'ui:get-state',

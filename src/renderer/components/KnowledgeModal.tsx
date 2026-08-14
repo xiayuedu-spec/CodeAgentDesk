@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Copy, FolderOpen, RotateCcw, Sparkles, X } from 'lucide-react';
+import { Copy, Download, FolderOpen, RotateCcw, Sparkles, X } from 'lucide-react';
 import type { KnowledgeItem, SessionRecord } from '../../shared/types';
 import { folderName, formatRelativeTime } from '../session-utils';
 import { MarkdownText } from './MarkdownText';
@@ -19,7 +19,7 @@ function keyOf(cwd: string): string {
   return cwd.replace(/[\\:]/g, '-');
 }
 
-/** 项目知识库：按项目聚合会话 → claude -p 提炼知识文档（含 token 预算提示）。 */
+/** 项目知识库：增量更新（只处理新会话）+ 导出 PROJECT_KNOWLEDGE.md 供新会话复用。 */
 export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
   const [projects, setProjects] = useState<ProjectEntry[]>([]);
   const [knowledge, setKnowledge] = useState<KnowledgeItem[]>([]);
@@ -29,6 +29,7 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,31 +55,45 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
     };
   }, []);
 
-  async function handleGenerate(cwd: string): Promise<void> {
+  async function handleGenerate(cwd: string, force?: boolean): Promise<void> {
     setGenerating(cwd);
     setError(null);
-    const result = await window.codeagentdesk.generateKnowledge(cwd);
+    setInfo(null);
+    const result = await window.codeagentdesk.generateKnowledge(cwd, force);
     setGenerating(null);
     if (!result.ok) {
-      setError(result.message ?? '生成失败');
+      setInfo(result.message ?? '生成失败');
       return;
     }
     setKnowledge(await window.codeagentdesk.listKnowledge());
     setSelectedKey(keyOf(cwd));
     setText(result.text ?? '');
     setEditing(false);
+    setInfo(force ? '已全量重建' : '知识库已更新（增量）');
   }
 
   async function handleView(key: string): Promise<void> {
     setSelectedKey(key);
     setEditing(false);
     setError(null);
+    setInfo(null);
     const result = await window.codeagentdesk.getKnowledge(key);
     if (result.ok) {
       setText(result.text ?? '');
     } else {
       setText(null);
       setError(result.message ?? '读取失败');
+    }
+  }
+
+  async function handleExport(cwd: string): Promise<void> {
+    setInfo(null);
+    setError(null);
+    const result = await window.codeagentdesk.exportKnowledge(cwd);
+    if (result.ok) {
+      setInfo(`已导出到 ${result.path}，新会话中让 claude 读取该文件即可复用项目经验`);
+    } else {
+      setError(result.message ?? '导出失败');
     }
   }
 
@@ -91,6 +106,7 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
     }
     setText(draft);
     setEditing(false);
+    setInfo('已保存');
     setKnowledge(await window.codeagentdesk.listKnowledge());
   }
 
@@ -110,8 +126,9 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
         <div className="day-body">
           <div className="knowledge-budget">
             生成约消耗 <b>{ESTIMATED_INPUT_TOKENS.toLocaleString()}</b> token（每小时限额 1000 万，约占
-            0.4%）
+            0.4%）；<b>增量更新</b>只处理新增会话，消耗更少
           </div>
+          {info ? <div className="knowledge-info">{info}</div> : null}
           {error ? <div className="knowledge-error">{error}</div> : null}
 
           {selectedKey && text ? (
@@ -122,10 +139,18 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
                   <button
                     type="button"
                     className="icon-button"
-                    title="复制"
+                    title="复制全文"
                     onClick={() => void navigator.clipboard.writeText(text)}
                   >
                     <Copy size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    title="导出为 PROJECT_KNOWLEDGE.md"
+                    onClick={() => void handleExport(selectedCwd)}
+                  >
+                    <Download size={14} />
                   </button>
                   <button
                     type="button"
@@ -141,9 +166,9 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
                   <button
                     type="button"
                     className="icon-button"
-                    title="重新生成"
+                    title="全量重建（处理全部会话）"
                     disabled={Boolean(generating)}
-                    onClick={() => void handleGenerate(selectedCwd)}
+                    onClick={() => void handleGenerate(selectedCwd, true)}
                   >
                     <RotateCcw size={13} />
                   </button>
@@ -174,7 +199,11 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
                     <button type="button" className="welcome-btn" onClick={() => setEditing(false)}>
                       取消
                     </button>
-                    <button type="button" className="welcome-btn primary" onClick={() => void handleSave()}>
+                    <button
+                      type="button"
+                      className="welcome-btn primary"
+                      onClick={() => void handleSave()}
+                    >
                       保存
                     </button>
                   </div>
@@ -217,7 +246,16 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
                               className="welcome-btn"
                               onClick={() => void handleGenerate(project.cwd)}
                             >
-                              重新生成
+                              更新
+                            </button>
+                            <button
+                              type="button"
+                              className="welcome-btn"
+                              title="导出 PROJECT_KNOWLEDGE.md"
+                              onClick={() => void handleExport(project.cwd)}
+                            >
+                              <Download size={13} />
+                              导出
                             </button>
                           </>
                         ) : (
