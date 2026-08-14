@@ -37,15 +37,29 @@ src/
 │  ├─ session-library.ts  # 扫描 JSONL、搜索、详情、用量统计
 │  ├─ session-meta-store.ts  # session-meta.json（重命名/归档标记）
 │  ├─ config.ts           # config.json（claude 目录）+ 目录解析
+│  ├─ group-store.ts      # groups.json（手动分组定义：名称/颜色）
 │  ├─ export.ts           # Markdown 导出
 │  └─ ui-state.ts         # ui-state.json（自动恢复标签页）
 ├─ preload/index.ts       # contextBridge 暴露类型化 API
 ├─ renderer/              # React + Vite
-│  ├─ App.tsx             # 主界面、模式切换、右键菜单
+│  ├─ App.tsx             # 容器组件：状态 + effects + handlers + 组装（约 1600 行）
+│  ├─ session-utils.tsx   # 共享类型（SessionView/Mode/菜单状态/分组区块）+ 纯函数（标题/时间/高亮）
+│  ├─ theme.ts            # 主题常量（窗口底色/色卡/展示名）
 │  └─ components/
 │     ├─ TitleBar.tsx     # 自绘窗口标题栏
 │     ├─ TerminalPane.tsx # xterm + 复制粘贴/滚轮
-│     └─ SessionDetail.tsx # 会话详情视图
+│     ├─ SessionDetail.tsx # 会话详情视图（lazy）
+│     ├─ SummaryModal.tsx # 总结弹窗：今日/月度/日历/历史（lazy）
+│     ├─ CommandPalette.tsx # 命令面板（lazy）
+│     ├─ SidebarBody.tsx  # 侧边栏主体：搜索框/模式切换/会话列表（含分组区块与行渲染）
+│     ├─ SidebarFooter.tsx # 底部：新建菜单/分组管理/设置弹层
+│     ├─ TabBar.tsx       # 标签栏（拖拽排序）
+│     ├─ InfoPanel.tsx    # 右侧信息面板（token 用量）
+│     ├─ Welcome.tsx      # 欢迎页
+│     ├─ StatusBar.tsx    # 底部状态栏
+│     ├─ SearchResults.tsx # 搜索结果视图
+│     ├─ ContextMenus.tsx # 会话/分组/移动子菜单三件套
+│     └─ ErrorBoundary.tsx # 崩溃兜底
 └─ shared/
    ├─ ipc-contract.ts     # 通道名唯一来源
    └─ types.ts            # IPC 类型 + CodeAgentDeskApi
@@ -70,8 +84,9 @@ src/
 ### 应用数据（Windows 为 %APPDATA%/codeagentdesk）
 
 - `config.json`：`{ "claudeDir": "...", "theme": "default" | "mac" | "green" | "sepia" | "amber" | "mist" }`
-- `session-meta.json`：`{ [sessionId]: { customName?, archived?, archivedAt?, archivedPath?, cwd?, summary?, tags? } }`
-- `ui-state.json`：`{ openSessionIds: [], activeSessionId? }`（自动恢复上次打开的标签）
+- `session-meta.json`：`{ [sessionId]: { customName?, archived?, archivedAt?, archivedPath?, cwd?, summary?, tags?, group? } }`（`group` 为分组 id）
+- `groups.json`：`[{ id, name, color }]`（手动分组定义，按数组顺序展示）
+- `ui-state.json`：`{ openSessionIds: [], activeSessionId?, collapsedGroups: [], collapsedSections: [] }`（自动恢复上次打开的标签 + 分组/区块折叠状态）
 - `recent-dirs.json`：最近使用的工作目录（去重，最多 8 个）
 - `summaries.json`：已归档总结 `{ days: { [date]: {text,updatedAt} }, months: { [month]: {...} } }`
 - `archive/<encodedDir>/<sessionId>.jsonl`：归档会话文件
@@ -96,6 +111,7 @@ src/
 - 历史会话一键 `--resume`（点击即恢复终端，不自动弹详情）
 - 自动恢复上次打开的标签页（`ui-state.json`）
 - 会话重命名（右键）、归档、恢复；归档会话"借出"运行（借出期间留在归档列表并高亮，切走自动放回；右键永久恢复）
+- **手动分组管理**：`groups.json` 存分组（名称+颜色）；分组是会话管理的核心容器——**运行中 + 历史会话都按组归类**（运行中在前，点击行切换/恢复），分组区块默认在侧边栏上方、可折叠（折叠状态随 ui-state 持久化）；未分组会话回落到"当前会话 / 历史会话"区块（无"未分组"区块）；会话右键"移动到分组"（含新建分组/移出分组），分组右键重命名/删除（删除自动清空成员）；侧边栏底部"分组管理"弹层可建组/改名/换色/删组
 - 历史列表实时刷新：watcher 检测 `.jsonl` 新增/删除 → 广播 `sessionsChanged` → 渲染层自动刷新
 - 拖放目录开会话（虚线 overlay，`webUtils.getPathForFile` 取路径，主进程 `isDirectory` 校验）
 - 终端栈常驻挂载：关闭一标签不卸载其他会话终端，滚动记录不丢
@@ -109,8 +125,7 @@ src/
 - 会话行信息：相对时间（"3 分钟前"）、hover 完整路径
 
 ### 5.3 总结与 AI
-- 会话 AI 摘要+标签：详情视图 ✨ 按钮，`claude -p` 无头生成，存 `session-meta.json`（`summary`/`tags`，60s 超时）
-- 自动摘要：会话结束自动生成（已有跳过），历史/归档行显示标签 chips + 摘要行
+- 会话 AI 摘要+标签：详情视图 ✨ 按钮，`claude -p` 无头生成，存 `session-meta.json`（`summary`/`tags`，60s 超时）；历史/归档行显示标签 chips + 摘要行
 - 总结体系（自动归档到 `summaries.json`）：**今日/月度**总结 + **日历**（每格显示当天会话数、有归档带圆点、点某天查看或"找回"——基于当天会话记录重新生成）+ **历史查看**（日/月列表看全文）；模态四标签（今日/月度/日历/历史）；入口：底部状态栏胶囊 / 欢迎页 / Ctrl+P
 - 相关 IPC：`session:summarize`、`day:summarize`（可传日期）、`month:summarize`、`summaries:list`、`summaries:get`
 
@@ -142,6 +157,8 @@ src/
 - `shared/ipc-contract.ts` 通道名唯一来源 + `shared/types.ts` 类型；新增通道改四处
 - 元数据用 JSON 文件存储（未用 SQLite）；node-pty 编译补丁（patch-package）、chokidar v4、`webUtils` 拖放取路径
 - 依赖：electron / react / node-pty / @xterm / chokidar / lucide-react / patch-package
+- 健壮性：`before-quit` 清理全部 pty；主进程 `uncaughtException`/`unhandledRejection` 写 `userData/error.log`；渲染层 `ErrorBoundary` 兜底（不白屏）；生产构建由 `vite.config.mts` 注入 CSP（开发模式跳过）；`app.setAppUserModelId` 对齐 electron-builder appId
+- 性能：会话列表有增量缓存（`session-library.ts` 按 mtime/size + `metaStore.getVersion()` 失效，只重读变化的 JSONL）；用量统计按字节偏移增量读（每 3s 轮询只扫新增行，超 2MB 回退全量）；`SessionDetail`/`SummaryModal`/`CommandPalette` 用 `React.lazy` 分包（`chunkSizeWarningLimit: 600`）
 
 ### 5.8 未实现（路线图，供对比）
 - 分屏 split view（标签页内多窗格）
@@ -171,7 +188,6 @@ src/
 11. **AI 摘要用 claude 无头模式**：`summarize.ts` 用 `spawn('claude', ['-p'], { shell: process.platform === 'win32' })`，指令和会话文本（截断 20k 字符）都写进 stdin（`-p` 无参数，避免 shell 引号问题）；Windows 上 claude 是 `.cmd` 包装器，`spawn` 不能直接跑，必须 `shell:true`。消耗一次真实 token 调用、需 claude 在 PATH；60s 超时 kill；输出按 `摘要：`/`标签：` 两行解析，兜底取首行。`resolveClaudeCommand` 已从 SessionManager 抽成公共函数供 pty 用（`session-manager.ts`）。
 12. **sessionCreate 校验目录**：新建/拖放开会话前 `fs.statSync(cwd).isDirectory()` 校验，非目录抛错给渲染层。
 13. **拖放路径用 `webUtils.getPathForFile`**：Electron ≥32 已移除 `File.path`（43 里是 undefined），必须经 preload 暴露 `webUtils.getPathForFile(file)`（官方 pattern）；拖放监听挂在 window 的 **capture 阶段**，避免被 xterm 等子元素 stopPropagation 截断。
-14. **自动摘要会真实调用 claude**：每个会话结束（`index.ts` onExit）都会触发一次 `claude -p`（已有 summary 跳过），消耗 token、需 claude 在 PATH；想关掉就从 onExit 里删掉 `maybeAutoSummarize` 调用。`summarize.ts` 的 `runClaude` 是 `-p` 无参数 + stdin 输内容，Windows 走 `shell:true`。
 
 ## 7. 开发约定
 
