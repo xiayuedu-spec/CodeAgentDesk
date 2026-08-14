@@ -15,6 +15,7 @@
     "rebuild": "electron-rebuild -f -w node-pty",
     "start": "electron .",
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
     "package": "npm run build && electron-builder"
   },
   "dependencies": {
@@ -39,6 +40,7 @@
     "patch-package": "^8.0.1",
     "typescript": "^7.0.2",
     "vite": "^8.2.0",
+    "vitest": "^4.1.10",
     "wait-on": "^9.1.0"
   }
 }

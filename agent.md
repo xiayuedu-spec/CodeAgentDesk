@@ -223,8 +223,9 @@ src/
 
 ## 8. 测试现状
 
-- 目前没有自动化测试，只有 `typecheck` / `build` / 手工清单。
-- 建议后续按 `DESIGN.md` 第 11 节补 Vitest：JSONL 解析器、标题提取、Markdown 导出、绑定匹配逻辑。
+- Vitest（`npm run test`）：已覆盖 buildMarkdown 导出、JSONL 解析（readChatEntries / readSessionInfo / readSessionDetail 工具链）、parseSummary 摘要解析，共 15 个用例。
+- 主进程测试用 vi.mock('electron') 隔离；测试文件在 src/**/__tests__/，已从构建 tsconfig 排除（vitest.config.mts）。
+- 后续可补：用量聚合、缓存失效、分组/归档逻辑。
 
 ## 9. 建议下一步
 

@@ -91,7 +91,8 @@ export async function summarizeWeekText(text: string): Promise<string> {
   return output.trim();
 }
 
-function parseSummary(output: string): SummaryResult {
+/** 解析摘要输出（`摘要：…` / `标签：…` 两行），供测试直接调用。 */
+export function parseSummary(output: string): SummaryResult {
   let summary = '';
   let tags: string[] = [];
   for (const line of output.split(/\r?\n/)) {

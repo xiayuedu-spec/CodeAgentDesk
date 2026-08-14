@@ -19,6 +19,26 @@ const MAX_HITS_PER_SESSION = 20;
 const MAX_TEXT_LENGTH = 4000;
 const MAX_USAGE_INCREMENT_LINES = 2000;
 
+/** 逐行扫描 JSONL（带行数上限与静默吞错），供各解析函数复用。 */
+function scanLines(filePath: string, limit: number, onLine: (line: string) => void): Promise<void> {
+  return new Promise((resolve) => {
+    const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
+    const reader = readline.createInterface({ input: stream, crlfDelay: Infinity });
+    let lines = 0;
+    reader.on('line', (line) => {
+      lines += 1;
+      if (lines > limit) {
+        reader.close();
+        return;
+      }
+      onLine(line);
+    });
+    reader.on('close', () => resolve());
+    reader.on('error', () => resolve());
+    stream.on('error', () => resolve());
+  });
+}
+
 interface CachedRecord {
   mtimeMs: number;
   size: number;
@@ -47,22 +67,9 @@ export async function listSessions(
 
 export async function readChatEntries(filePath: string): Promise<ChatEntry[]> {
   const entries: ChatEntry[] = [];
-  let lines = 0;
-  await new Promise<void>((resolve) => {
-    const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
-    const reader = readline.createInterface({ input: stream, crlfDelay: Infinity });
-    reader.on('line', (line) => {
-      lines += 1;
-      if (lines > MAX_DETAIL_LINES) {
-        reader.close();
-        return;
-      }
-      const entry = parseChatLine(line);
-      if (entry) entries.push(entry);
-    });
-    reader.on('close', () => resolve());
-    reader.on('error', () => resolve());
-    stream.on('error', () => resolve());
+  await scanLines(filePath, MAX_DETAIL_LINES, (line) => {
+    const entry = parseChatLine(line);
+    if (entry) entries.push(entry);
   });
   return entries;
 }
@@ -70,40 +77,27 @@ export async function readChatEntries(filePath: string): Promise<ChatEntry[]> {
 export async function readSessionDetail(filePath: string): Promise<SessionDetailEntry[]> {
   const entries: SessionDetailEntry[] = [];
   const toolUses = new Map<string, { name: string; input: string }>();
-  let lines = 0;
-  await new Promise<void>((resolve) => {
-    const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
-    const reader = readline.createInterface({ input: stream, crlfDelay: Infinity });
-    reader.on('line', (line) => {
-      lines += 1;
-      if (lines > MAX_DETAIL_LINES) {
-        reader.close();
-        return;
-      }
-      try {
-        const event = JSON.parse(line) as {
-          type?: string;
+  await scanLines(filePath, MAX_DETAIL_LINES, (line) => {
+    try {
+      const event = JSON.parse(line) as {
+        type?: string;
+        role?: string;
+        message?: {
           role?: string;
-          message?: {
-            role?: string;
-            content?: unknown;
-          };
+          content?: unknown;
         };
-        if (event.type === 'user' || (event.type === 'message' && event.role === 'user')) {
-          pushUserDetail(entries, event.message?.content, toolUses);
-        } else if (
-          event.type === 'assistant' ||
-          (event.type === 'message' && event.role === 'assistant')
-        ) {
-          pushAssistantDetail(entries, event.message?.content, toolUses);
-        }
-      } catch {
-        // Ignore malformed lines.
+      };
+      if (event.type === 'user' || (event.type === 'message' && event.role === 'user')) {
+        pushUserDetail(entries, event.message?.content, toolUses);
+      } else if (
+        event.type === 'assistant' ||
+        (event.type === 'message' && event.role === 'assistant')
+      ) {
+        pushAssistantDetail(entries, event.message?.content, toolUses);
       }
-    });
-    reader.on('close', () => resolve());
-    reader.on('error', () => resolve());
-    stream.on('error', () => resolve());
+    } catch {
+      // Ignore malformed lines.
+    }
   });
   return entries;
 }
@@ -225,27 +219,20 @@ export async function searchSessions(
 async function searchFile(filePath: string, needle: string): Promise<SearchHit[]> {
   const hits: SearchHit[] = [];
   let lineNumber = 0;
-  await new Promise<void>((resolve) => {
-    const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
-    const reader = readline.createInterface({ input: stream, crlfDelay: Infinity });
-    reader.on('line', (line) => {
-      lineNumber += 1;
-      if (lineNumber > MAX_SEARCH_LINES || hits.length >= MAX_HITS_PER_SESSION) {
-        reader.close();
-        return;
-      }
-      const readable = extractReadableLine(line);
-      if (readable && readable.text.toLowerCase().includes(needle)) {
-        hits.push({
-          line: lineNumber,
-          snippet: readable.text.trim().slice(0, 240),
-          role: readable.role,
-        });
-      }
-    });
-    reader.on('close', () => resolve());
-    reader.on('error', () => resolve());
-    stream.on('error', () => resolve());
+  await scanLines(filePath, MAX_SEARCH_LINES, (line) => {
+    if (hits.length >= MAX_HITS_PER_SESSION) {
+      // scanLines 行数上限不足以约束命中数，这里提前停止（剩余行将被跳过）。
+      return;
+    }
+    lineNumber += 1;
+    const readable = extractReadableLine(line);
+    if (readable && readable.text.toLowerCase().includes(needle)) {
+      hits.push({
+        line: lineNumber,
+        snippet: readable.text.trim().slice(0, 240),
+        role: readable.role,
+      });
+    }
   });
   return hits;
 }
@@ -316,22 +303,9 @@ export async function readSessionUsage(filePath: string): Promise<SessionUsage> 
 /** 全量重读（初始或增量回退用），带行数上限保护。 */
 async function readSessionUsageFull(filePath: string): Promise<SessionUsage> {
   const usageByMessage = new Map<string, UsageSnapshot>();
-  let lines = 0;
-  await new Promise<void>((resolve) => {
-    const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
-    const reader = readline.createInterface({ input: stream, crlfDelay: Infinity });
-    reader.on('line', (line) => {
-      lines += 1;
-      if (lines > MAX_DETAIL_LINES) {
-        reader.close();
-        return;
-      }
-      const parsed = parseUsageLine(line);
-      if (parsed) usageByMessage.set(parsed.messageId, parsed.snapshot);
-    });
-    reader.on('close', () => resolve());
-    reader.on('error', () => resolve());
-    stream.on('error', () => resolve());
+  await scanLines(filePath, MAX_DETAIL_LINES, (line) => {
+    const parsed = parseUsageLine(line);
+    if (parsed) usageByMessage.set(parsed.messageId, parsed.snapshot);
   });
   return sumUsage(usageByMessage);
 }
@@ -579,40 +553,27 @@ export async function readSessionInfo(
   let cwd: string | undefined;
   let title: string | undefined;
   let startedAt: string | undefined;
-  let lines = 0;
-  await new Promise<void>((resolve) => {
-    const stream = fs.createReadStream(file, { encoding: 'utf8' });
-    const reader = readline.createInterface({ input: stream, crlfDelay: Infinity });
-    reader.on('line', (line) => {
-      lines += 1;
-      if (lines > MAX_SCAN_LINES) {
-        reader.close();
-        return;
+  await scanLines(file, MAX_SCAN_LINES, (line) => {
+    try {
+      const event = JSON.parse(line) as {
+        type?: string;
+        cwd?: unknown;
+        aiTitle?: unknown;
+        timestamp?: unknown;
+        message?: { content?: unknown };
+      };
+      if (!cwd && typeof event.cwd === 'string') cwd = event.cwd;
+      if (!startedAt && typeof event.timestamp === 'string') startedAt = event.timestamp;
+      if (event.type === 'ai-title' && typeof event.aiTitle === 'string') {
+        title = event.aiTitle.slice(0, 40);
       }
-      try {
-        const event = JSON.parse(line) as {
-          type?: string;
-          cwd?: unknown;
-          aiTitle?: unknown;
-          timestamp?: unknown;
-          message?: { content?: unknown };
-        };
-        if (!cwd && typeof event.cwd === 'string') cwd = event.cwd;
-        if (!startedAt && typeof event.timestamp === 'string') startedAt = event.timestamp;
-        if (event.type === 'ai-title' && typeof event.aiTitle === 'string') {
-          title = event.aiTitle.slice(0, 40);
-        }
-        if (!title && event.type === 'user') {
-          const text = extractText(event.message?.content);
-          if (text) title = text.replace(/\s+/g, ' ').trim().slice(0, 40);
-        }
-      } catch {
-        // Ignore partially written lines.
+      if (!title && event.type === 'user') {
+        const text = extractText(event.message?.content);
+        if (text) title = text.replace(/\s+/g, ' ').trim().slice(0, 40);
       }
-    });
-    reader.on('close', () => resolve());
-    reader.on('error', () => resolve());
-    stream.on('error', () => resolve());
+    } catch {
+      // Ignore partially written lines.
+    }
   });
   return { cwd, title, startedAt };
 }

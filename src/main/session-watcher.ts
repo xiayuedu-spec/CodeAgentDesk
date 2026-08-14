@@ -13,6 +13,7 @@ const MAX_SCAN_LINES = 200;
 export class SessionWatcher {
   private watcher?: FSWatcher;
   private readonly pending = new Map<string, PendingSpawn>();
+  private changeTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(
     private readonly sessions: SessionManager,
@@ -35,12 +36,25 @@ export class SessionWatcher {
         this.onChanged?.();
       }
     });
+    this.watcher.on('change', (file) => {
+      // 运行中会话持续 append：节流广播，让列表 updatedAt 实时刷新。
+      if (file.endsWith('.jsonl')) this.scheduleChanged();
+    });
     this.watcher.on('unlink', (file) => {
-      if (file.endsWith('.jsonl')) this.onChanged?.();
+      if (file.endsWith('.jsonl')) this.scheduleChanged();
     });
     this.watcher.on('error', () => {
       // TODO: route watcher errors into an app log.
     });
+  }
+
+  /** 变更广播节流：高频 append 只触发一次刷新。 */
+  private scheduleChanged(): void {
+    if (this.changeTimer) return;
+    this.changeTimer = setTimeout(() => {
+      this.changeTimer = undefined;
+      this.onChanged?.();
+    }, 1000);
   }
 
   restart(claudeHome: string): void {
