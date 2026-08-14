@@ -17,16 +17,28 @@ const MAX_DETAIL_LINES = 2000;
 const MAX_SEARCH_LINES = 5000;
 const MAX_HITS_PER_SESSION = 20;
 const MAX_TEXT_LENGTH = 4000;
+const MAX_USAGE_INCREMENT_LINES = 2000;
+
+interface CachedRecord {
+  mtimeMs: number;
+  size: number;
+  metaVersion: number;
+  record: SessionRecord;
+}
+
+/** 会话记录缓存：文件 mtime/size 未变且元数据版本未变时直接复用，避免重复读 JSONL 头部。 */
+const recordCache = new Map<string, CachedRecord>();
 
 export async function listSessions(
   claudeHome: string,
   metaStore: SessionMetaStore,
 ): Promise<SessionRecord[]> {
+  const metaVersion = metaStore.getVersion();
   const projectsRoot = claudeHome;
   const archiveRoot = path.join(app.getPath('userData'), 'archive');
   const [projectRecords, archiveRecords] = await Promise.all([
-    scanJsonlFiles(projectsRoot, metaStore, false),
-    scanJsonlFiles(archiveRoot, metaStore, true),
+    scanJsonlFiles(projectsRoot, metaStore, false, metaVersion),
+    scanJsonlFiles(archiveRoot, metaStore, true, metaVersion),
   ]);
   return [...projectRecords, ...archiveRecords].sort((a, b) =>
     b.updatedAt.localeCompare(a.updatedAt),
@@ -238,7 +250,71 @@ async function searchFile(filePath: string, needle: string): Promise<SearchHit[]
   return hits;
 }
 
+interface UsageCacheEntry {
+  offset: number;
+  usageByMessage: Map<string, UsageSnapshot>;
+}
+
+/** 用量统计缓存：按文件字节偏移只读新增行，避免每 3s 轮询时全量重扫。 */
+const usageCache = new Map<string, UsageCacheEntry>();
+
 export async function readSessionUsage(filePath: string): Promise<SessionUsage> {
+  let fd: number;
+  try {
+    fd = fs.openSync(filePath, 'r');
+  } catch {
+    return emptyUsageValue();
+  }
+  try {
+    const size = fs.fstatSync(fd).size;
+    let entry = usageCache.get(filePath);
+    let offset = entry?.offset ?? 0;
+    let usageByMessage = entry?.usageByMessage ?? new Map<string, UsageSnapshot>();
+    if (size < offset) {
+      // 文件被截断/替换，从头重读。
+      offset = 0;
+      usageByMessage = new Map();
+    }
+    if (size === offset) {
+      return sumUsage(usageByMessage);
+    }
+    const delta = size - offset;
+    // 增量异常大（如长时间未轮询）时回退全量重读，避免一次解析过多内容。
+    if (delta > 2 * 1024 * 1024) {
+      usageCache.delete(filePath);
+      return readSessionUsageFull(filePath);
+    }
+    const buffer = Buffer.alloc(delta);
+    fs.readSync(fd, buffer, 0, delta, offset);
+    const text = buffer.toString('utf8');
+    const hasTrailingNewline = text.endsWith('\n');
+    const lines = text.split('\n');
+    if (!hasTrailingNewline && lines.length > 0) {
+      // 末行可能未写完（append 进行中），回退到该行起始，等待下次补读。
+      const partial = lines.pop() as string;
+      offset = size - Buffer.byteLength(partial);
+    } else {
+      offset = size;
+    }
+    for (const line of lines) {
+      const parsed = parseUsageLine(line);
+      if (parsed) usageByMessage.set(parsed.messageId, parsed.snapshot);
+    }
+    usageCache.set(filePath, { offset, usageByMessage });
+    return sumUsage(usageByMessage);
+  } catch {
+    return emptyUsageValue();
+  } finally {
+    try {
+      fs.closeSync(fd);
+    } catch {
+      // 忽略关闭失败。
+    }
+  }
+}
+
+/** 全量重读（初始或增量回退用），带行数上限保护。 */
+async function readSessionUsageFull(filePath: string): Promise<SessionUsage> {
   const usageByMessage = new Map<string, UsageSnapshot>();
   let lines = 0;
   await new Promise<void>((resolve) => {
@@ -250,31 +326,41 @@ export async function readSessionUsage(filePath: string): Promise<SessionUsage> 
         reader.close();
         return;
       }
-      try {
-        const event = JSON.parse(line) as {
-          type?: string;
-          role?: string;
-          message?: { id?: unknown; usage?: unknown };
-        };
-        if (
-          (event.type === 'assistant' || (event.type === 'message' && event.role === 'assistant')) &&
-          event.message
-        ) {
-          const messageId = typeof event.message?.id === 'string' ? event.message.id : '';
-          const usage = event.message?.usage;
-          if (messageId && usage && typeof usage === 'object') {
-            usageByMessage.set(messageId, normalizeUsage(usage as Record<string, unknown>));
-          }
-        }
-      } catch {
-        // Ignore malformed lines.
-      }
+      const parsed = parseUsageLine(line);
+      if (parsed) usageByMessage.set(parsed.messageId, parsed.snapshot);
     });
     reader.on('close', () => resolve());
     reader.on('error', () => resolve());
     stream.on('error', () => resolve());
   });
+  return sumUsage(usageByMessage);
+}
 
+function parseUsageLine(line: string): { messageId: string; snapshot: UsageSnapshot } | null {
+  try {
+    const event = JSON.parse(line) as {
+      type?: string;
+      role?: string;
+      message?: { id?: unknown; usage?: unknown };
+    };
+    if (
+      (event.type === 'assistant' || (event.type === 'message' && event.role === 'assistant')) &&
+      event.message
+    ) {
+      const messageId = typeof event.message?.id === 'string' ? event.message.id : '';
+      const usage = event.message?.usage;
+      if (messageId && usage && typeof usage === 'object') {
+        return { messageId, snapshot: normalizeUsage(usage as Record<string, unknown>) };
+      }
+    }
+    return null;
+  } catch {
+    // Ignore malformed lines.
+    return null;
+  }
+}
+
+function sumUsage(usageByMessage: Map<string, UsageSnapshot>): SessionUsage {
   let requests = 0;
   let inputTokens = 0;
   let outputTokens = 0;
@@ -288,6 +374,10 @@ export async function readSessionUsage(filePath: string): Promise<SessionUsage> 
     cacheCreationTokens += usage.cacheCreation;
   }
   return { requests, inputTokens, outputTokens, cacheReadTokens, cacheCreationTokens };
+}
+
+function emptyUsageValue(): SessionUsage {
+  return { requests: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0 };
 }
 
 interface UsageSnapshot {
@@ -335,6 +425,7 @@ async function scanJsonlFiles(
   root: string,
   metaStore: SessionMetaStore,
   archived: boolean,
+  metaVersion: number,
 ): Promise<SessionRecord[]> {
   if (!fs.existsSync(root)) return [];
   const files: string[] = [];
@@ -349,8 +440,46 @@ async function scanJsonlFiles(
     }
   };
   walk(root);
-  const records = await Promise.all(files.map((file) => toRecord(file, metaStore, archived)));
+  // 清理已不存在的文件缓存（会话删除/移动后）。
+  for (const key of recordCache.keys()) {
+    if (!files.includes(key)) recordCache.delete(key);
+  }
+  const records = await Promise.all(
+    files.map((file) => cachedRecord(file, metaStore, archived, metaVersion)),
+  );
   return records.filter((record): record is SessionRecord => record !== null);
+}
+
+async function cachedRecord(
+  file: string,
+  metaStore: SessionMetaStore,
+  archived: boolean,
+  metaVersion: number,
+): Promise<SessionRecord | null> {
+  try {
+    const stat = fs.statSync(file);
+    const cached = recordCache.get(file);
+    if (
+      cached &&
+      cached.mtimeMs === stat.mtimeMs &&
+      cached.size === stat.size &&
+      cached.metaVersion === metaVersion
+    ) {
+      return cached.record;
+    }
+    const record = await toRecord(file, metaStore, archived);
+    if (record) {
+      recordCache.set(file, {
+        mtimeMs: stat.mtimeMs,
+        size: stat.size,
+        metaVersion,
+        record,
+      });
+    }
+    return record;
+  } catch {
+    return null;
+  }
 }
 
 async function toRecord(
@@ -373,6 +502,7 @@ async function toRecord(
       customName: meta.customName,
       summary: meta.summary,
       tags: meta.tags,
+      group: meta.group,
       startedAt: info.startedAt ?? stat.birthtime.toISOString(),
       updatedAt: stat.mtime.toISOString(),
     };

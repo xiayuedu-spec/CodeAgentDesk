@@ -20,6 +20,7 @@ interface RunningSession {
 export class SessionManager {
   private readonly sessions = new Map<string, RunningSession>();
   private readonly sequences = new Map<string, number>();
+  private readonly exitWaiters = new Map<string, () => void>();
 
   constructor(private readonly callbacks: SessionCallbacks) {}
 
@@ -84,6 +85,28 @@ export class SessionManager {
     }
   }
 
+  /** 应用退出前清理全部运行中的 pty，避免残留 claude 进程。 */
+  closeAll(): void {
+    for (const id of [...this.sessions.keys()]) {
+      this.close(id);
+    }
+  }
+
+  /** 等待会话从运行表移除（进程退出），超时兜底。 */
+  waitForExit(id: string, timeoutMs: number): Promise<void> {
+    if (!this.sessions.has(id)) return Promise.resolve();
+    return new Promise((resolve) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const finish = (): void => {
+        if (timer) clearTimeout(timer);
+        this.exitWaiters.delete(id);
+        resolve();
+      };
+      timer = setTimeout(finish, timeoutMs);
+      this.exitWaiters.set(id, finish);
+    });
+  }
+
   private nextSequence(cwd: string): { sequence: number } {
     const key = normalizeCwd(cwd);
     const sequence = (this.sequences.get(key) ?? 0) + 1;
@@ -118,6 +141,8 @@ export class SessionManager {
       const sessionId = session?.sessionId;
       const cwd = session?.cwd;
       this.sessions.delete(id);
+      this.exitWaiters.get(id)?.();
+      this.exitWaiters.delete(id);
       this.callbacks.onExit(id, exitCode, sessionId, cwd);
     });
 

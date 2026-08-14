@@ -1,4 +1,6 @@
 import { app, BrowserWindow } from 'electron';
+import fs from 'node:fs';
+import path from 'node:path';
 import { IpcChannel } from '../shared/ipc-contract';
 import type {
   SessionBoundEvent,
@@ -8,11 +10,28 @@ import type {
 } from '../shared/types';
 import { registerIpcHandlers } from './ipc';
 import { readConfig, resolveClaudeHome } from './config';
+import { GroupStore } from './group-store';
 import { SessionManager } from './session-manager';
 import { SessionMetaStore } from './session-meta-store';
 import { SessionWatcher } from './session-watcher';
-import { maybeAutoSummarize } from './summarize';
 import { broadcast, createMainWindow } from './window-manager';
+
+// Windows 通知/任务栏分组需要显式设置 AppUserModelID（与 electron-builder appId 一致）。
+app.setAppUserModelId('com.codeagentdesk.app');
+
+/** 主进程未捕获异常写入 userData/error.log，便于排查启动与运行期问题。 */
+function logMainError(kind: string, error: unknown): void {
+  try {
+    const message = error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error);
+    const line = `[${new Date().toISOString()}] ${kind}: ${message}\n`;
+    fs.appendFileSync(path.join(app.getPath('userData'), 'error.log'), line);
+  } catch {
+    // 日志写入失败静默忽略。
+  }
+}
+
+process.on('uncaughtException', (error) => logMainError('uncaughtException', error));
+process.on('unhandledRejection', (reason) => logMainError('unhandledRejection', reason));
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
@@ -32,16 +51,8 @@ if (!hasSingleInstanceLock) {
     const sessions = new SessionManager({
       onData: (id, data) =>
         broadcast(IpcChannel.sessionData, { id, data } satisfies SessionDataEvent),
-      onExit: (id, exitCode, sessionId, cwd) => {
+      onExit: (id, exitCode) => {
         broadcast(IpcChannel.sessionExited, { id, exitCode } satisfies SessionExitedEvent);
-        // 会话结束后自动生成摘要（已有则跳过；等待文件落盘）
-        if (sessionId && cwd && readConfig().autoSummarize) {
-          setTimeout(() => {
-            void maybeAutoSummarize(sessionId, cwd, metaStore).catch(() => {
-              // 自动摘要失败静默忽略。
-            });
-          }, 2000);
-        }
       },
       onBound: (id, sessionId) =>
         broadcast(IpcChannel.sessionBound, { id, sessionId } satisfies SessionBoundEvent),
@@ -51,13 +62,19 @@ if (!hasSingleInstanceLock) {
     const watcher = new SessionWatcher(sessions, () => {
       broadcast(IpcChannel.sessionsChanged, undefined);
     });
+    const groups = GroupStore.create();
     const initialClaudeHome = resolveClaudeHome(readConfig());
 
-    registerIpcHandlers(sessions, watcher, metaStore, () => {
+    registerIpcHandlers(sessions, watcher, metaStore, groups, () => {
       watcher.restart(resolveClaudeHome(readConfig()));
     });
     createMainWindow();
     watcher.start(initialClaudeHome);
+
+    app.on('before-quit', () => {
+      // 退出前终止所有 pty 会话，避免 claude 进程残留。
+      sessions.closeAll();
+    });
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
