@@ -485,6 +485,25 @@ export function registerIpcHandlers(
   );
 
   ipcMain.handle(
+    IpcChannel.summarySave,
+    async (
+      _event,
+      payload: { kind: SummaryKind; key: string; text: string },
+    ): Promise<SummaryGetResult> => {
+      if (payload.kind !== 'day' && payload.kind !== 'week' && payload.kind !== 'month') {
+        return { ok: false, message: '无效的总结类型' };
+      }
+      if (!payload.key.trim()) return { ok: false, message: '缺少日期' };
+      try {
+        saveSummary(payload.kind, payload.key.trim(), payload.text);
+        return { ok: true, text: payload.text };
+      } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : String(error) };
+      }
+    },
+  );
+
+  ipcMain.handle(
     IpcChannel.sessionExport,
     async (_event, payload: { sessionId: string; cwd?: string }): Promise<ExportResult> => {
       const filePath = await locateSessionFile(payload.sessionId, payload.cwd);

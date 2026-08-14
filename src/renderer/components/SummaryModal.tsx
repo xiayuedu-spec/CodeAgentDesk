@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Copy, FolderOpen, Sparkles, X } from 'lucide-react';
 import type { SummaryHistoryResult } from '../../shared/types';
 import type { SummaryTab } from '../hooks/useSummary';
@@ -26,6 +26,8 @@ export interface SummaryModalState {
   calDay: CalDayState | null;
   viewing: { title: string; text: string } | null;
   sessionCounts: Map<string, number>;
+  editing: 'day' | 'week' | 'month' | null;
+  draft: string;
 }
 
 export interface SummaryModalActions {
@@ -36,6 +38,10 @@ export interface SummaryModalActions {
   generateWeek: () => void;
   shiftWeek: (delta: number) => void;
   generateMonth: () => void;
+  setDraft: (text: string) => void;
+  startEdit: (kind: 'day' | 'week' | 'month') => void;
+  cancelEdit: () => void;
+  saveEdit: (kind: 'day' | 'week' | 'month') => void;
   loadDay: (date: string) => void;
   generateDayFor: (date: string) => void;
   shiftMonth: (delta: number) => void;
@@ -66,6 +72,8 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
     calDay,
     viewing,
     sessionCounts,
+    editing,
+    draft,
   } = state;
   const {
     setSummaryTab,
@@ -75,6 +83,10 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
     generateWeek,
     shiftWeek,
     generateMonth,
+    setDraft,
+    startEdit,
+    cancelEdit,
+    saveEdit,
     loadDay,
     generateDayFor,
     shiftMonth,
@@ -103,6 +115,68 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
       d.getDate(),
     ).padStart(2, '0')}`;
   }
+
+  /** 可编辑总结 tab 的公共渲染：展示 / 编辑（textarea）/ 生成 / 重新生成。 */
+  const renderEditableTab = (
+    kind: 'day' | 'week' | 'month',
+    text: string,
+    emptyHint: string,
+    generateLabel: string,
+    generate: () => void,
+  ): ReactNode => (
+    <div className="day-tab-content">
+      {summarizing ? (
+        <div className="day-loading">正在生成…（调用 claude 无头模式）</div>
+      ) : editing === kind ? (
+        <>
+          <textarea
+            className="summary-editor"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            placeholder="编辑总结内容…"
+            aria-label="编辑总结内容"
+          />
+          <div className="day-generate-bar">
+            <button type="button" className="welcome-btn" onClick={cancelEdit}>
+              取消
+            </button>
+            <button
+              type="button"
+              className="welcome-btn primary"
+              onClick={() => void saveEdit(kind)}
+            >
+              保存
+            </button>
+          </div>
+        </>
+      ) : text ? (
+        <>
+          <pre className="day-text">{text}</pre>
+          <div className="day-generate-bar">
+            <button type="button" className="welcome-btn" onClick={() => startEdit(kind)}>
+              编辑
+            </button>
+            <button
+              type="button"
+              className="welcome-btn primary"
+              onClick={() => void generate()}
+            >
+              {text ? '重新生成' : generateLabel}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="day-empty">{emptyHint}</div>
+          <div className="day-generate-bar">
+            <button type="button" className="welcome-btn primary" onClick={() => void generate()}>
+              {generateLabel}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div className="day-overlay" onClick={close}>
@@ -202,27 +276,9 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
             </div>
             <div className="day-body">
               {summaryTab === 'day' ? (
-                <div className="day-tab-content">
-                  {summarizing ? (
-                    <div className="day-loading">正在生成今日总结…（调用 claude 无头模式）</div>
-                  ) : dayText ? (
-                    <pre className="day-text">{dayText}</pre>
-                  ) : (
-                    <div className="day-empty">还没有生成今日总结</div>
-                  )}
-                  <div className="day-generate-bar">
-                    <button
-                      type="button"
-                      className="welcome-btn primary"
-                      onClick={() => void generateDay()}
-                    >
-                      <Sparkles size={14} />
-                      <span>{dayText ? '重新生成' : '生成今日总结'}</span>
-                    </button>
-                  </div>
-                </div>
+                renderEditableTab('day', dayText, '还没有生成今日总结', '生成今日总结', generateDay)
               ) : summaryTab === 'week' ? (
-                <div className="day-tab-content">
+                <>
                   <div className="week-nav">
                     <button type="button" aria-label="上一周" onClick={() => shiftWeek(-1)}>
                       ‹
@@ -235,44 +291,16 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
                       ›
                     </button>
                   </div>
-                  {summarizing ? (
-                    <div className="day-loading">正在生成周报…（调用 claude 无头模式）</div>
-                  ) : weekText ? (
-                    <pre className="day-text">{weekText}</pre>
-                  ) : (
-                    <div className="day-empty">该周还没有周报</div>
+                  {renderEditableTab(
+                    'week',
+                    weekText,
+                    '该周还没有周报',
+                    isCurrentWeek ? '生成本周总结' : '生成该周总结',
+                    generateWeek,
                   )}
-                  <div className="day-generate-bar">
-                    <button
-                      type="button"
-                      className="welcome-btn primary"
-                      onClick={() => void generateWeek()}
-                    >
-                      <Sparkles size={14} />
-                      <span>{weekText ? '重新生成' : isCurrentWeek ? '生成本周总结' : '生成该周总结'}</span>
-                    </button>
-                  </div>
-                </div>
+                </>
               ) : summaryTab === 'month' ? (
-                <div className="day-tab-content">
-                  {summarizing ? (
-                    <div className="day-loading">正在生成月度总结…（调用 claude 无头模式）</div>
-                  ) : monthText ? (
-                    <pre className="day-text">{monthText}</pre>
-                  ) : (
-                    <div className="day-empty">还没有生成月度总结</div>
-                  )}
-                  <div className="day-generate-bar">
-                    <button
-                      type="button"
-                      className="welcome-btn primary"
-                      onClick={() => void generateMonth()}
-                    >
-                      <Sparkles size={14} />
-                      <span>{monthText ? '重新生成' : '生成本月总结'}</span>
-                    </button>
-                  </div>
-                </div>
+                renderEditableTab('month', monthText, '还没有生成月度总结', '生成本月总结', generateMonth)
               ) : summaryTab === 'calendar' ? (
                 <div className="cal-content">
                   <div className="cal-nav">

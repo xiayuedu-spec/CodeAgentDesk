@@ -3078,3 +3078,22 @@ button:active:not(:disabled),
   background: var(--accent);
   box-shadow: 0 0 4px var(--accent-glow);
 }
+/* 总结编辑框（日报/周报/月报手动编辑） */
+.summary-editor {
+  width: 100%;
+  min-height: 240px;
+  padding: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  outline: none;
+  background: var(--bg-inset);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12px;
+  line-height: 1.7;
+  resize: vertical;
+}
+.summary-editor:focus {
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}

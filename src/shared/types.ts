@@ -246,6 +246,11 @@ export interface CodeAgentDeskApi {
   summarizeMonth(month?: string): Promise<DaySummarizeResult>;
   summariesList(): Promise<SummaryHistoryResult>;
   summariesGet(kind: 'day' | 'week' | 'month', key: string): Promise<SummaryGetResult>;
+  saveSummaryText(
+    kind: 'day' | 'week' | 'month',
+    key: string,
+    text: string,
+  ): Promise<SummaryGetResult>;
   exportSessionMarkdown(sessionId: string, cwd?: string): Promise<ExportResult>;
   readSessionText(sessionId: string): Promise<ReadSessionTextResult>;
   getUiState(): Promise<UiState>;

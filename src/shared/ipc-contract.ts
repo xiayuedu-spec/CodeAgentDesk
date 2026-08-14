@@ -27,6 +27,7 @@ export const IpcChannel = {
   monthSummarize: 'month:summarize',
   summariesList: 'summaries:list',
   summariesGet: 'summaries:get',
+  summarySave: 'summary:save',
   sessionExport: 'session:export',
   sessionReadText: 'session:read-text',
   uiGetState: 'ui:get-state',

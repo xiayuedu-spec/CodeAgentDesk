@@ -56,6 +56,8 @@ export function useSummary(reportError: (message: string) => void) {
     months: [],
   });
   const [viewing, setViewing] = useState<{ title: string; text: string } | null>(null);
+  const [editing, setEditing] = useState<'day' | 'week' | 'month' | null>(null);
+  const [draft, setDraft] = useState('');
 
   function openSummary(): void {
     setSummaryOpen(true);
@@ -123,7 +125,7 @@ export function useSummary(reportError: (message: string) => void) {
     }
   }
 
-  /** 切换到相邻周：更新范围标签并加载该周已有的周报。 */
+  /** 切换周：更新范围标签并加载该周已有的周报。 */
   function shiftWeek(delta: number): void {
     const d = new Date(`${weekStart}T00:00:00`);
     d.setDate(d.getDate() + delta * 7);
@@ -140,6 +142,39 @@ export function useSummary(reportError: (message: string) => void) {
       .catch(() => {
         // 静默忽略加载失败。
       });
+  }
+
+  /** 进入编辑：以当前文本为草稿。 */
+  function startEdit(kind: 'day' | 'week' | 'month'): void {
+    const current = kind === 'day' ? dayText : kind === 'week' ? weekText : monthText;
+    setEditing(kind);
+    setDraft(current);
+  }
+
+  function cancelEdit(): void {
+    setEditing(null);
+    setDraft('');
+  }
+
+  /** 保存手动编辑：覆盖到 summaries.json 对应维度与 key。 */
+  async function saveEdit(kind: 'day' | 'week' | 'month'): Promise<void> {
+    const key =
+      kind === 'day'
+        ? todayKey()
+        : kind === 'week'
+          ? weekStart
+          : new Date().toISOString().slice(0, 7);
+    const result = await window.codeagentdesk.saveSummaryText(kind, key, draft);
+    if (!result.ok) {
+      reportError(result.message ?? '保存失败');
+      return;
+    }
+    if (kind === 'day') setDayText(draft);
+    else if (kind === 'week') setWeekText(draft);
+    else setMonthText(draft);
+    setEditing(null);
+    setDraft('');
+    void loadSummaryHistory();
   }
 
   async function generateMonthSummary(): Promise<void> {
@@ -222,6 +257,12 @@ export function useSummary(reportError: (message: string) => void) {
     summaryHistory,
     viewing,
     setViewing,
+    editing,
+    draft,
+    setDraft,
+    startEdit,
+    cancelEdit,
+    saveEdit,
     openSummary,
     loadSummaryHistory,
     viewHistoryItem,

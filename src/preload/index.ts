@@ -62,6 +62,7 @@ const CHANNELS = {
   monthSummarize: 'month:summarize',
   summariesList: 'summaries:list',
   summariesGet: 'summaries:get',
+  summarySave: 'summary:save',
   sessionExport: 'session:export',
   sessionReadText: 'session:read-text',
   uiGetState: 'ui:get-state',
@@ -139,6 +140,8 @@ const api: CodeAgentDeskApi = {
   summariesList: () => ipcRenderer.invoke(CHANNELS.summariesList) as Promise<SummaryHistoryResult>,
   summariesGet: (kind, key) =>
     ipcRenderer.invoke(CHANNELS.summariesGet, { kind, key }) as Promise<SummaryGetResult>,
+  saveSummaryText: (kind, key, text) =>
+    ipcRenderer.invoke(CHANNELS.summarySave, { kind, key, text }) as Promise<SummaryGetResult>,
   exportSessionMarkdown: (sessionId, cwd) =>
     ipcRenderer.invoke(CHANNELS.sessionExport, { sessionId, cwd }) as Promise<ExportResult>,
   readSessionText: (sessionId) =>
