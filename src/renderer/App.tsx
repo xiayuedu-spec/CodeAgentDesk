@@ -134,6 +134,7 @@ export default function App() {
   const [moveNewName, setMoveNewName] = useState('');
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<Set<string>>(new Set());
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const sidebarBodyRef = useRef<HTMLDivElement | null>(null);
   const sidebarWidthRef = useRef(232);
   const infoWidthRef = useRef(260);
@@ -472,6 +473,10 @@ export default function App() {
 
   useEffect(() => {
     setNavIndex(-1);
+    // 切出归档视图时退出多选模式。
+    setArchiveSelectMode(false);
+    setSelectedArchiveIds(new Set());
+    setConfirmingDelete(false);
   }, [mode]);
 
   async function handleNewSession(cwd?: string): Promise<void> {
@@ -515,6 +520,12 @@ export default function App() {
     setConfirmingDelete(false);
   }
 
+  function toggleSelectMode(): void {
+    setArchiveSelectMode((value) => !value);
+    setSelectedArchiveIds(new Set());
+    setConfirmingDelete(false);
+  }
+
   function toggleSelectAllArchived(): void {
     setSelectedArchiveIds((previous) => {
       if (previous.size > 0 && previous.size === archivedRecords.length) return new Set();
@@ -529,6 +540,17 @@ export default function App() {
     const result = await window.codeagentdesk.deleteSessions(ids);
     setConfirmingDelete(false);
     setSelectedArchiveIds(new Set());
+    if (!result.ok) {
+      setError(result.message ?? '删除失败');
+      return;
+    }
+    setArchiveSelectMode(false);
+    await refreshRecords();
+  }
+
+  async function handleDeleteArchivedOne(sessionId: string): Promise<void> {
+    if (!window.confirm('确定删除该归档会话？此操作不可恢复。')) return;
+    const result = await window.codeagentdesk.deleteSessions([sessionId]);
     if (!result.ok) {
       setError(result.message ?? '删除失败');
       return;
@@ -1187,6 +1209,7 @@ export default function App() {
     navClass,
     selectedArchiveIds,
     confirmingDelete,
+    archiveSelectMode,
   };
   const sidebarBodyActions = {
     setMode,
@@ -1213,6 +1236,7 @@ export default function App() {
     toggleSelectAllArchived,
     handleDeleteArchived,
     setConfirmingDelete,
+    toggleSelectMode,
   };
   const sidebarFooterData = {
     appInfo,
@@ -1274,6 +1298,7 @@ export default function App() {
     openDetailById: (sessionId: string) => void openDetailById(sessionId),
     restoreArchived: (sessionId: string, cwd: string) => void restoreArchived(sessionId, cwd),
     copySessionText: (sessionId: string) => void copySessionText(sessionId),
+    onDeleteSession: (sessionId: string) => void handleDeleteArchivedOne(sessionId),
     handleDeleteGroup: (id: string) => void handleDeleteGroup(id),
     moveToGroup: (sessionId: string, groupId: string | null) => void moveToGroup(sessionId, groupId),
     setMoveNewOpen,

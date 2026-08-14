@@ -3,6 +3,7 @@ import {
   FolderOpen,
   Search,
   Terminal,
+  Trash2,
   X,
 } from 'lucide-react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
@@ -37,6 +38,7 @@ interface SidebarBodyData {
   navClass: (index: number) => string;
   selectedArchiveIds: Set<string>;
   confirmingDelete: boolean;
+  archiveSelectMode: boolean;
 }
 
 interface SidebarBodyActions {
@@ -61,6 +63,7 @@ interface SidebarBodyActions {
   toggleSelectAllArchived: () => void;
   handleDeleteArchived: () => void;
   setConfirmingDelete: (confirming: boolean) => void;
+  toggleSelectMode: () => void;
 }
 
 export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions: SidebarBodyActions }) {
@@ -84,6 +87,7 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
     navClass,
     selectedArchiveIds,
     confirmingDelete,
+    archiveSelectMode,
   } = data;
   const {
     setMode,
@@ -107,6 +111,7 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
     toggleSelectAllArchived,
     handleDeleteArchived,
     setConfirmingDelete,
+    toggleSelectMode,
   } = actions;
 
   const renderRunningRow = (session: SessionView, rowIndex: number): ReactNode => (
@@ -423,46 +428,59 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
           ) : (
             <>
               <div className="archive-toolbar">
-                <button
-                  type="button"
-                  className="archive-toolbar-btn"
-                  onClick={toggleSelectAllArchived}
-                >
-                  {selectedArchiveIds.size > 0 && selectedArchiveIds.size === archivedRecords.length
-                    ? '取消全选'
-                    : '全选'}
-                </button>
-                {selectedArchiveIds.size > 0 ? (
-                  <button
-                    type="button"
-                    className={`archive-toolbar-btn danger${confirmingDelete ? ' confirming' : ''}`}
-                    onClick={() => {
-                      if (!confirmingDelete) {
-                        setConfirmingDelete(true);
-                        return;
-                      }
-                      void handleDeleteArchived();
-                    }}
-                  >
-                    {confirmingDelete ? `确认删除 ${selectedArchiveIds.size} 个？` : '删除'}
+                {!archiveSelectMode ? (
+                  <button type="button" className="archive-toolbar-btn" onClick={toggleSelectMode}>
+                    选择
                   </button>
-                ) : null}
-                {selectedArchiveIds.size > 0 ? (
-                  <span className="archive-selected-count">{selectedArchiveIds.size} 已选</span>
-                ) : null}
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="archive-toolbar-btn"
+                      onClick={toggleSelectAllArchived}
+                    >
+                      {selectedArchiveIds.size > 0 &&
+                      selectedArchiveIds.size === archivedRecords.length
+                        ? '取消全选'
+                        : '全选'}
+                    </button>
+                    {selectedArchiveIds.size > 0 ? (
+                      <button
+                        type="button"
+                        className={`archive-toolbar-btn danger${confirmingDelete ? ' confirming' : ''}`}
+                        onClick={() => {
+                          if (!confirmingDelete) {
+                            setConfirmingDelete(true);
+                            return;
+                          }
+                          void handleDeleteArchived();
+                        }}
+                      >
+                        <Trash2 size={12} />
+                        <span>{confirmingDelete ? `确认删除 ${selectedArchiveIds.size} 个？` : '删除'}</span>
+                      </button>
+                    ) : null}
+                    <span className="archive-selected-count">{selectedArchiveIds.size} 已选</span>
+                    <button type="button" className="archive-toolbar-btn" onClick={toggleSelectMode}>
+                      完成
+                    </button>
+                  </>
+                )}
               </div>
               <ul className="session-list">
                 {archivedRecords.map((record, k) => {
                   const checked = selectedArchiveIds.has(record.sessionId);
                   return (
                     <li key={record.sessionId} className={`archive-row${checked ? ' checked' : ''}`}>
-                      <input
-                        type="checkbox"
-                        className="archive-check"
-                        aria-label={`选择 ${recordTitle(record)}`}
-                        checked={checked}
-                        onChange={() => toggleArchiveSelect(record.sessionId)}
-                      />
+                      {archiveSelectMode ? (
+                        <input
+                          type="checkbox"
+                          className="archive-check"
+                          aria-label={`选择 ${recordTitle(record)}`}
+                          checked={checked}
+                          onChange={() => toggleArchiveSelect(record.sessionId)}
+                        />
+                      ) : null}
                       <button
                         type="button"
                         className={`session-row archive-row-main ${
@@ -474,7 +492,13 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
                             : ''
                         }${navClass(k)}`}
                         data-nav-index={k}
-                        onClick={() => void openArchivedSession(record)}
+                        onClick={() => {
+                          if (archiveSelectMode) {
+                            toggleArchiveSelect(record.sessionId);
+                          } else {
+                            void openArchivedSession(record);
+                          }
+                        }}
                         onContextMenu={(event) => {
                           event.preventDefault();
                           event.stopPropagation();

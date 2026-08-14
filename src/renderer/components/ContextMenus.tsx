@@ -8,6 +8,7 @@ import {
   Plus,
   RotateCcw,
   Tags,
+  Trash2,
   X,
 } from 'lucide-react';
 import type { GroupRecord, SessionRecord } from '../../shared/types';
@@ -44,6 +45,7 @@ interface ContextMenusActions {
   openDetailById: (sessionId: string) => void;
   restoreArchived: (sessionId: string, cwd: string) => void;
   copySessionText: (sessionId: string) => void;
+  onDeleteSession: (sessionId: string) => void;
   handleDeleteGroup: (id: string) => void;
   moveToGroup: (sessionId: string, groupId: string | null) => void;
   setMoveNewOpen: (open: boolean) => void;
@@ -65,6 +67,7 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
     openDetailById,
     restoreArchived,
     copySessionText,
+    onDeleteSession,
     handleDeleteGroup,
     moveToGroup,
     setMoveNewOpen,
@@ -165,6 +168,22 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
                 <ArchiveRestore size={14} />
               </span>
               恢复
+            </button>
+          ) : null}
+          {menu.archived ? (
+            <button
+              type="button"
+              className="context-menu-danger"
+              disabled={!menuSession}
+              onClick={() => {
+                onDeleteSession(menu.sessionId);
+                closeMenu();
+              }}
+            >
+              <span className="context-menu-icon">
+                <Trash2 size={14} />
+              </span>
+              删除
             </button>
           ) : null}
           <div className="context-menu-separator" />
