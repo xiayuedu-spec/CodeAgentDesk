@@ -6,6 +6,8 @@ import type {
   CodeAgentDeskApi,
   CreateSessionResult,
   ExportResult,
+  GroupOpResult,
+  GroupRecord,
   PickDirectoryResult,
   PickClaudeDirResult,
   ReadSessionTextResult,
@@ -34,11 +36,16 @@ const CHANNELS = {
   configGet: 'config:get',
   configSetClaudeDir: 'config:set-claude-dir',
   configSetTheme: 'config:set-theme',
-  configSetAutoSummarize: 'config:set-auto-summarize',
   configPickClaudeDir: 'config:pick-claude-dir',
   sessionsList: 'sessions:list',
   sessionsChanged: 'sessions:changed',
   recentDirsGet: 'recent-dirs:get',
+  groupsList: 'groups:list',
+  groupsCreate: 'groups:create',
+  groupsRename: 'groups:rename',
+  groupsDelete: 'groups:delete',
+  groupsSetColor: 'groups:set-color',
+  sessionSetGroup: 'session:set-group',
   sessionPickDirectory: 'session:pick-directory',
   sessionCreate: 'session:create',
   sessionResume: 'session:resume',
@@ -86,11 +93,19 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.configSetClaudeDir, dir) as Promise<ClaudeConfigInfo>,
   setTheme: (theme) =>
     ipcRenderer.invoke(CHANNELS.configSetTheme, theme) as Promise<ClaudeConfigInfo>,
-  setAutoSummarize: (enabled) =>
-    ipcRenderer.invoke(CHANNELS.configSetAutoSummarize, enabled) as Promise<ClaudeConfigInfo>,
   pickClaudeDir: () =>
     ipcRenderer.invoke(CHANNELS.configPickClaudeDir) as Promise<PickClaudeDirResult>,
   listSessions: () => ipcRenderer.invoke(CHANNELS.sessionsList) as Promise<SessionRecord[]>,
+  listGroups: () => ipcRenderer.invoke(CHANNELS.groupsList) as Promise<GroupRecord[]>,
+  createGroup: (name) =>
+    ipcRenderer.invoke(CHANNELS.groupsCreate, name) as Promise<GroupRecord>,
+  renameGroup: (id, name) =>
+    ipcRenderer.invoke(CHANNELS.groupsRename, { id, name }) as Promise<GroupOpResult>,
+  deleteGroup: (id) => ipcRenderer.invoke(CHANNELS.groupsDelete, id) as Promise<GroupOpResult>,
+  setGroupColor: (id, color) =>
+    ipcRenderer.invoke(CHANNELS.groupsSetColor, { id, color }) as Promise<GroupOpResult>,
+  setSessionGroup: (sessionId, groupId) =>
+    ipcRenderer.invoke(CHANNELS.sessionSetGroup, { sessionId, groupId }) as Promise<GroupOpResult>,
   getRecentDirs: () => ipcRenderer.invoke(CHANNELS.recentDirsGet) as Promise<string[]>,
   pickDirectory: () =>
     ipcRenderer.invoke(CHANNELS.sessionPickDirectory) as Promise<PickDirectoryResult>,

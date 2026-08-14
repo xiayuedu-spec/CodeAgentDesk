@@ -8,6 +8,8 @@ import type {
   ClaudeConfigInfo,
   CreateSessionResult,
   ExportResult,
+  GroupOpResult,
+  GroupRecord,
   PickClaudeDirResult,
   PickDirectoryResult,
   ReadSessionTextResult,
@@ -46,6 +48,7 @@ import { getRecentDirs, recordRecentDir } from './recent-dirs';
 import { summarizeDayText, summarizeMonthText, summarizeSession } from './summarize';
 import { getSummaryText, listSummaries, saveSummary, type SummaryKind } from './summary-store';
 import { readUiState, writeUiState } from './ui-state';
+import type { GroupStore } from './group-store';
 import type { SessionMetaStore } from './session-meta-store';
 import type { SessionManager } from './session-manager';
 import type { SessionWatcher } from './session-watcher';
@@ -56,6 +59,7 @@ export function registerIpcHandlers(
   sessions: SessionManager,
   watcher: SessionWatcher,
   metaStore: SessionMetaStore,
+  groups: GroupStore,
   onClaudeDirChanged: () => void,
 ): void {
   const locateSessionFile = async (sessionId: string, cwd?: string): Promise<string | null> => {
@@ -115,14 +119,6 @@ export function registerIpcHandlers(
     },
   );
 
-  ipcMain.handle(
-    IpcChannel.configSetAutoSummarize,
-    (_event, enabled: boolean): ClaudeConfigInfo => {
-      writeConfig({ ...readConfig(), autoSummarize: enabled });
-      return readClaudeConfigInfo();
-    },
-  );
-
   ipcMain.handle(IpcChannel.configPickClaudeDir, async (): Promise<PickClaudeDirResult> => {
     const result = await dialog.showOpenDialog({
       title: '选择 Claude 目录',
@@ -137,6 +133,48 @@ export function registerIpcHandlers(
   );
 
   ipcMain.handle(IpcChannel.recentDirsGet, (): string[] => getRecentDirs());
+
+  ipcMain.handle(IpcChannel.groupsList, (): GroupRecord[] => groups.list());
+
+  ipcMain.handle(IpcChannel.groupsCreate, (_event, name: string): GroupRecord => {
+    return groups.create(typeof name === 'string' ? name : '');
+  });
+
+  ipcMain.handle(
+    IpcChannel.groupsRename,
+    (_event, payload: { id: string; name: string }): GroupOpResult => {
+      if (!payload.name.trim()) return { ok: false, message: '名称不能为空' };
+      if (!groups.rename(payload.id, payload.name)) return { ok: false, message: '分组不存在' };
+      return { ok: true };
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.groupsDelete,
+    (_event, id: string): GroupOpResult => {
+      if (!groups.delete(id)) return { ok: false, message: '分组不存在' };
+      metaStore.clearGroup(id);
+      return { ok: true };
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.groupsSetColor,
+    (_event, payload: { id: string; color: string }): GroupOpResult => {
+      if (!groups.setColor(payload.id, payload.color)) return { ok: false, message: '分组不存在' };
+      return { ok: true };
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.sessionSetGroup,
+    (_event, payload: { sessionId: string; groupId: string | null }): GroupOpResult => {
+      const sessionId = payload.sessionId.trim();
+      if (!sessionId) return { ok: false, message: '缺少会话信息' };
+      metaStore.setGroup(sessionId, payload.groupId);
+      return { ok: true };
+    },
+  );
 
   ipcMain.handle(IpcChannel.sessionPickDirectory, async (): Promise<PickDirectoryResult> => {
     const result = await dialog.showOpenDialog({
@@ -191,10 +229,7 @@ export function registerIpcHandlers(
       const runningId = sessions.findBySessionId(sessionId);
       if (runningId) {
         sessions.close(runningId);
-        const deadline = Date.now() + 3000;
-        while (sessions.has(runningId) && Date.now() < deadline) {
-          await delay(50);
-        }
+        await sessions.waitForExit(runningId, 3000);
       }
 
       const claudeHome = resolveClaudeHome(readConfig());
@@ -411,6 +446,8 @@ export function registerIpcHandlers(
     writeUiState({
       openSessionIds: Array.isArray(state.openSessionIds) ? state.openSessionIds : [],
       activeSessionId: state.activeSessionId,
+      collapsedGroups: Array.isArray(state.collapsedGroups) ? state.collapsedGroups : [],
+      collapsedSections: Array.isArray(state.collapsedSections) ? state.collapsedSections : [],
     });
   });
 
@@ -496,10 +533,6 @@ export function registerIpcHandlers(
     watcher.clearPending(id);
     sessions.close(id);
   });
-}
-
-function delay(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 /** 收集 [from, to] 日期区间内所有会话的可读文本（按会话分段）。 */

@@ -10,6 +10,12 @@ export function readUiState(): UiState {
     return {
       openSessionIds: Array.isArray(parsed.openSessionIds) ? parsed.openSessionIds : [],
       activeSessionId: typeof parsed.activeSessionId === 'string' ? parsed.activeSessionId : undefined,
+      collapsedGroups: Array.isArray(parsed.collapsedGroups)
+        ? parsed.collapsedGroups.filter((item): item is string => typeof item === 'string')
+        : [],
+      collapsedSections: Array.isArray(parsed.collapsedSections)
+        ? parsed.collapsedSections.filter((item): item is string => typeof item === 'string')
+        : [],
     };
   } catch {
     return { openSessionIds: [] };

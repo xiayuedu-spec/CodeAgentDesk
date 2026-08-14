@@ -8,12 +8,34 @@ export interface AppInfo {
   startedAt: string;
 }
 
+/** 新建分组时按顺序循环取用的颜色。 */
+export const GROUP_COLORS = [
+  '#34d3c0',
+  '#4f8cff',
+  '#e0a64e',
+  '#2e8b57',
+  '#c96f4a',
+  '#8b7cf6',
+  '#e25f8a',
+  '#58a0a8',
+] as const;
+
+export interface GroupRecord {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface GroupOpResult {
+  ok: boolean;
+  message?: string;
+}
+
 export type ThemeName = 'default' | 'mac' | 'green' | 'sepia' | 'amber' | 'mist';
 
 export interface AppConfig {
   claudeDir?: string;
   theme?: ThemeName;
-  autoSummarize?: boolean;
 }
 
 export interface ClaudeConfigInfo {
@@ -50,6 +72,7 @@ export interface SessionRecord {
   customName?: string;
   summary?: string;
   tags?: string[];
+  group?: string;
   startedAt: string;
   updatedAt: string;
 }
@@ -83,6 +106,8 @@ export interface ExportResult {
 export interface UiState {
   openSessionIds: string[];
   activeSessionId?: string;
+  collapsedGroups?: string[];
+  collapsedSections?: string[];
 }
 
 export interface RestoreSessionResult {
@@ -183,9 +208,14 @@ export interface CodeAgentDeskApi {
   getClaudeConfig(): Promise<ClaudeConfigInfo>;
   setClaudeDir(dir: string | null): Promise<ClaudeConfigInfo>;
   setTheme(theme: ThemeName): Promise<ClaudeConfigInfo>;
-  setAutoSummarize(enabled: boolean): Promise<ClaudeConfigInfo>;
   pickClaudeDir(): Promise<PickClaudeDirResult>;
   listSessions(): Promise<SessionRecord[]>;
+  listGroups(): Promise<GroupRecord[]>;
+  createGroup(name: string): Promise<GroupRecord>;
+  renameGroup(id: string, name: string): Promise<GroupOpResult>;
+  deleteGroup(id: string): Promise<GroupOpResult>;
+  setGroupColor(id: string, color: string): Promise<GroupOpResult>;
+  setSessionGroup(sessionId: string, groupId: string | null): Promise<GroupOpResult>;
   getRecentDirs(): Promise<string[]>;
   pickDirectory(): Promise<PickDirectoryResult>;
   createSession(cwd: string): Promise<CreateSessionResult>;
