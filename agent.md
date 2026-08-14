@@ -42,9 +42,14 @@ src/
 │  └─ ui-state.ts         # ui-state.json（自动恢复标签页）
 ├─ preload/index.ts       # contextBridge 暴露类型化 API
 ├─ renderer/              # React + Vite
-│  ├─ App.tsx             # 容器组件：状态 + effects + handlers + 组装（约 1600 行）
+│  ├─ App.tsx             # 容器组件：会话/分组状态 + effects + handlers + 组装（约 1400 行）
 │  ├─ session-utils.tsx   # 共享类型（SessionView/Mode/菜单状态/分组区块）+ 纯函数（标题/时间/高亮）
 │  ├─ theme.ts            # 主题常量（窗口底色/色卡/展示名）
+│  ├─ hooks/              # 按功能域抽取的状态逻辑
+│  │  ├─ useUiState.ts    # 应用信息 / Claude 目录配置 / 最近目录 / 设置弹窗 / 全局错误
+│  │  ├─ useSearch.ts     # 模式切换 + 搜索输入与防抖结果
+│  │  ├─ usePalette.ts    # 命令面板（过滤/键盘导航/选中执行）
+│  │  └─ useSummary.ts    # 总结弹窗（今日/月度/日历/历史）
 │  └─ components/
 │     ├─ TitleBar.tsx     # 自绘窗口标题栏
 │     ├─ TerminalPane.tsx # xterm + 复制粘贴/滚轮
@@ -89,6 +94,7 @@ src/
 - `ui-state.json`：`{ openSessionIds: [], activeSessionId?, collapsedGroups: [], collapsedSections: [] }`（自动恢复上次打开的标签 + 分组/区块折叠状态）
 - `recent-dirs.json`：最近使用的工作目录（去重，最多 8 个）
 - `summaries.json`：已归档总结 `{ days: { [date]: {text,updatedAt} }, months: { [month]: {...} } }`
+- `window-state.json`：窗口位置/大小/最大化状态（`getNormalBounds` 保存，恢复时校验屏幕可见性）
 - `archive/<encodedDir>/<sessionId>.jsonl`：归档会话文件
 
 ## 4. Claude JSONL 事实清单（重要，别凭假设）

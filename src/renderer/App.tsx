@@ -10,14 +10,11 @@ import {
 } from 'react';
 import { FolderOpen } from 'lucide-react';
 import type {
-  AppInfo,
-  ClaudeConfigInfo,
   GroupRecord,
   SearchResult,
   SessionDetailResult,
   SessionRecord,
   SessionUsage,
-  SummaryHistoryResult,
   ThemeName,
 } from '../shared/types';
 import { GROUP_COLORS } from '../shared/types';
@@ -30,11 +27,14 @@ import {
   type GroupMenuState,
   type GroupSection,
   type GroupSectionItem,
-  type Mode,
   type MoveMenuState,
   type SessionView,
 } from './session-utils';
 import { THEME_BACKGROUND, THEMES } from './theme';
+import { useUiState } from './hooks/useUiState';
+import { useSearch } from './hooks/useSearch';
+import { usePalette } from './hooks/usePalette';
+import { useSummary } from './hooks/useSummary';
 import { TerminalPane } from './components/TerminalPane';
 import { TitleBar } from './components/TitleBar';
 import { TabBar } from './components/TabBar';
@@ -59,19 +59,71 @@ const LazySummaryModal = lazy(() =>
 );
 
 export default function App() {
-  const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
-  const [mode, setMode] = useState<Mode>('sessions');
-  const [query, setQuery] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const ui = useUiState();
+  const {
+    appInfo,
+    claudeInfo,
+    settingsOpen,
+    setSettingsOpen,
+    recentDirs,
+    refreshRecentDirs,
+    error,
+    setError,
+    handlePickClaudeDir,
+    handleResetClaudeDir,
+    handleSetTheme,
+  } = ui;
+  const search = useSearch(setError);
+  const { mode, setMode, query, setQuery, searchResults } = search;
+  const palette = usePalette(buildPaletteItems);
+  const {
+    paletteItems,
+    paletteOpen,
+    setPaletteOpen,
+    paletteQuery,
+    setPaletteQuery,
+    setPaletteIndex,
+    openPalette,
+    paletteSafeIndex,
+    onPaletteKeyDown,
+    runPaletteItem,
+  } = palette;
+  const summaryState = useSummary(setError);
+  const {
+    summary,
+    setSummary,
+    summaryOpen,
+    setSummaryOpen,
+    summaryTab,
+    setSummaryTab,
+    calMonth,
+    selectedDay,
+    calDay,
+    dayText,
+    monthText,
+    summarizing,
+    setSummarizing,
+    summaryHistory,
+    viewing,
+    setViewing,
+    openSummary,
+    loadSummaryHistory,
+    viewHistoryItem,
+    generateDaySummary,
+    generateMonthSummary,
+    todayKey,
+    shiftMonth,
+    buildCalendarCells,
+    loadDayFor,
+    generateDayFor,
+  } = summaryState;
+
   const [sessions, setSessions] = useState<SessionView[]>([]);
   const [records, setRecords] = useState<SessionRecord[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
   const [detail, setDetail] = useState<SessionDetailResult | null>(null);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [usage, setUsage] = useState<SessionUsage>(EMPTY_USAGE);
-  const [claudeInfo, setClaudeInfo] = useState<ClaudeConfigInfo | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [borrowedIds, setBorrowedIds] = useState<string[]>([]);
@@ -81,31 +133,8 @@ export default function App() {
   const [navIndex, setNavIndex] = useState(-1);
   const [loadingList, setLoadingList] = useState(true);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [recentDirs, setRecentDirs] = useState<string[]>([]);
   const [newMenuOpen, setNewMenuOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [paletteOpen, setPaletteOpen] = useState(false);
-  const [paletteQuery, setPaletteQuery] = useState('');
-  const [paletteIndex, setPaletteIndex] = useState(0);
-  const [summary, setSummary] = useState<{ summary: string; tags: string[] } | null>(null);
-  const [summaryOpen, setSummaryOpen] = useState(false);
-  const [summaryTab, setSummaryTab] = useState<'day' | 'month' | 'calendar' | 'history'>('day');
-  const [calMonth, setCalMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [calDay, setCalDay] = useState<{ date: string; text: string; loading: boolean } | null>(
-    null,
-  );
-  const [dayText, setDayText] = useState('');
-  const [monthText, setMonthText] = useState('');
-  const [summarizing, setSummarizing] = useState(false);
-  const [summaryHistory, setSummaryHistory] = useState<SummaryHistoryResult>({
-    days: [],
-    months: [],
-  });
-  const [viewing, setViewing] = useState<{ title: string; text: string } | null>(null);
   const [groups, setGroups] = useState<GroupRecord[]>([]);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -126,42 +155,12 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     window.codeagentdesk
-      .getRecentDirs()
-      .then((dirs) => {
-        if (!cancelled) setRecentDirs(dirs);
-      })
-      .catch(() => {
-        // 静默忽略。
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    window.codeagentdesk
       .listGroups()
       .then((value) => {
         if (!cancelled) setGroups(value);
       })
       .catch(() => {
         // 静默忽略。
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    window.codeagentdesk
-      .getAppInfo()
-      .then((info) => {
-        if (!cancelled) setAppInfo(info);
-      })
-      .catch((reason: unknown) => {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
       });
     return () => {
       cancelled = true;
@@ -179,45 +178,6 @@ export default function App() {
     }
     void window.codeagentdesk.setWindowBackgroundColor(THEME_BACKGROUND[theme]);
   }, [claudeInfo]);
-
-  useEffect(() => {
-    let cancelled = false;
-    window.codeagentdesk
-      .getClaudeConfig()
-      .then((info) => {
-        if (!cancelled) setClaudeInfo(info);
-      })
-      .catch((reason: unknown) => {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (mode !== 'search') return;
-    const text = query.trim();
-    if (!text) {
-      setSearchResults([]);
-      return;
-    }
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      window.codeagentdesk
-        .searchSessions(text)
-        .then((results) => {
-          if (!cancelled) setSearchResults(results);
-        })
-        .catch((reason: unknown) => {
-          if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
-        });
-    }, 250);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [mode, query]);
 
   const activeSessionId = sessions.find((item) => item.id === activeId)?.sessionId;
 
@@ -277,9 +237,7 @@ export default function App() {
         searchInputRef.current?.focus();
       } else if (event.key.toLowerCase() === 'p') {
         event.preventDefault();
-        setPaletteQuery('');
-        setPaletteIndex(0);
-        setPaletteOpen(true);
+        openPalette();
       } else if (/^[1-9]$/.test(event.key)) {
         const target = sessions[Number(event.key) - 1];
         if (target) setActiveId(target.id);
@@ -537,12 +495,7 @@ export default function App() {
     setNewMenuOpen(false);
     try {
       const created = await window.codeagentdesk.createSession(target);
-      window.codeagentdesk
-        .getRecentDirs()
-        .then((dirs) => setRecentDirs(dirs))
-        .catch(() => {
-          // 静默忽略最近目录刷新失败。
-        });
+      void refreshRecentDirs();
       setSessions((previous) => [
         ...previous,
         {
@@ -674,25 +627,6 @@ export default function App() {
     if (group) setGroupRenameId(null);
   }
 
-  async function handlePickClaudeDir(): Promise<void> {
-    const picked = await window.codeagentdesk.pickClaudeDir();
-    if (!picked.dir) return;
-    const info = await window.codeagentdesk.setClaudeDir(picked.dir);
-    setClaudeInfo(info);
-    await refreshRecords();
-  }
-
-  async function handleResetClaudeDir(): Promise<void> {
-    const info = await window.codeagentdesk.setClaudeDir(null);
-    setClaudeInfo(info);
-    await refreshRecords();
-  }
-
-  async function handleSetTheme(theme: ThemeName): Promise<void> {
-    const info = await window.codeagentdesk.setTheme(theme);
-    setClaudeInfo(info);
-  }
-
   async function handleCloseSession(id: string): Promise<void> {
     const session = sessions.find((item) => item.id === id);
     if (session?.sessionId && borrowedIds.includes(session.sessionId)) {
@@ -791,103 +725,6 @@ export default function App() {
       setSummary({ summary: result.summary ?? '', tags: result.tags ?? [] });
     } else {
       setError(result.message ?? '生成摘要失败');
-    }
-  }
-
-  function openSummary(): void {
-    setSummaryOpen(true);
-    setViewing(null);
-    setSummaryTab('day');
-  }
-
-  async function loadSummaryHistory(): Promise<void> {
-    try {
-      const result = await window.codeagentdesk.summariesList();
-      setSummaryHistory(result);
-    } catch {
-      // 静默忽略。
-    }
-  }
-
-  async function viewHistoryItem(kind: 'day' | 'month', key: string): Promise<void> {
-    const result = await window.codeagentdesk.summariesGet(kind, key);
-    if (result.ok) {
-      setViewing({ title: `${key} ${kind === 'day' ? '每日总结' : '月度总结'}`, text: result.text ?? '' });
-    } else {
-      setError(result.message ?? '读取总结失败');
-    }
-  }
-
-  async function generateDaySummary(): Promise<void> {
-    if (summarizing) return;
-    setSummarizing(true);
-    setDayText('');
-    const result = await window.codeagentdesk.summarizeDay();
-    setSummarizing(false);
-    if (result.ok) {
-      setDayText(result.text ?? '');
-      void loadSummaryHistory();
-    } else {
-      setError(result.message ?? '生成今日总结失败');
-    }
-  }
-
-  async function generateMonthSummary(): Promise<void> {
-    if (summarizing) return;
-    setSummarizing(true);
-    setMonthText('');
-    const result = await window.codeagentdesk.summarizeMonth();
-    setSummarizing(false);
-    if (result.ok) {
-      setMonthText(result.text ?? '');
-      void loadSummaryHistory();
-    } else {
-      setError(result.message ?? '生成本月总结失败');
-    }
-  }
-
-  function todayKey(): string {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
-      now.getDate(),
-    ).padStart(2, '0')}`;
-  }
-
-  function shiftMonth(delta: number): void {
-    const [year, month] = calMonth.split('-').map(Number);
-    const next = new Date(year, month - 1 + delta, 1);
-    setCalMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`);
-  }
-
-  function buildCalendarCells(month: string): (string | null)[] {
-    const [year, monthNum] = month.split('-').map(Number);
-    const lead = new Date(year, monthNum - 1, 1).getDay();
-    const daysInMonth = new Date(year, monthNum, 0).getDate();
-    const cells: (string | null)[] = [];
-    for (let i = 0; i < lead; i += 1) cells.push(null);
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      cells.push(`${month}-${String(day).padStart(2, '0')}`);
-    }
-    return cells;
-  }
-
-  async function loadDayFor(date: string): Promise<void> {
-    setSelectedDay(date);
-    setCalDay({ date, text: '', loading: true });
-    // 直接查归档存储，不依赖可能过期的 summaryHistory 缓存。
-    const result = await window.codeagentdesk.summariesGet('day', date);
-    setCalDay({ date, text: result.ok ? result.text ?? '' : '', loading: false });
-  }
-
-  async function generateDayFor(date: string): Promise<void> {
-    setCalDay({ date, text: '', loading: true });
-    const result = await window.codeagentdesk.summarizeDay(date);
-    if (result.ok) {
-      setCalDay({ date, text: result.text ?? '', loading: false });
-      void loadSummaryHistory();
-    } else {
-      setCalDay({ date, text: '', loading: false });
-      setError(result.message ?? '生成失败');
     }
   }
 
@@ -1134,30 +971,6 @@ export default function App() {
     return items;
   }
 
-  function runPaletteItem(item: PaletteItem): void {
-    setPaletteOpen(false);
-    setPaletteQuery('');
-    item.run();
-  }
-
-  function onPaletteKeyDown(event: ReactKeyboardEvent): void {
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      if (paletteFiltered.length) setPaletteIndex((i) => (i + 1) % paletteFiltered.length);
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      if (paletteFiltered.length) {
-        setPaletteIndex((i) => (i - 1 + paletteFiltered.length) % paletteFiltered.length);
-      }
-    } else if (event.key === 'Enter') {
-      event.preventDefault();
-      const item = paletteFiltered[paletteSafeIndex];
-      if (item) runPaletteItem(item);
-    } else if (event.key === 'Escape') {
-      setPaletteOpen(false);
-    }
-  }
-
   const activeSession = sessions.find((session) => session.id === activeId) ?? null;
   const historyRecords = records.filter(
     (record) => !record.archived && !sessions.some((s) => s.sessionId === record.sessionId),
@@ -1278,18 +1091,6 @@ export default function App() {
   const activeNav = navItems.length ? Math.min(navIndex, navItems.length - 1) : -1;
   const navClass = (index: number): string => (activeNav === index ? ' nav-focus' : '');
 
-  const paletteItems = buildPaletteItems();
-  const paletteFiltered = paletteQuery.trim()
-    ? paletteItems.filter((item) =>
-        `${item.label} ${item.hint ?? ''}`
-          .toLowerCase()
-          .includes(paletteQuery.trim().toLowerCase()),
-      )
-    : paletteItems;
-  const paletteSafeIndex = paletteFiltered.length
-    ? Math.min(paletteIndex, paletteFiltered.length - 1)
-    : -1;
-
   const sessionCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const record of records) {
@@ -1392,8 +1193,12 @@ export default function App() {
     setGroupRenameId,
     handleNewSession: (cwd?: string) => void handleNewSession(cwd),
     handleSetTheme: (theme: ThemeName) => void handleSetTheme(theme),
-    handlePickClaudeDir: () => void handlePickClaudeDir(),
-    handleResetClaudeDir: () => void handleResetClaudeDir(),
+    handlePickClaudeDir: () => {
+      void handlePickClaudeDir().then(() => void refreshRecords());
+    },
+    handleResetClaudeDir: () => {
+      void handleResetClaudeDir().then(() => void refreshRecords());
+    },
     createGroupFromManage: () => void createGroupFromManage(),
     commitGroupRename: (id: string, name: string) => void commitGroupRename(id, name),
     handleDeleteGroup: (id: string) => void handleDeleteGroup(id),
