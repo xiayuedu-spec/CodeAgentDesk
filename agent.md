@@ -153,6 +153,7 @@ src/
 - 未激活标签活动提醒：非激活标签有新输出时 dot 变黄快闪，切到后清除
 - **系统通知**：会话**意外异常退出**时发 Windows 通知（主动关闭/归档/正常结束不打扰；`Notification` 点击聚焦窗口，`app.setAppUserModelId` 已配置）
 - **用量趋势**：状态栏 / `Ctrl+P` 入口，近 14 天按日堆叠柱状图（`UsageTrendModal` 自绘 SVG，复用 usage 增量缓存聚合）
+- **项目知识库**：状态栏 / `Ctrl+P` 入口，按项目聚合最近 30 个会话 → `claude -p` 提炼知识文档（架构/命令/坑/决策/待办），存 `knowledge.json`，支持查看/编辑/重新生成；**token 预算控制**：每会话 8k 字符、总输入 120k 字符（约 4 万 token，占小时限额 0.4%），估算按 3 字符/token 保守高估（`knowledge.ts` 的 `estimateTokens`）
 - 标签拖拽排序（顺序随 ui-state 持久化）
 - 底部状态栏：会话数、归档数、今日总结入口、Claude 目录、版本号
 

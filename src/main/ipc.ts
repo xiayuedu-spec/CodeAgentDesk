@@ -48,6 +48,8 @@ import {
 } from './session-library';
 import { buildMarkdown } from './export';
 import { getRecentDirs, recordRecentDir } from './recent-dirs';
+import { generateProjectKnowledge } from './knowledge';
+import { getKnowledgeText, listKnowledge, saveKnowledge, type KnowledgeItem } from './knowledge-store';
 import { summarizeDayText, summarizeMonthText, summarizeSession, summarizeWeekText } from './summarize';
 import { getSummaryText, listSummaries, saveSummary, type SummaryKind } from './summary-store';
 import { readUiState, writeUiState } from './ui-state';
@@ -500,6 +502,40 @@ export function registerIpcHandlers(
       } catch (error) {
         return { ok: false, message: error instanceof Error ? error.message : String(error) };
       }
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.knowledgeGenerate,
+    async (_event, cwd: string): Promise<SummaryGetResult> => {
+      if (!cwd) return { ok: false, message: '缺少项目目录' };
+      try {
+        const text = await generateProjectKnowledge(resolveClaudeHome(readConfig()), metaStore, cwd);
+        const key = cwd.replace(/[\\:]/g, '-');
+        saveKnowledge(key, text);
+        return { ok: true, text };
+      } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : String(error) };
+      }
+    },
+  );
+
+  ipcMain.handle(IpcChannel.knowledgeList, (): KnowledgeItem[] => listKnowledge());
+
+  ipcMain.handle(
+    IpcChannel.knowledgeGet,
+    async (_event, key: string): Promise<SummaryGetResult> => {
+      const text = getKnowledgeText(key);
+      return text ? { ok: true, text } : { ok: false, message: '尚未生成知识库' };
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.knowledgeSave,
+    async (_event, payload: { key: string; text: string }): Promise<SummaryGetResult> => {
+      if (!payload.key.trim()) return { ok: false, message: '缺少项目标识' };
+      saveKnowledge(payload.key.trim(), payload.text);
+      return { ok: true, text: payload.text };
     },
   );
 

@@ -10,7 +10,7 @@ export interface SummaryResult {
 }
 
 /** 调 claude 无头模式（`claude -p`），指令+内容走 stdin。Windows 需 shell 启动 .cmd。 */
-function runClaude(input: string): Promise<string> {
+export function runClaude(input: string): Promise<string> {
   return new Promise((resolve, reject) => {
     let settled = false;
     let child: ReturnType<typeof spawn> | null = null;

@@ -60,6 +60,9 @@ const LazySummaryModal = lazy(() =>
 const LazyUsageTrendModal = lazy(() =>
   import('./components/UsageTrendModal').then((module) => ({ default: module.UsageTrendModal })),
 );
+const LazyKnowledgeModal = lazy(() =>
+  import('./components/KnowledgeModal').then((module) => ({ default: module.KnowledgeModal })),
+);
 
 export default function App() {
   const ui = useUiState();
@@ -155,6 +158,7 @@ export default function App() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const [usageTrendOpen, setUsageTrendOpen] = useState(false);
+  const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   const sidebarBodyRef = useRef<HTMLDivElement | null>(null);
   const sidebarWidthRef = useRef(232);
   const infoWidthRef = useRef(260);
@@ -1033,6 +1037,11 @@ export default function App() {
       run: () => setUsageTrendOpen(true),
     });
     items.push({
+      key: 'knowledge',
+      label: '项目知识库',
+      run: () => setKnowledgeOpen(true),
+    });
+    items.push({
       key: 'settings',
       label: '打开设置',
       run: () => setSettingsOpen(true),
@@ -1440,6 +1449,7 @@ export default function App() {
           version={appInfo?.appVersion ?? '…'}
           onOpenSummary={openSummary}
           onOpenUsageTrend={() => setUsageTrendOpen(true)}
+          onOpenKnowledge={() => setKnowledgeOpen(true)}
         />
         </main>
       </div>
@@ -1495,6 +1505,12 @@ export default function App() {
       {usageTrendOpen ? (
         <Suspense fallback={null}>
           <LazyUsageTrendModal onClose={() => setUsageTrendOpen(false)} />
+        </Suspense>
+      ) : null}
+
+      {knowledgeOpen ? (
+        <Suspense fallback={null}>
+          <LazyKnowledgeModal onClose={() => setKnowledgeOpen(false)} />
         </Suspense>
       ) : null}
 

@@ -3503,3 +3503,94 @@ body,
 .archive-detail {
   border-radius: var(--radius-md);
 }
+/* ---- 项目知识库 ---- */
+.knowledge-panel {
+  width: 720px;
+}
+.knowledge-budget {
+  margin: 0 2px 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent-soft) 40%, transparent);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.knowledge-budget b {
+  color: var(--accent);
+}
+.knowledge-error {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+  font-size: 12px;
+}
+.knowledge-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.knowledge-title {
+  font-size: 14px;
+  font-weight: 650;
+}
+.knowledge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.knowledge-project {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-raised);
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 120ms ease;
+}
+.knowledge-project:hover {
+  border-color: var(--accent-dim);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+.knowledge-project-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.knowledge-project-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.knowledge-project-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+.knowledge-project-meta {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.knowledge-project-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.knowledge-project-actions .welcome-btn {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+.knowledge-generating {
+  color: var(--warn);
+  font-size: 12px;
+}

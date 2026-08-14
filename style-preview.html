@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CodeAgentDesk 风格预览</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
+    background: #eef0f3; color: #222; padding: 40px 32px 80px;
+  }
+  .page-title { text-align: center; margin-bottom: 8px; font-size: 26px; font-weight: 700; }
+  .page-sub { text-align: center; color: #666; margin-bottom: 48px; font-size: 14px; }
+
+  /* ---------- 主题块 ---------- */
+  .theme-block { margin: 36px auto; max-width: 920px; border-radius: 18px; overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,.14); }
+  .theme-head { display: flex; align-items: baseline; gap: 12px; padding: 18px 24px; }
+  .theme-head h2 { font-size: 19px; font-weight: 700; }
+  .theme-head .tagline { font-size: 13px; opacity: .75; }
+  .swatches { display: flex; gap: 8px; margin-left: auto; }
+  .swatch { width: 26px; height: 26px; border-radius: 8px; border: 1px solid rgba(0,0,0,.15); }
+
+  /* ---------- 通用 mock ---------- */
+  .mock { display: grid; grid-template-columns: 170px 1fr; min-height: 340px; }
+  .mock-sidebar { padding: 14px 10px; display: flex; flex-direction: column; gap: 4px; }
+  .mock-logo { display: flex; align-items: center; gap: 8px; padding: 6px 8px 12px; font-weight: 700; font-size: 13px; }
+  .mock-logo-dot { width: 16px; height: 16px; border-radius: 5px; display: grid; place-items: center; font-size: 9px; color: #fff; }
+  .mock-label { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; padding: 8px 8px 4px; opacity: .6; }
+  .mock-item { padding: 7px 8px; border-radius: 7px; font-size: 12px; display: flex; gap: 7px; align-items: center; }
+  .mock-item .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .mock-item.active { font-weight: 600; }
+  .mock-item .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mock-main { padding: 12px 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .mock-tabs { display: flex; gap: 6px; }
+  .mock-tab { padding: 5px 12px; border-radius: 7px; font-size: 12px; display: flex; gap: 6px; align-items: center; }
+  .mock-tab .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .mock-card { border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .mock-card .k { font-size: 10px; opacity: .65; }
+  .mock-card .v { font-size: 13px; font-weight: 600; }
+  .mock-row { display: flex; gap: 8px; }
+  .mock-bar { height: 8px; border-radius: 999px; display: flex; overflow: hidden; gap: 2px; }
+  .mock-bar i { display: block; }
+  .mock-btn { border: 0; border-radius: 8px; padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer; align-self: flex-start; }
+  .mock-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mock-chip { padding: 2px 9px; border-radius: 999px; font-size: 10px; }
+
+  /* ---------- 主题 A：深空科技 ---------- */
+  .theme-a { background: var(--a-bg); color: var(--a-text); }
+  .theme-a .theme-head { background: var(--a-raised); color: var(--a-text); }
+  .theme-a { --a-bg:#0b0e14; --a-raised:#12161f; --a-inset:#07090e; --a-border:#1f2532; --a-text:#e6ecf5;
+    --a-muted:#8b96a8; --a-accent:#22d3ee; --a-soft:rgba(34,211,238,.14); --a-warn:#fbbf24; --a-radius:9px; }
+  .theme-a .mock { background: var(--a-bg); }
+  .theme-a .mock-sidebar { background: var(--a-raised); border-right: 1px solid var(--a-border); }
+  .theme-a .mock-item:hover, .theme-a .mock-item.active { background: var(--a-soft); }
+  .theme-a .mock-item.active { color: var(--a-accent); }
+  .theme-a .mock-item .dot { background: var(--a-muted); }
+  .theme-a .mock-item:nth-child(4) .dot { background: var(--a-accent); box-shadow: 0 0 8px var(--a-accent); }
+  .theme-a .mock-main { background: var(--a-bg); }
+  .theme-a .mock-tab { background: var(--a-inset); border: 1px solid var(--a-border); color: var(--a-muted); }
+  .theme-a .mock-tab.active { background: var(--a-soft); border-color: var(--a-accent); color: var(--a-text); box-shadow: 0 0 12px var(--a-soft); }
+  .theme-a .mock-card { background: var(--a-raised); border: 1px solid var(--a-border); box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+  .theme-a .mock-bar { background: var(--a-inset); }
+  .theme-a .mock-bar i:nth-child(1){ background: var(--a-accent); } .theme-a .mock-bar i:nth-child(2){ background: var(--a-warn); } .theme-a .mock-bar i:nth-child(3){ background: var(--a-border); }
+  .theme-a .mock-btn { background: linear-gradient(180deg, #67e8f9, var(--a-accent)); color: #062a33; box-shadow: 0 3px 12px rgba(34,211,238,.35); }
+  .theme-a .mock-chip { background: var(--a-soft); color: var(--a-accent); }
+  .theme-a .mock-logo-dot { background: linear-gradient(135deg, #67e8f9, var(--a-accent)); box-shadow: 0 0 12px var(--a-accent); }
+
+  /* ---------- 主题 B：暖纸书卷 ---------- */
+  .theme-b { background: var(--b-bg); color: var(--b-text); }
+  .theme-b .theme-head { background: var(--b-raised); }
+  .theme-b { --b-bg:#faf6ef; --b-raised:#f4eee2; --b-inset:#fffdf8; --b-border:#e3d8c4; --b-text:#3a3226;
+    --b-muted:#8a7a5f; --b-accent:#c2600a; --b-soft:rgba(194,96,10,.12); --b-warn:#d97706; --b-radius:12px; }
+  .theme-b .mock { background: var(--b-bg); }
+  .theme-b .mock-sidebar { background: var(--b-raised); border-right: 1px solid var(--b-border); }
+  .theme-b .mock-item:hover, .theme-b .mock-item.active { background: var(--b-soft); }
+  .theme-b .mock-item.active { color: var(--b-accent); }
+  .theme-b .mock-item .dot { background: var(--b-muted); }
+  .theme-b .mock-item:nth-child(4) .dot { background: var(--b-accent); }
+  .theme-b .mock-main { background: var(--b-bg); }
+  .theme-b .mock-tab { background: var(--b-inset); border: 1px solid var(--b-border); color: var(--b-muted); }
+  .theme-b .mock-tab.active { background: var(--b-inset); border-color: var(--b-accent); color: var(--b-accent); box-shadow: 0 1px 4px rgba(194,96,10,.15); }
+  .theme-b .mock-card { background: var(--b-inset); border: 1px solid var(--b-border); border-radius: 14px; box-shadow: 0 4px 16px rgba(90,70,40,.08); }
+  .theme-b .mock-bar { background: var(--b-border); }
+  .theme-b .mock-bar i:nth-child(1){ background: var(--b-accent); } .theme-b .mock-bar i:nth-child(2){ background: var(--b-warn); } .theme-b .mock-bar i:nth-child(3){ background: #d4c4a4; }
+  .theme-b .mock-btn { background: linear-gradient(180deg, #d97706, var(--b-accent)); color: #fffdf8; box-shadow: 0 3px 10px rgba(194,96,10,.25); }
+  .theme-b .mock-chip { background: var(--b-soft); color: var(--b-accent); }
+  .theme-b .mock-logo-dot { background: linear-gradient(135deg, #e8930c, var(--b-accent)); }
+
+  /* ---------- 主题 C：紫夜霓虹 ---------- */
+  .theme-c { background: var(--c-bg); color: var(--c-text); }
+  .theme-c .theme-head { background: var(--c-raised); }
+  .theme-c { --c-bg:#151022; --c-raised:#1d1630; --c-inset:#0f0b1a; --c-border:#2d2347; --c-text:#ece7f7;
+    --c-muted:#9b8ec2; --c-accent:#a78bfa; --c-soft:rgba(167,139,250,.16); --c-warn:#f472b6; --c-radius:12px; }
+  .theme-c .mock { background: var(--c-bg); }
+  .theme-c .mock-sidebar { background: var(--c-raised); border-right: 1px solid var(--c-border); }
+  .theme-c .mock-item:hover, .theme-c .mock-item.active { background: var(--c-soft); }
+  .theme-c .mock-item.active { color: var(--c-accent); }
+  .theme-c .mock-item .dot { background: var(--c-muted); }
+  .theme-c .mock-item:nth-child(4) .dot { background: var(--c-accent); box-shadow: 0 0 10px var(--c-accent); }
+  .theme-c .mock-main { background: radial-gradient(700px 300px at 80% -10%, rgba(167,139,250,.12), transparent 60%), var(--c-bg); }
+  .theme-c .mock-tab { background: var(--c-inset); border: 1px solid var(--c-border); color: var(--c-muted); }
+  .theme-c .mock-tab.active { background: var(--c-soft); border-color: var(--c-accent); color: var(--c-text); box-shadow: 0 0 14px var(--c-soft); }
+  .theme-c .mock-card { background: var(--c-raised); border: 1px solid var(--c-border); box-shadow: 0 8px 26px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
+  .theme-c .mock-bar { background: var(--c-inset); }
+  .theme-c .mock-bar i:nth-child(1){ background: var(--c-accent); } .theme-c .mock-bar i:nth-child(2){ background: var(--c-warn); } .theme-c .mock-bar i:nth-child(3){ background: var(--c-border); }
+  .theme-c .mock-btn { background: linear-gradient(180deg, #c4b5fd, var(--c-accent)); color: #1b1133; box-shadow: 0 3px 16px rgba(167,139,250,.4); }
+  .theme-c .mock-chip { background: var(--c-soft); color: var(--c-accent); }
+  .theme-c .mock-logo-dot { background: linear-gradient(135deg, #c4b5fd, #e879f9); box-shadow: 0 0 14px rgba(167,139,250,.5); }
+
+  /* ---------- 主题 D：青柠清爽 ---------- */
+  .theme-d { background: var(--d-bg); color: var(--d-text); }
+  .theme-d .theme-head { background: var(--d-raised); }
+  .theme-d { --d-bg:#f6f9f8; --d-raised:#ffffff; --d-inset:#eef4f2; --d-border:#d9e4e0; --d-text:#1c2b26;
+    --d-muted:#5f756e; --d-accent:#0e9f6e; --d-soft:rgba(14,159,110,.12); --d-warn:#eab308; --d-radius:10px; }
+  .theme-d .mock { background: var(--d-bg); }
+  .theme-d .mock-sidebar { background: var(--d-raised); border-right: 1px solid var(--d-border); }
+  .theme-d .mock-item:hover, .theme-d .mock-item.active { background: var(--d-soft); }
+  .theme-d .mock-item.active { color: var(--d-accent); }
+  .theme-d .mock-item .dot { background: var(--d-muted); }
+  .theme-d .mock-item:nth-child(4) .dot { background: var(--d-accent); }
+  .theme-d .mock-main { background: var(--d-bg); }
+  .theme-d .mock-tab { background: var(--d-inset); border: 1px solid var(--d-border); color: var(--d-muted); }
+  .theme-d .mock-tab.active { background: var(--d-raised); border-color: var(--d-accent); color: var(--d-accent); box-shadow: 0 1px 6px rgba(14,159,110,.15); }
+  .theme-d .mock-card { background: var(--d-raised); border: 1px solid var(--d-border); box-shadow: 0 4px 18px rgba(20,60,50,.06); }
+  .theme-d .mock-bar { background: var(--d-inset); }
+  .theme-d .mock-bar i:nth-child(1){ background: var(--d-accent); } .theme-d .mock-bar i:nth-child(2){ background: var(--d-warn); } .theme-d .mock-bar i:nth-child(3){ background: var(--d-border); }
+  .theme-d .mock-btn { background: linear-gradient(180deg, #10b981, var(--d-accent)); color: #f0fdf8; box-shadow: 0 3px 10px rgba(14,159,110,.28); }
+  .theme-d .mock-chip { background: var(--d-soft); color: var(--d-accent); }
+  .theme-d .mock-logo-dot { background: linear-gradient(135deg, #10b981, var(--d-accent)); }
+
+  .theme-tip { max-width: 920px; margin: 0 auto 12px; font-size: 13px; color: #555; line-height: 1.7; }
+  .theme-tip code { background: #e5e7eb; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+  <div class="page-title">CodeAgentDesk · 风格预览</div>
+  <div class="page-sub">4 个方向，用浏览器打开此文件查看效果，选一个告诉我即可落地为应用主题</div>
+
+  <div class="theme-tip">每块都模拟了应用的真实界面：<b>左侧</b> 侧边栏（品牌 + 运行中/历史列表），<b>右侧</b> 标签栏 + token 用量卡片 + 按钮 + 标签徽章。底部色板是各风格的主色。</div>
+
+  <!-- A -->
+  <section class="theme-block theme-a">
+    <div class="theme-head">
+      <h2>A · 深空科技</h2>
+      <span class="tagline">深蓝黑 · 青色光晕 · 玻璃质感 — 类 Linear / Vercel，克制有科技感</span>
+      <div class="swatches">
+        <span class="swatch" style="background:#0b0e14"></span>
+        <span class="swatch" style="background:#22d3ee"></span>
+        <span class="swatch" style="background:#12161f"></span>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-sidebar">
+        <div class="mock-logo"><span class="mock-logo-dot">⌘</span>CodeAgentDesk</div>
+        <div class="mock-label">当前会话</div>
+        <div class="mock-item active"><span class="dot"></span><span class="t">dsh-harness #3</span></div>
+        <div class="mock-item"><span class="dot"></span><span class="t">CodeAgentDesk #2</span></div>
+        <div class="mock-label">历史会话</div>
+        <div class="mock-item"><span class="dot"></span><span class="t">分组功能开发</span></div>
+        <div class="mock-item"><span class="dot"></span><span class="t">UI 升级</span></div>
+        <div class="mock-item"><span class="dot"></span><span class="t">性能优化</span></div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-tabs">
+          <div class="mock-tab active"><span class="dot"></span>dsh-harness #3</div>
+          <div class="mock-tab"><span class="dot"></span>CodeAgentDesk #2</div>
+        </div>
+        <div class="mock-card">
+          <span class="k">Token 用量（近 14 天）</span>
+          <div class="mock-bar"><i style="flex:5"></i><i style="flex:2"></i><i style="flex:3"></i></div>
+          <div class="mock-chips"><span class="mock-chip">输入 1.2M</span><span class="mock-chip">输出 480k</span></div>
+        </div>
+        <div class="mock-card">
+          <span class="k">会话 ID</span>
+          <span class="v">a1b2c3d4-…</span>
+        </div>
+        <button class="mock-btn">新建会话</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section class="theme-block theme-b">
+    <div class="theme-head">
+      <h2>B · 暖纸书卷</h2>
+      <span class="tagline">米白纸感 · 暖棕文字 · 琥珀强调 — 类 Notion / 纸书，护眼、安静、有温度</span>
+      <div class="swatches">
+        <span class="swatch" style="background:#faf6ef"></span>
+        <span class="swatch" style="background:#c2600a"></span>
+        <span class="swatch" style="background:#f4eee2"></span>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-sidebar">
+        <div class="mock-logo"><span class="mock-logo-dot">⌘</span>CodeAgentDesk</div>
+        <div class="mock-label">当前会话</div>
+        <div class="mock-item active"><span class="dot"></span><span class="t">dsh-harness #3</span></div>
+        <div class="mock-item"><span class="dot"></span><span class="t">CodeAgentDesk #2</span></div>
+        <div class="mock-label">历史会话</div>
+        <div class="mock-item"><span class="dot"></span><span class="t">分组功能开发</span></div>
+        <div class="mock-item"><span class="dot"></span><span class="t">UI 升级</span></div>
+        <div class="mock-item"><span class="dot"></span><span class="t">性能优化</span></div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-tabs">
+          <div class="mock-tab active"><span class="dot"></span>dsh-harness #3</div>
+          <div class="mock-tab"><span class="dot"></span>CodeAgentDesk #2</div>
+        </div>
+        <div class="mock-card">
+          <span class="k">Token 用量（近 14 天）</span>
+          <div class="mock-bar"><i style="flex:5"></i><i style="flex:2"></i><i style="flex:3"></i></div>
+          <div class="mock-chips"><span class="mock-chip">输入 1.2M</span><span class="mock-chip">输出 480k</span></div>
+        </div>
+        <div class="mock-card">
+          <span class="k">会话 ID</span>
+          <span class="v">a1b2c3d4-…</span>
+        </div>
+        <button class="mock-btn">新建会话</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section class="theme-block theme-c">
+    <div class="theme-head">
+      <h2>C · 紫夜霓虹</h2>
+      <span class="tagline">深紫黑 · 紫粉霓虹 · 强发光 — 有态度的开发工具感，醒目、个性</span>
+      <div class="swatches">
+        <span class="swatch" style="background:#151022"></span>
+        <span class="swatch" style="background:#a78bfa"></span>
+        <span class="swatch" style="background:#e879f9"></span>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-sidebar">
+        <div class="mock-logo"><span class="mock-logo-dot">⌘</span>CodeAgentDesk</div>
+        <div class="mock-label">当前会话</div>
+        <div class="mock-item active"><span class="dot"></span><span class="t">dsh-harness #3</span></div>
+        <div class="mock-item"><span class="dot"></span><span class="t">CodeAgentDesk #2</span></div>
+        <div class="mock-label">历史会话</div>
+        <div class="mock-item"><span class="dot"></span><span class="t">分组功能开发</span></div>
+        <div class="mock-item"><span class="dot"></span><span class="t">UI 升级</span></div>
+        <div class="mock-item"><span class="dot"></span><span class="t">性能优化</span></div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-tabs">
+          <div class="mock-tab active"><span class="dot"></span>dsh-harness #3</div>
+          <div class="mock-tab"><span class="dot"></span>CodeAgentDesk #2</div>
+        </div>
+        <div class="mock-card">
+          <span class="k">Token 用量（近 14 天）</span>
+          <div class="mock-bar"><i style="flex:5"></i><i style="flex:2"></i><i style="flex:3"></i></div>
+          <div class="mock-chips"><span class="mock-chip">输入 1.2M</span><span class="mock-chip">输出 480k</span></div>
+        </div>
+        <div class="mock-card">
+          <span class="k">会话 ID</span>
+          <span class="v">a1b2c3d4-…</span>
+        </div>
+        <button class="mock-btn">新建会话</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- D -->
+  <section class="theme-block theme-d">
+    <div class="theme-head">
+      <h2>D · 青柠清爽</h2>
+      <span class="tagline">白底 · 薄荷绿 · 高对比 — 明亮的现代浅色，干净利落（类 Arc / Linear 浅色）</span>
+      <div class="swatches">
+        <span class="swatch" style="background:#f6f9f8"></span>
+        <span class="swatch" style="background:#0e9f6e"></span>
+        <span class="swatch" style="background:#ffffff"></span>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-sidebar">
+        <div class="mock-logo"><span class="mock-logo-dot">⌘</span>CodeAgentDesk</div>
+        <div class="mock-label">当前会话</div>
+        <div class="mock-item active"><span class="dot"></span><span class="t">dsh-harness #3</span></div>
+        <div class="mock-item"><span class="dot"></span><span class="t">CodeAgentDesk #2</span></div>
+        <div class="mock-label">历史会话</div>
+        <div class="mock-item"><span class="dot"></span><span class="t">分组功能开发</span></div>
+        <div class="mock-item"><span class="dot"></span><span class="t">UI 升级</span></div>
+        <div class="mock-item"><span class="dot"></span><span class="t">性能优化</span></div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-tabs">
+          <div class="mock-tab active"><span class="dot"></span>dsh-harness #3</div>
+          <div class="mock-tab"><span class="dot"></span>CodeAgentDesk #2</div>
+        </div>
+        <div class="mock-card">
+          <span class="k">Token 用量（近 14 天）</span>
+          <div class="mock-bar"><i style="flex:5"></i><i style="flex:2"></i><i style="flex:3"></i></div>
+          <div class="mock-chips"><span class="mock-chip">输入 1.2M</span><span class="mock-chip">输出 480k</span></div>
+        </div>
+        <div class="mock-card">
+          <span class="k">会话 ID</span>
+          <span class="v">a1b2c3d4-…</span>
+        </div>
+        <button class="mock-btn">新建会话</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="theme-tip" style="text-align:center; margin-top:36px;">
+    选定后回复字母（如 <code>B</code>）即可；也可以说"A 改深一点"这类微调意见。
+  </div>
+</body>
+</html>

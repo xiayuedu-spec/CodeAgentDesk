@@ -186,6 +186,12 @@ export interface SummaryGetResult {
   message?: string;
 }
 
+export interface KnowledgeItem {
+  key: string;
+  updatedAt: string;
+  preview: string;
+}
+
 export interface ArchiveSessionResult {
   ok: boolean;
   message?: string;
@@ -251,6 +257,10 @@ export interface CodeAgentDeskApi {
     key: string,
     text: string,
   ): Promise<SummaryGetResult>;
+  generateKnowledge(cwd: string): Promise<SummaryGetResult>;
+  listKnowledge(): Promise<KnowledgeItem[]>;
+  getKnowledge(key: string): Promise<SummaryGetResult>;
+  saveKnowledge(key: string, text: string): Promise<SummaryGetResult>;
   exportSessionMarkdown(sessionId: string, cwd?: string): Promise<ExportResult>;
   readSessionText(sessionId: string): Promise<ReadSessionTextResult>;
   getUiState(): Promise<UiState>;

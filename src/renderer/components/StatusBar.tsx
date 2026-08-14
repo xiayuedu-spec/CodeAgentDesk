@@ -5,6 +5,7 @@ interface StatusBarProps {
   version: string;
   onOpenSummary: () => void;
   onOpenUsageTrend: () => void;
+  onOpenKnowledge: () => void;
 }
 
 export function StatusBar({
@@ -14,6 +15,7 @@ export function StatusBar({
   version,
   onOpenSummary,
   onOpenUsageTrend,
+  onOpenKnowledge,
 }: StatusBarProps) {
   return (
     <footer className="status-bar">
@@ -24,6 +26,9 @@ export function StatusBar({
       </button>
       <button type="button" className="status-day" title="Token 用量趋势" onClick={onOpenUsageTrend}>
         用量趋势
+      </button>
+      <button type="button" className="status-day" title="项目知识库" onClick={onOpenKnowledge}>
+        知识库
       </button>
       <span className="status-bar-spacer" />
       <span>{claudeDirName}</span>
