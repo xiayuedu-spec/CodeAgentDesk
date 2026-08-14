@@ -1,9 +1,4 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { readChatEntries } from './session-library';
-import { readConfig, resolveClaudeHome } from './config';
-import type { SessionMetaStore } from './session-meta-store';
 
 const MAX_SESSION_INPUT = 20000;
 const MAX_DAY_INPUT = 40000;
@@ -86,32 +81,6 @@ export async function summarizeMonthText(text: string): Promise<string> {
     '## 本月成果\n按项目归纳本月完成的主要工作\n## 关键决策 / 技术沉淀\n## 问题与复盘\n## 下月建议\n要点式、有数据感。\n\n--- 会话记录（截断）---\n';
   const output = await runClaude(instruction + text.slice(-MAX_DAY_INPUT));
   return output.trim();
-}
-
-/** 会话结束时自动生成摘要（已有则跳过）。不阻塞、失败静默。 */
-export async function maybeAutoSummarize(
-  sessionId: string,
-  cwd: string,
-  metaStore: SessionMetaStore,
-): Promise<void> {
-  if (metaStore.get(sessionId).summary) return;
-  const claudeHome = resolveClaudeHome(readConfig());
-  const filePath = path.join(
-    claudeHome,
-    'projects',
-    cwd.replace(/[\\:]/g, '-'),
-    `${sessionId}.jsonl`,
-  );
-  if (!fs.existsSync(filePath)) return;
-  const entries = await readChatEntries(filePath);
-  const text = entries
-    .map((entry) => `${entry.role === 'user' ? 'User' : 'Claude'}:\n${entry.text}`)
-    .join('\n\n');
-  if (!text.trim()) return;
-  const result = await summarizeSession(text);
-  if (result.summary || result.tags.length) {
-    metaStore.setSummary(sessionId, result.summary, result.tags);
-  }
 }
 
 function parseSummary(output: string): SummaryResult {

@@ -1,34 +1,18 @@
 import {
+  lazy,
+  Suspense,
   useEffect,
   useMemo,
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
-  type ReactNode,
 } from 'react';
-import {
-  Archive,
-  ArchiveRestore,
-  BookOpen,
-  Check,
-  Copy,
-  FolderOpen,
-  Link2,
-  PanelLeft,
-  PanelLeftClose,
-  Pencil,
-  Plus,
-  RotateCcw,
-  Search,
-  Settings2,
-  Sparkles,
-  Terminal,
-  X,
-} from 'lucide-react';
+import { FolderOpen } from 'lucide-react';
 import type {
   AppInfo,
   ClaudeConfigInfo,
+  GroupRecord,
   SearchResult,
   SessionDetailResult,
   SessionRecord,
@@ -36,124 +20,43 @@ import type {
   SummaryHistoryResult,
   ThemeName,
 } from '../shared/types';
+import { GROUP_COLORS } from '../shared/types';
+import {
+  EMPTY_USAGE,
+  folderName,
+  formatSessionTitle,
+  recordTitle,
+  type ContextMenuState,
+  type GroupMenuState,
+  type GroupSection,
+  type GroupSectionItem,
+  type Mode,
+  type MoveMenuState,
+  type SessionView,
+} from './session-utils';
+import { THEME_BACKGROUND, THEMES } from './theme';
 import { TerminalPane } from './components/TerminalPane';
-import { SessionDetail } from './components/SessionDetail';
 import { TitleBar } from './components/TitleBar';
+import { TabBar } from './components/TabBar';
+import { InfoPanel } from './components/InfoPanel';
+import { Welcome } from './components/Welcome';
+import { StatusBar } from './components/StatusBar';
+import { SearchResults } from './components/SearchResults';
+import { SidebarBody } from './components/SidebarBody';
+import { SidebarFooter } from './components/SidebarFooter';
+import { ContextMenus } from './components/ContextMenus';
+import type { PaletteItem } from './components/CommandPalette';
 
-type Mode = 'sessions' | 'archive' | 'search';
-
-interface SessionView {
-  id: string;
-  cwd: string;
-  sequence: number;
-  status: 'starting' | 'running' | 'ended';
-  sessionId?: string;
-  customName?: string;
-  activity?: boolean;
-}
-
-interface ContextMenuState {
-  sessionId: string;
-  cwd: string;
-  archived: boolean;
-  x: number;
-  y: number;
-}
-
-interface PaletteItem {
-  key: string;
-  label: string;
-  hint?: string;
-  run: () => void;
-}
-
-const EMPTY_USAGE: SessionUsage = {
-  requests: 0,
-  inputTokens: 0,
-  outputTokens: 0,
-  cacheReadTokens: 0,
-  cacheCreationTokens: 0,
-};
-
-const THEME_BACKGROUND: Record<ThemeName, string> = {
-  default: '#08090c',
-  mac: '#ececef',
-  green: '#c7edcc',
-  sepia: '#f4ead8',
-  amber: '#16120b',
-  mist: '#131619',
-};
-
-const THEMES: { name: ThemeName; label: string }[] = [
-  { name: 'default', label: '深色默认' },
-  { name: 'mac', label: 'Mac 浅色' },
-  { name: 'green', label: '护眼豆沙绿' },
-  { name: 'sepia', label: '暖纸米黄' },
-  { name: 'amber', label: '琥珀夜间' },
-  { name: 'mist', label: '柔雾深青' },
-];
-
-const THEME_SWATCHES: Record<ThemeName, { bg: string; fg: string; accent: string }> = {
-  default: { bg: '#08090c', fg: '#e8ecf1', accent: '#34d3c0' },
-  mac: { bg: '#ececef', fg: '#1d1d1f', accent: '#0a84ff' },
-  green: { bg: '#c7edcc', fg: '#2f4a35', accent: '#2e8b57' },
-  sepia: { bg: '#f4ead8', fg: '#3d3528', accent: '#a67c1f' },
-  amber: { bg: '#16120b', fg: '#e2cfa5', accent: '#e0a64e' },
-  mist: { bg: '#131619', fg: '#c6cdd4', accent: '#58a0a8' },
-};
-
-function folderName(cwd: string): string {
-  const parts = cwd.split(/[\\/]/).filter(Boolean);
-  return parts.at(-1) ?? cwd;
-}
-
-function formatSessionTitle(session: SessionView): string {
-  if (session.customName) return session.customName;
-  return `${folderName(session.cwd)} #${session.sequence}`;
-}
-
-function recordTitle(record: SessionRecord): string {
-  return record.customName ?? (record.cwd ? folderName(record.cwd) : '未命名会话');
-}
-
-function statusLabel(status: SessionView['status']): string {
-  if (status === 'running') return '运行中';
-  if (status === 'ended') return '已结束';
-  return '启动中';
-}
-
-function formatRelativeTime(value: string | undefined): string {
-  if (!value) return '';
-  const elapsed = Date.now() - new Date(value).getTime();
-  if (elapsed < 60_000) return '刚刚';
-  const minutes = Math.floor(elapsed / 60_000);
-  if (minutes < 60) return `${minutes} 分钟前`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} 小时前`;
-  return `${Math.floor(hours / 24)} 天前`;
-}
-
-function renderTime(iso: string | undefined): ReactNode {
-  const text = formatRelativeTime(iso);
-  return text ? <span className="session-time">{text}</span> : null;
-}
-
-function highlight(text: string, needle: string): ReactNode {
-  const term = needle.trim().toLowerCase();
-  if (!term) return text;
-  const lower = text.toLowerCase();
-  const parts: ReactNode[] = [];
-  let index = 0;
-  let at = lower.indexOf(term);
-  while (at >= 0 && index < text.length) {
-    if (at > index) parts.push(text.slice(index, at));
-    parts.push(<mark key={at}>{text.slice(at, at + term.length)}</mark>);
-    index = at + term.length;
-    at = lower.indexOf(term, index);
-  }
-  if (index < text.length) parts.push(text.slice(index));
-  return parts;
-}
+// 首屏不渲染的重组件按需加载，减小主 chunk。
+const LazySessionDetail = lazy(() =>
+  import('./components/SessionDetail').then((module) => ({ default: module.SessionDetail })),
+);
+const LazyCommandPalette = lazy(() =>
+  import('./components/CommandPalette').then((module) => ({ default: module.CommandPalette })),
+);
+const LazySummaryModal = lazy(() =>
+  import('./components/SummaryModal').then((module) => ({ default: module.SummaryModal })),
+);
 
 export default function App() {
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
@@ -203,6 +106,16 @@ export default function App() {
     months: [],
   });
   const [viewing, setViewing] = useState<{ title: string; text: string } | null>(null);
+  const [groups, setGroups] = useState<GroupRecord[]>([]);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [groupRenameId, setGroupRenameId] = useState<string | null>(null);
+  const [groupMenu, setGroupMenu] = useState<GroupMenuState | null>(null);
+  const [groupManageOpen, setGroupManageOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [moveMenu, setMoveMenu] = useState<MoveMenuState | null>(null);
+  const [moveNewOpen, setMoveNewOpen] = useState(false);
+  const [moveNewName, setMoveNewName] = useState('');
   const sidebarBodyRef = useRef<HTMLDivElement | null>(null);
   const sidebarWidthRef = useRef(232);
   const infoWidthRef = useRef(260);
@@ -216,6 +129,21 @@ export default function App() {
       .getRecentDirs()
       .then((dirs) => {
         if (!cancelled) setRecentDirs(dirs);
+      })
+      .catch(() => {
+        // 静默忽略。
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    window.codeagentdesk
+      .listGroups()
+      .then((value) => {
+        if (!cancelled) setGroups(value);
       })
       .catch(() => {
         // 静默忽略。
@@ -324,10 +252,15 @@ export default function App() {
       .filter((id): id is string => Boolean(id));
     const active = sessions.find((session) => session.id === activeId)?.sessionId;
     const timer = setTimeout(() => {
-      void window.codeagentdesk.saveUiState({ openSessionIds: ids, activeSessionId: active });
+      void window.codeagentdesk.saveUiState({
+        openSessionIds: ids,
+        activeSessionId: active,
+        collapsedGroups: [...collapsedGroups],
+        collapsedSections: [...collapsedSections],
+      });
     }, 400);
     return () => clearTimeout(timer);
-  }, [sessions, activeId]);
+  }, [sessions, activeId, collapsedGroups, collapsedSections]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -398,6 +331,12 @@ export default function App() {
         setSessions(restored);
         const active = restored.find((item) => item.sessionId === state.activeSessionId);
         setActiveId(active?.id ?? (restored.length > 0 ? restored[0].id : null));
+        if (state.collapsedGroups?.length) {
+          setCollapsedGroups(new Set(state.collapsedGroups));
+        }
+        if (state.collapsedSections?.length) {
+          setCollapsedSections(new Set(state.collapsedSections));
+        }
       })
       .catch((reason: unknown) => {
         if (!cancelled) {
@@ -490,6 +429,44 @@ export default function App() {
   }, [menu]);
 
   useEffect(() => {
+    if (!groupMenu) return;
+    const close = () => setGroupMenu(null);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setGroupMenu(null);
+    };
+    window.addEventListener('click', close);
+    window.addEventListener('contextmenu', close);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('contextmenu', close);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [groupMenu]);
+
+  useEffect(() => {
+    if (!moveMenu) return;
+    const close = () => {
+      setMoveMenu(null);
+      setMoveNewOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (moveNewOpen) setMoveNewOpen(false);
+        else close();
+      }
+    };
+    window.addEventListener('click', close);
+    window.addEventListener('contextmenu', close);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('contextmenu', close);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [moveMenu, moveNewOpen]);
+
+  useEffect(() => {
     if (!newMenuOpen) return;
     const close = () => setNewMenuOpen(false);
     const onKey = (event: KeyboardEvent) => {
@@ -502,6 +479,20 @@ export default function App() {
       window.removeEventListener('keydown', onKey);
     };
   }, [newMenuOpen]);
+
+  useEffect(() => {
+    if (!groupManageOpen) return;
+    const close = () => setGroupManageOpen(false);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setGroupManageOpen(false);
+    };
+    window.addEventListener('click', close);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [groupManageOpen]);
 
   useEffect(() => {
     const onDragOver = (event: DragEvent): void => {
@@ -572,6 +563,117 @@ export default function App() {
     setRecords(value);
   }
 
+  async function refreshGroups(): Promise<void> {
+    const value = await window.codeagentdesk.listGroups();
+    setGroups(value);
+  }
+
+  function toggleGroupCollapse(key: string): void {
+    setCollapsedGroups((previous) => {
+      const next = new Set(previous);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function toggleSectionCollapse(key: 'current' | 'history'): void {
+    setCollapsedSections((previous) => {
+      const next = new Set(previous);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  async function handleCreateGroup(name: string): Promise<GroupRecord | null> {
+    const trimmed = name.trim();
+    if (!trimmed) return null;
+    try {
+      const group = await window.codeagentdesk.createGroup(trimmed);
+      await refreshGroups();
+      return group;
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+      return null;
+    }
+  }
+
+  async function commitGroupRename(id: string, rawValue: string): Promise<void> {
+    if (groupRenameId !== id) return;
+    const name = rawValue.trim();
+    setGroupRenameId(null);
+    if (!name) return;
+    const result = await window.codeagentdesk.renameGroup(id, name);
+    if (!result.ok) {
+      setError(result.message ?? '重命名分组失败');
+      return;
+    }
+    await refreshGroups();
+  }
+
+  async function handleDeleteGroup(id: string): Promise<void> {
+    setGroupMenu(null);
+    const result = await window.codeagentdesk.deleteGroup(id);
+    if (!result.ok) {
+      setError(result.message ?? '删除分组失败');
+      return;
+    }
+    setCollapsedGroups((previous) => {
+      const next = new Set(previous);
+      next.delete(id);
+      return next;
+    });
+    await refreshGroups();
+    await refreshRecords();
+  }
+
+  async function cycleGroupColor(id: string, current: string): Promise<void> {
+    const index = GROUP_COLORS.indexOf(current as (typeof GROUP_COLORS)[number]);
+    const next = GROUP_COLORS[(index + 1) % GROUP_COLORS.length];
+    const result = await window.codeagentdesk.setGroupColor(id, next);
+    if (!result.ok) {
+      setError(result.message ?? '修改分组颜色失败');
+      return;
+    }
+    await refreshGroups();
+  }
+
+  async function handleSetSessionGroup(sessionId: string, groupId: string | null): Promise<void> {
+    const result = await window.codeagentdesk.setSessionGroup(sessionId, groupId);
+    if (!result.ok) {
+      setError(result.message ?? '移动分组失败');
+      return;
+    }
+    await refreshRecords();
+  }
+
+  function openGroupMenu(id: string, name: string, x: number, y: number): void {
+    setGroupMenu({ id, name, x, y });
+  }
+
+  async function moveToGroup(sessionId: string, groupId: string | null): Promise<void> {
+    await handleSetSessionGroup(sessionId, groupId);
+    setMoveMenu(null);
+    setMoveNewOpen(false);
+  }
+
+  async function createGroupAndMove(): Promise<void> {
+    const name = moveNewName.trim();
+    if (!name || !moveMenu) return;
+    const group = await handleCreateGroup(name);
+    setMoveNewOpen(false);
+    if (group) await moveToGroup(moveMenu.sessionId, group.id);
+  }
+
+  async function createGroupFromManage(): Promise<void> {
+    const name = newGroupName.trim();
+    if (!name) return;
+    const group = await handleCreateGroup(name);
+    setNewGroupName('');
+    if (group) setGroupRenameId(null);
+  }
+
   async function handlePickClaudeDir(): Promise<void> {
     const picked = await window.codeagentdesk.pickClaudeDir();
     if (!picked.dir) return;
@@ -591,18 +693,18 @@ export default function App() {
     setClaudeInfo(info);
   }
 
-  async function handleSetAutoSummarize(enabled: boolean): Promise<void> {
-    const info = await window.codeagentdesk.setAutoSummarize(enabled);
-    setClaudeInfo(info);
-  }
-
   async function handleCloseSession(id: string): Promise<void> {
     const session = sessions.find((item) => item.id === id);
     if (session?.sessionId && borrowedIds.includes(session.sessionId)) {
       await retireArchivedSession(session.sessionId, session.cwd);
       return;
     }
-    await window.codeagentdesk.closeSession(id);
+    try {
+      await window.codeagentdesk.closeSession(id);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+      return;
+    }
     setSessions((previous) => previous.filter((session) => session.id !== id));
     setActiveId((current) => (current === id ? null : current));
   }
@@ -1067,40 +1169,112 @@ export default function App() {
       null
     : null;
 
+  // 分组是会话管理的核心容器：运行中 + 历史会话都按组归类（运行中在前），分组区块默认在上方。
+  // 未分组的会话分别回落到"当前会话 / 历史会话"区块，不单独建"未分组"区块。
+  const groupSections = useMemo<GroupSection[]>(() => {
+    const groupById = new Map(groups.map((group) => [group.id, group]));
+    const recordGroupBySession = new Map(
+      records.map((record) => [record.sessionId, record.group]),
+    );
+    const byGroup = new Map<string, GroupSectionItem[]>();
+    const pushItem = (item: GroupSectionItem): void => {
+      const groupId = item.sessionId
+        ? recordGroupBySession.get(item.sessionId)
+        : undefined;
+      if (groupId && groupById.has(groupId)) {
+        const list = byGroup.get(groupId) ?? [];
+        list.push(item);
+        byGroup.set(groupId, list);
+      }
+    };
+    for (const session of sessions) {
+      pushItem({
+        key: `s:${session.id}`,
+        kind: 'running',
+        id: session.id,
+        sessionId: session.sessionId,
+        cwd: session.cwd,
+      });
+    }
+    for (const record of historyRecords) {
+      pushItem({
+        key: `h:${record.sessionId}`,
+        kind: 'history',
+        sessionId: record.sessionId,
+        cwd: record.cwd,
+      });
+    }
+    return groups
+      .map((group) => ({
+        key: group.id,
+        group,
+        items: byGroup.get(group.id) ?? [],
+        collapsed: collapsedGroups.has(group.id),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [groups, records, sessions, historyRecords, collapsedGroups]);
+
+  const ungroupedRunning = useMemo(
+    () =>
+      sessions.filter((session) => {
+        const groupId = session.sessionId
+          ? records.find((record) => record.sessionId === session.sessionId)?.group
+          : undefined;
+        return !groupId || !groups.some((group) => group.id === groupId);
+      }),
+    [groups, records, sessions],
+  );
+
+  const ungroupedHistory = useMemo(
+    () =>
+      historyRecords.filter((record) => {
+        const groupId = record.group;
+        return !groupId || !groups.some((group) => group.id === groupId);
+      }),
+    [groups, historyRecords],
+  );
+
+  const visibleRows: GroupSectionItem[] = [
+    ...groupSections.flatMap((section) => (section.collapsed ? [] : section.items)),
+    ...ungroupedRunning.map((session) => ({
+      key: `s:${session.id}`,
+      kind: 'running' as const,
+      id: session.id,
+      sessionId: session.sessionId,
+      cwd: session.cwd,
+    })),
+    ...ungroupedHistory.map((record) => ({
+      key: `h:${record.sessionId}`,
+      kind: 'history' as const,
+      sessionId: record.sessionId,
+      cwd: record.cwd,
+    })),
+  ];
+  const rowIndexByKey = new Map(visibleRows.map((item, index) => [item.key, index]));
+
   const navItems: {
     key: string;
     kind: 'running' | 'history' | 'archived';
     id?: string;
     sessionId?: string;
     cwd: string;
-  }[] = (() => {
-    if (mode === 'sessions') {
-      return [
-        ...sessions.map((s) => ({
-          key: `s:${s.id}`,
-          kind: 'running' as const,
-          id: s.id,
-          sessionId: s.sessionId,
-          cwd: s.cwd,
-        })),
-        ...historyRecords.map((r) => ({
-          key: `h:${r.sessionId}`,
-          kind: 'history' as const,
-          sessionId: r.sessionId,
-          cwd: r.cwd,
-        })),
-      ];
-    }
-    if (mode === 'archive') {
-      return archivedRecords.map((r) => ({
-        key: `a:${r.sessionId}`,
-        kind: 'archived' as const,
-        sessionId: r.sessionId,
-        cwd: r.cwd,
-      }));
-    }
-    return [];
-  })();
+  }[] =
+    mode === 'sessions'
+      ? visibleRows.map((item) => ({
+          key: item.key,
+          kind: item.kind,
+          id: item.id,
+          sessionId: item.sessionId,
+          cwd: item.cwd,
+        }))
+      : mode === 'archive'
+        ? archivedRecords.map((record) => ({
+            key: `a:${record.sessionId}`,
+            kind: 'archived' as const,
+            sessionId: record.sessionId,
+            cwd: record.cwd,
+          }))
+        : [];
   const activeNav = navItems.length ? Math.min(navIndex, navItems.length - 1) : -1;
   const navClass = (index: number): string => (activeNav === index ? ' nav-focus' : '');
 
@@ -1124,11 +1298,6 @@ export default function App() {
     }
     return counts;
   }, [records]);
-
-  const summaryDayKeys = useMemo(
-    () => new Set(summaryHistory.days.map((item) => item.key)),
-    [summaryHistory],
-  );
 
   useEffect(() => {
     if (activeNav < 0) return;
@@ -1162,6 +1331,110 @@ export default function App() {
     </div>
   );
 
+  const sidebarBodyData = {
+    mode,
+    query,
+    loadingList,
+    sessions,
+    records,
+    activeId,
+    detailSessionId,
+    renamingId,
+    groupRenameId,
+    collapsedSections,
+    historyRecords,
+    archivedRecords,
+    groupSections,
+    ungroupedRunning,
+    ungroupedHistory,
+    rowIndexByKey,
+    navClass,
+  };
+  const sidebarBodyActions = {
+    setMode,
+    setQuery,
+    onSearchClear: () => {
+      setQuery('');
+      searchInputRef.current?.focus();
+    },
+    onKeyDown: onSidebarKeyDown,
+    bodyRef: sidebarBodyRef,
+    searchInputRef,
+    setActiveId,
+    openHistory: (record: SessionRecord) => void openHistory(record),
+    openArchivedSession: (record: SessionRecord) => void openArchivedSession(record),
+    openContextMenu,
+    commitRename: (sessionId: string, name: string) => void commitRename(sessionId, name),
+    setRenamingId,
+    commitGroupRename: (id: string, name: string) => void commitGroupRename(id, name),
+    setGroupRenameId,
+    toggleGroupCollapse,
+    toggleSectionCollapse,
+    openGroupMenu,
+  };
+  const sidebarFooterData = {
+    appInfo,
+    claudeInfo,
+    groups,
+    records,
+    recentDirs,
+    newMenuOpen,
+    settingsOpen,
+    groupManageOpen,
+    newGroupName,
+    groupRenameId,
+  };
+  const sidebarFooterActions = {
+    setNewMenuOpen,
+    setSettingsOpen,
+    setGroupManageOpen,
+    setNewGroupName,
+    setGroupRenameId,
+    handleNewSession: (cwd?: string) => void handleNewSession(cwd),
+    handleSetTheme: (theme: ThemeName) => void handleSetTheme(theme),
+    handlePickClaudeDir: () => void handlePickClaudeDir(),
+    handleResetClaudeDir: () => void handleResetClaudeDir(),
+    createGroupFromManage: () => void createGroupFromManage(),
+    commitGroupRename: (id: string, name: string) => void commitGroupRename(id, name),
+    handleDeleteGroup: (id: string) => void handleDeleteGroup(id),
+    cycleGroupColor: (id: string, color: string) => void cycleGroupColor(id, color),
+  };
+
+  const contextMenusData = {
+    menu,
+    menuSession,
+    groupMenu,
+    moveMenu,
+    groups,
+    moveNewOpen,
+    moveNewName,
+    sessions,
+    records,
+  };
+  const contextMenusActions = {
+    closeMenu: () => setMenu(null),
+    closeGroupMenu: () => setGroupMenu(null),
+    setRenamingId,
+    setGroupRenameId,
+    archiveSession: (sessionId: string, cwd: string) => void archiveSession(sessionId, cwd),
+    openMoveMenu: (sessionId: string, x: number, y: number) => {
+      setMoveMenu({ sessionId, x, y });
+      setMoveNewOpen(false);
+      setMoveNewName('');
+      setMenu(null);
+    },
+    setActiveId,
+    openHistory: (record: SessionRecord) => void openHistory(record),
+    openDetailById: (sessionId: string) => void openDetailById(sessionId),
+    restoreArchived: (sessionId: string, cwd: string) => void restoreArchived(sessionId, cwd),
+    copySessionText: (sessionId: string) => void copySessionText(sessionId),
+    handleDeleteGroup: (id: string) => void handleDeleteGroup(id),
+    moveToGroup: (sessionId: string, groupId: string | null) => void moveToGroup(sessionId, groupId),
+    setMoveNewOpen,
+    setMoveNewName,
+    createGroupAndMove: () => void createGroupAndMove(),
+  };
+
   return (
     <div className="app">
       {dragOver ? (
@@ -1173,396 +1446,8 @@ export default function App() {
       <TitleBar />
       <div className="app-body">
         <aside className="sidebar" style={{ width: sidebarWidth }}>
-        <div className="brand">
-          <span className="brand-icon">
-            <Terminal size={18} strokeWidth={1.8} />
-          </span>
-          <span>CodeAgentDesk</span>
-        </div>
-
-        <div className="search-box">
-          <Search size={14} />
-          <input
-            ref={searchInputRef}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onFocus={() => setMode('search')}
-            placeholder="搜索会话"
-            aria-label="搜索会话"
-          />
-          {query ? (
-            <button
-              type="button"
-              className="search-clear"
-              aria-label="清空搜索"
-              onClick={() => {
-                setQuery('');
-                searchInputRef.current?.focus();
-              }}
-            >
-              <X size={12} />
-            </button>
-          ) : null}
-        </div>
-
-        <div className="mode-switch" role="tablist" aria-label="视图模式">
-          <button
-            type="button"
-            className={mode === 'sessions' ? 'active' : ''}
-            onClick={() => setMode('sessions')}
-          >
-            会话
-          </button>
-          <button
-            type="button"
-            className={mode === 'archive' ? 'active' : ''}
-            onClick={() => setMode('archive')}
-          >
-            归档
-          </button>
-          <button
-            type="button"
-            className={mode === 'search' ? 'active' : ''}
-            onClick={() => setMode('search')}
-          >
-            搜索
-          </button>
-        </div>
-
-        <div
-          className="sidebar-body"
-          ref={sidebarBodyRef}
-          tabIndex={0}
-          aria-label="会话列表"
-          onKeyDown={onSidebarKeyDown}
-        >
-          {mode === 'sessions' ? (
-            loadingList && sessions.length === 0 ? (
-              <div className="skeleton-list" aria-label="加载中">
-                <div className="skeleton-row" />
-                <div className="skeleton-row" />
-                <div className="skeleton-row" />
-                <div className="skeleton-row" />
-              </div>
-            ) : sessions.length === 0 && historyRecords.length === 0 ? (
-              <div className="empty-state">
-                <FolderOpen size={20} strokeWidth={1.6} />
-                <span>暂无会话</span>
-              </div>
-            ) : (
-              <div className="session-groups">
-                {sessions.length > 0 ? (
-                  <section className="session-group">
-                    <div className="group-label">当前会话</div>
-                    <ul className="session-list">
-                      {sessions.map((session, i) => (
-                        <li key={session.id}>
-                          {renamingId === session.sessionId ? (
-                            <div className="session-row renaming">
-                              <input
-                                className="session-rename-input"
-                                autoFocus
-                                defaultValue={session.customName ?? formatSessionTitle(session)}
-                                onBlur={(event) =>
-                                  void commitRename(
-                                    session.sessionId ?? '',
-                                    event.currentTarget.value,
-                                  )
-                                }
-                                onKeyDown={(event) => {
-                                  if (event.key === 'Enter') {
-                                    void commitRename(
-                                      session.sessionId ?? '',
-                                      event.currentTarget.value,
-                                    );
-                                  } else if (event.key === 'Escape') {
-                                    setRenamingId(null);
-                                  }
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              className={`session-row ${session.id === activeId ? 'active' : ''}${navClass(i)}`}
-                              data-nav-index={i}
-                              onClick={() => setActiveId(session.id)}
-                              onContextMenu={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                if (session.sessionId) {
-                                  openContextMenu(
-                                    session.sessionId,
-                                    session.cwd,
-                                    records.some(
-                                      (record) =>
-                                        record.sessionId === session.sessionId &&
-                                        record.archived,
-                                    ),
-                                    event.clientX,
-                                    event.clientY,
-                                  );
-                                }
-                              }}
-                            >
-                              <span
-                                className={`session-dot ${session.status}`}
-                                title={statusLabel(session.status)}
-                              />
-                              <span className="session-title">
-                                {formatSessionTitle(session)}
-                              </span>
-                              <span className="session-cwd" title={session.cwd}>
-                                {session.cwd}
-                              </span>
-                              {renderTime(
-                                records.find((r) => r.sessionId === session.sessionId)?.updatedAt,
-                              )}
-                            </button>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                ) : null}
-
-                {historyRecords.length > 0 ? (
-                  <section className="session-group">
-                    <div className="group-label">历史会话</div>
-                    <ul className="session-list">
-                      {historyRecords.map((record, j) => (
-                        <li key={record.sessionId}>
-                          {renamingId === record.sessionId ? (
-                            <div className="session-row renaming">
-                              <input
-                                className="session-rename-input"
-                                autoFocus
-                                defaultValue={recordTitle(record)}
-                                onBlur={(event) =>
-                                  void commitRename(record.sessionId, event.currentTarget.value)
-                                }
-                                onKeyDown={(event) => {
-                                  if (event.key === 'Enter') {
-                                    void commitRename(record.sessionId, event.currentTarget.value);
-                                  } else if (event.key === 'Escape') {
-                                    setRenamingId(null);
-                                  }
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              className={`session-row${navClass(sessions.length + j)}`}
-                              data-nav-index={sessions.length + j}
-                              onClick={() => void openHistory(record)}
-                              onContextMenu={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                openContextMenu(
-                                  record.sessionId,
-                                  record.cwd,
-                                  false,
-                                  event.clientX,
-                                  event.clientY,
-                                );
-                              }}
-                            >
-                              <span className="session-dot ended" title="已结束" />
-                              <div className="session-main">
-                                <span className="session-title-line">
-                                  <span className="session-title">{recordTitle(record)}</span>
-                                  {record.tags?.length ? (
-                                    <span className="session-tags">
-                                      {record.tags.slice(0, 3).map((tag) => (
-                                        <i key={tag}>{tag}</i>
-                                      ))}
-                                    </span>
-                                  ) : null}
-                                </span>
-                                <span className="session-cwd" title={record.cwd || ''}>
-                                  {record.summary || record.cwd || '未知目录'}
-                                </span>
-                              </div>
-                              {renderTime(record.updatedAt)}
-                            </button>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                ) : null}
-              </div>
-            )
-          ) : mode === 'archive' ? (
-            archivedRecords.length === 0 ? (
-              <div className="empty-state">
-                <FolderOpen size={20} strokeWidth={1.6} />
-                <span>暂无归档</span>
-              </div>
-            ) : (
-              <ul className="session-list">
-                {archivedRecords.map((record, k) => (
-                  <li key={record.sessionId}>
-                    <button
-                      type="button"
-                      className={`session-row ${
-                        sessions.some(
-                          (session) =>
-                            session.sessionId === record.sessionId && session.id === activeId,
-                        ) || detailSessionId === record.sessionId
-                          ? 'active'
-                          : ''
-                      }${navClass(k)}`}
-                      data-nav-index={k}
-                      onClick={() => void openArchivedSession(record)}
-                      onContextMenu={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        openContextMenu(
-                          record.sessionId,
-                          record.cwd,
-                          true,
-                          event.clientX,
-                          event.clientY,
-                        );
-                      }}
-                    >
-                      <span className="session-dot ended" title="已结束" />
-                      <span className="session-title">{recordTitle(record)}</span>
-                      <span className="session-cwd">{record.cwd || '未知目录'}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )
-          ) : (
-            <div className="empty-state">
-              <Search size={20} strokeWidth={1.6} />
-              <span>输入关键词开始搜索</span>
-            </div>
-          )}
-        </div>
-
-        <div className="sidebar-footer">
-          <div className="new-wrap">
-            <button
-              type="button"
-              className="new-session"
-              onClick={(event) => {
-                event.stopPropagation();
-                setNewMenuOpen((open) => !open);
-              }}
-            >
-              <Plus size={16} />
-              <span>新建会话</span>
-            </button>
-            {newMenuOpen ? (
-              <div className="new-menu" role="menu" onClick={(event) => event.stopPropagation()}>
-                <div className="new-menu-label">最近目录</div>
-                {recentDirs.length === 0 ? (
-                  <div className="new-menu-empty">暂无历史目录</div>
-                ) : (
-                  recentDirs.map((dir) => (
-                    <button
-                      key={dir}
-                      type="button"
-                      role="menuitem"
-                      className="new-menu-item"
-                      onClick={() => void handleNewSession(dir)}
-                    >
-                      <span className="new-menu-name">{folderName(dir)}</span>
-                      <span className="new-menu-path">{dir}</span>
-                    </button>
-                  ))
-                )}
-                <div className="new-menu-sep" />
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="new-menu-item"
-                  onClick={() => void handleNewSession()}
-                >
-                  <FolderOpen size={13} />
-                  <span>选择其他目录…</span>
-                </button>
-              </div>
-            ) : null}
-          </div>
-          <div className="status-line">
-            <span className={`status-dot ${appInfo ? 'ok' : 'pending'}`} />
-            <span>{appInfo ? `v${appInfo.appVersion}` : '启动中'}</span>
-          </div>
-          <div className="settings-wrap">
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="设置"
-              onClick={() => setSettingsOpen((open) => !open)}
-            >
-              <Settings2 size={16} />
-            </button>
-            {settingsOpen && claudeInfo ? (
-              <div className="settings-popover settings-popover-compact">
-                <div className="settings-label">皮肤</div>
-                <div className="theme-grid">
-                  {THEMES.map((item) => {
-                    const swatch = THEME_SWATCHES[item.name];
-                    const active = (claudeInfo.config.theme ?? 'default') === item.name;
-                    return (
-                      <button
-                        key={item.name}
-                        type="button"
-                        className={`theme-chip ${active ? 'active' : ''}`}
-                        onClick={() => void handleSetTheme(item.name)}
-                      >
-                        <span
-                          className="theme-chip-swatch"
-                          style={{ background: swatch.bg }}
-                        />
-                        <span className="theme-chip-label">{item.label}</span>
-                        {active ? (
-                          <Check size={12} className="theme-chip-check" />
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="settings-label">Claude 目录</div>
-                <div className="settings-row">
-                  <span className="settings-path" title={claudeInfo.resolvedClaudeDir}>
-                    {claudeInfo.resolvedClaudeDir}
-                  </span>
-                  <button
-                    type="button"
-                    className="icon-button"
-                    title="选择目录"
-                    onClick={() => void handlePickClaudeDir()}
-                  >
-                    <FolderOpen size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-button"
-                    title="恢复默认"
-                    onClick={() => void handleResetClaudeDir()}
-                  >
-                    <RotateCcw size={14} />
-                  </button>
-                </div>
-                <div className="settings-label">自动摘要</div>
-                <label className="settings-option">
-                  <input
-                    type="checkbox"
-                    checked={claudeInfo.config.autoSummarize === true}
-                    onChange={(event) => void handleSetAutoSummarize(event.target.checked)}
-                  />
-                  <span>会话结束后自动生成 AI 摘要</span>
-                </label>
-              </div>
-            ) : null}
-          </div>
-        </div>
+        <SidebarBody data={sidebarBodyData} actions={sidebarBodyActions} />
+        <SidebarFooter data={sidebarFooterData} actions={sidebarFooterActions} />
         </aside>
         <div
           className="sidebar-resizer"
@@ -1571,665 +1456,145 @@ export default function App() {
         />
 
         <main className="main">
-        <div className="tab-bar" role="tablist" aria-label="打开的会话">
-          {sessions.map((session, i) => (
-            <div
-              key={session.id}
-              className={`tab ${session.id === activeId ? 'active' : ''}${
-                dragIndex === i ? ' dragging' : ''
-              }${session.activity ? ' has-activity' : ''}`}
-              role="tab"
-              aria-selected={session.id === activeId}
-              tabIndex={0}
-              draggable
-              onDragStart={() => setDragIndex(i)}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => {
-                event.preventDefault();
-                if (dragIndex == null) return;
-                const from = dragIndex;
-                const to = i;
-                setDragIndex(null);
-                if (from === to) return;
-                setSessions((previous) => {
-                  const next = [...previous];
-                  const [moved] = next.splice(from, 1);
-                  next.splice(to, 0, moved);
-                  return next;
-                });
-              }}
-              onDragEnd={() => setDragIndex(null)}
-              onClick={() => setActiveId(session.id)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') setActiveId(session.id);
-              }}
-              onContextMenu={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                if (session.sessionId) {
-                  openContextMenu(
-                    session.sessionId,
-                    session.cwd,
-                    records.some(
-                      (record) =>
-                        record.sessionId === session.sessionId && record.archived,
-                    ),
-                    event.clientX,
-                    event.clientY,
-                  );
-                }
-              }}
-            >
-              <span
-                className={`tab-dot ${session.status}`}
-                title={statusLabel(session.status)}
-              />
-              <span>{formatSessionTitle(session)}</span>
-              <button
-                type="button"
-                className="icon-button tab-close"
-                aria-label="关闭会话"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void handleCloseSession(session.id);
-                }}
-              >
-                <X size={14} />
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            className="icon-button tab-panel-toggle"
-            aria-label={infoOpen ? '收起信息面板' : '展开信息面板'}
-            title={infoOpen ? '收起信息面板' : '展开信息面板'}
-            onClick={() => setInfoOpen((open) => !open)}
-          >
-            {infoOpen ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
-          </button>
-          <button
-            type="button"
-            className="icon-button tab-add"
-            aria-label="新建会话"
-            onClick={() => void handleNewSession()}
-          >
-            <Plus size={16} />
-          </button>
-        </div>
+        <TabBar
+          sessions={sessions}
+          activeId={activeId}
+          dragIndex={dragIndex}
+          infoOpen={infoOpen}
+          onDragStart={setDragIndex}
+          onDragEnd={() => setDragIndex(null)}
+          onDrop={(from, to) => {
+            setDragIndex(null);
+            if (from === to) return;
+            setSessions((previous) => {
+              const next = [...previous];
+              const [moved] = next.splice(from, 1);
+              next.splice(to, 0, moved);
+              return next;
+            });
+          }}
+          onSelect={setActiveId}
+          onClose={(id) => void handleCloseSession(id)}
+          onContextMenu={(event, sessionId, cwd) => {
+            openContextMenu(
+              sessionId,
+              cwd,
+              records.some(
+                (record) => record.sessionId === sessionId && record.archived,
+              ),
+              event.clientX,
+              event.clientY,
+            );
+          }}
+          onToggleInfo={() => setInfoOpen((open) => !open)}
+          onNew={() => void handleNewSession()}
+        />
 
         <div
           className={`content ${infoOpen ? '' : 'info-collapsed'}`}
           style={infoOpen ? { gridTemplateColumns: `minmax(0, 1fr) ${infoWidth}px` } : undefined}
         >
           {mode === 'search' ? (
-            <div className="search-results" role="log">
-              {searchResults.length === 0 ? (
-                <div className="archive-empty">没有匹配结果</div>
-              ) : (
-                searchResults.map((result) => (
-                  <section key={result.sessionId} className="search-group">
-                    <button
-                      type="button"
-                      className="search-session-header"
-                      onClick={() => void openSearchResult(result)}
-                    >
-                      <span className="search-title">
-                        {result.customName ?? folderName(result.cwd)}
-                      </span>
-                      <span className="search-path">{result.cwd}</span>
-                    </button>
-                    <ul className="search-hit-list">
-                      {result.hits.map((hit) => (
-                        <li key={hit.line} className="search-hit">
-                          <span className="search-line">{hit.line}</span>
-                          <span className={`search-role ${hit.role}`}>
-                            {hit.role === 'user' ? '用户' : 'Claude'}
-                          </span>
-                          <span className="search-snippet">{highlight(hit.snippet, query)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                ))
-              )}
-            </div>
+            <SearchResults
+              results={searchResults}
+              query={query}
+              onOpen={(result) => void openSearchResult(result)}
+            />
           ) : (
             <>
               {terminalStack}
               {detail && detailSessionId ? (
-                <SessionDetail
-                  detail={detail}
-                  summary={summary}
-                  summarizing={summarizing}
-                  onSummarize={() => void handleSummarize()}
-                  onExport={() => void exportFromDetail()}
-                  onClose={closeDetail}
-                />
-              ) : activeSession ? (
-                <section className="info-panel" aria-label="会话状态">
-                  <div
-                    className="info-resizer"
-                    onMouseDown={startInfoResize}
-                    title="拖动调整宽度"
+                <Suspense fallback={null}>
+                  <LazySessionDetail
+                    detail={detail}
+                    summary={summary}
+                    summarizing={summarizing}
+                    onSummarize={() => void handleSummarize()}
+                    onExport={() => void exportFromDetail()}
+                    onClose={closeDetail}
                   />
-                <div className="info-item">
-                  <span>状态</span>
-                  <strong className={`status-text ${activeSession.status}`}>
-                    {statusLabel(activeSession.status)}
-                  </strong>
-                </div>
-                <div className="info-item">
-                  <span>会话 ID</span>
-                  <strong className="truncate">{activeSession.sessionId ?? '绑定中…'}</strong>
-                </div>
-                <div className="info-item">
-                  <span>工作目录</span>
-                  <strong className="truncate">{activeSession.cwd}</strong>
-                </div>
-                <div className="info-item">
-                  <span>请求数</span>
-                  <strong className="usage-badge">{usage.requests}</strong>
-                </div>
-                <div className="info-item">
-                  <span>Token 用量</span>
-                  <div className="usage-bar" title="输入 / 输出 / 缓存读">
-                    <span className="usage-seg in" style={{ flexGrow: usage.inputTokens }} />
-                    <span className="usage-seg out" style={{ flexGrow: usage.outputTokens }} />
-                    <span
-                      className="usage-seg cache"
-                      style={{ flexGrow: usage.cacheReadTokens }}
-                    />
-                  </div>
-                  <div className="usage-legend">
-                    <span>
-                      <i className="usage-dot in" />
-                      输入 {usage.inputTokens.toLocaleString()}
-                    </span>
-                    <span>
-                      <i className="usage-dot out" />
-                      输出 {usage.outputTokens.toLocaleString()}
-                    </span>
-                    <span>
-                      <i className="usage-dot cache" />
-                      缓存读 {usage.cacheReadTokens.toLocaleString()} / 写{' '}
-                      {usage.cacheCreationTokens.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-                {error ? (
-                  <div className="info-item">
-                    <span>错误</span>
-                    <strong className="error-text truncate">{error}</strong>
-                  </div>
-                ) : null}
-                </section>
+                </Suspense>
+              ) : activeSession ? (
+                <InfoPanel
+                  session={activeSession}
+                  usage={usage}
+                  error={error}
+                  onResizeStart={startInfoResize}
+                />
               ) : (
-                <div className="welcome">
-                  <div className="welcome-icon">
-                    <Terminal size={26} strokeWidth={1.6} />
-                  </div>
-                  <div className="welcome-title">CodeAgentDesk</div>
-                  <div className="welcome-sub">Claude Code 统一窗口管理器</div>
-                  <div className="welcome-actions">
-                    <button
-                      type="button"
-                      className="welcome-btn primary"
-                      onClick={() => void handleNewSession()}
-                    >
-                      <Plus size={16} />
-                      <span>新建会话</span>
-                    </button>
-                    {historyRecords.length > 0 ? (
-                      <button
-                        type="button"
-                        className="welcome-btn"
-                        onClick={() => sidebarBodyRef.current?.focus()}
-                      >
-                        <BookOpen size={16} />
-                        <span>打开历史会话</span>
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="welcome-btn"
-                      onClick={openSummary}
-                    >
-                      <Sparkles size={16} />
-                      <span>今日总结</span>
-                    </button>
-                  </div>
-                  <div className="welcome-hint">
-                    Ctrl+K 全局搜索 · Ctrl+T 新建会话 · Ctrl+1..9 切换标签
-                  </div>
-                  {error ? <div className="welcome-error">{error}</div> : null}
-                </div>
+                <Welcome
+                  historyCount={historyRecords.length}
+                  error={error}
+                  onNew={() => void handleNewSession()}
+                  onFocusHistory={() => sidebarBodyRef.current?.focus()}
+                  onOpenSummary={openSummary}
+                />
               )}
             </>
           )}
         </div>
-        <footer className="status-bar">
-          <span>{sessions.length} 会话</span>
-          <span>{archivedRecords.length} 归档</span>
-          <button
-            type="button"
-            className="status-day"
-            title="生成今日总结"
-            onClick={openSummary}
-          >
-            今日总结
-          </button>
-          <span className="status-bar-spacer" />
-          <span>{claudeInfo ? folderName(claudeInfo.resolvedClaudeDir) : '…'}</span>
-          <span>v{appInfo?.appVersion ?? '…'}</span>
-          </footer>
+        <StatusBar
+          sessionCount={sessions.length}
+          archivedCount={archivedRecords.length}
+          claudeDirName={claudeInfo ? folderName(claudeInfo.resolvedClaudeDir) : '…'}
+          version={appInfo?.appVersion ?? '…'}
+          onOpenSummary={openSummary}
+        />
         </main>
       </div>
 
       {summaryOpen ? (
-        <div className="day-overlay" onClick={() => setSummaryOpen(false)}>
-          <div className="day-panel" onClick={(event) => event.stopPropagation()}>
-            {viewing ? (
-              <>
-                <div className="day-header">
-                  <span className="day-title">{viewing.title}</span>
-                  <div className="day-actions">
-                    <button
-                      type="button"
-                      className="icon-button"
-                      title="复制"
-                      onClick={() => void navigator.clipboard.writeText(viewing.text)}
-                    >
-                      <Copy size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-button"
-                      title="返回"
-                      onClick={() => setViewing(null)}
-                    >
-                      <FolderOpen size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-button"
-                      title="关闭"
-                      onClick={() => setSummaryOpen(false)}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                </div>
-                <div className="day-body">
-                  <pre className="day-text">{viewing.text}</pre>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="day-header">
-                  <div className="day-tabs" role="tablist" aria-label="总结类型">
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={summaryTab === 'day'}
-                      className={summaryTab === 'day' ? 'active' : ''}
-                      onClick={() => setSummaryTab('day')}
-                    >
-                      今日
-                    </button>
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={summaryTab === 'month'}
-                      className={summaryTab === 'month' ? 'active' : ''}
-                      onClick={() => setSummaryTab('month')}
-                    >
-                      月度
-                    </button>
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={summaryTab === 'calendar'}
-                      className={summaryTab === 'calendar' ? 'active' : ''}
-                      onClick={() => {
-                        setSummaryTab('calendar');
-                        void loadDayFor(todayKey());
-                        void loadSummaryHistory();
-                      }}
-                    >
-                      日历
-                    </button>
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={summaryTab === 'history'}
-                      className={summaryTab === 'history' ? 'active' : ''}
-                      onClick={() => {
-                        setSummaryTab('history');
-                        void loadSummaryHistory();
-                      }}
-                    >
-                      历史
-                    </button>
-                  </div>
-                  <div className="day-actions">
-                    <button
-                      type="button"
-                      className="icon-button"
-                      title="关闭"
-                      onClick={() => setSummaryOpen(false)}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                </div>
-                <div className="day-body">
-                  {summaryTab === 'day' ? (
-                    <div className="day-tab-content">
-                      {summarizing ? (
-                        <div className="day-loading">正在生成今日总结…（调用 claude 无头模式）</div>
-                      ) : dayText ? (
-                        <pre className="day-text">{dayText}</pre>
-                      ) : (
-                        <div className="day-empty">还没有生成今日总结</div>
-                      )}
-                      <div className="day-generate-bar">
-                        <button
-                          type="button"
-                          className="welcome-btn primary"
-                          onClick={() => void generateDaySummary()}
-                        >
-                          <Sparkles size={14} />
-                          <span>{dayText ? '重新生成' : '生成今日总结'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : summaryTab === 'month' ? (
-                    <div className="day-tab-content">
-                      {summarizing ? (
-                        <div className="day-loading">正在生成月度总结…（调用 claude 无头模式）</div>
-                      ) : monthText ? (
-                        <pre className="day-text">{monthText}</pre>
-                      ) : (
-                        <div className="day-empty">还没有生成月度总结</div>
-                      )}
-                      <div className="day-generate-bar">
-                        <button
-                          type="button"
-                          className="welcome-btn primary"
-                          onClick={() => void generateMonthSummary()}
-                        >
-                          <Sparkles size={14} />
-                          <span>{monthText ? '重新生成' : '生成本月总结'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : summaryTab === 'calendar' ? (
-                    <div className="cal-content">
-                      <div className="cal-nav">
-                        <button type="button" aria-label="上个月" onClick={() => shiftMonth(-1)}>
-                          ‹
-                        </button>
-                        <span className="cal-month">{calMonth}</span>
-                        <button type="button" aria-label="下个月" onClick={() => shiftMonth(1)}>
-                          ›
-                        </button>
-                      </div>
-                      <div className="cal-grid">
-                        {['日', '一', '二', '三', '四', '五', '六'].map((weekday) => (
-                          <div key={weekday} className="cal-weekday">
-                            {weekday}
-                          </div>
-                        ))}
-                        {buildCalendarCells(calMonth).map((date, i) =>
-                          date === null ? (
-                            <div key={`empty-${i}`} className="cal-cell empty" />
-                          ) : (
-                            <button
-                              key={date}
-                              type="button"
-                              className={`cal-cell${selectedDay === date ? ' selected' : ''}${
-                                summaryDayKeys.has(date) ? ' has-summary' : ''
-                              }`}
-                              onClick={() => void loadDayFor(date)}
-                            >
-                              <span className="cal-daynum">{Number(date.slice(8))}</span>
-                              {sessionCounts.get(date) ? (
-                                <span className="cal-count">{sessionCounts.get(date)}</span>
-                              ) : null}
-                            </button>
-                          ),
-                        )}
-                      </div>
-                      <div className="cal-day-view">
-                        {calDay ? (
-                          <>
-                            <div className="cal-day-head">
-                              <span className="cal-day-title">{calDay.date} 当日总结</span>
-                              {!calDay.loading && calDay.text ? (
-                                <div className="cal-day-actions">
-                                  <button
-                                    type="button"
-                                    className="icon-button"
-                                    title="复制"
-                                    onClick={() => void navigator.clipboard.writeText(calDay.text)}
-                                  >
-                                    <Copy size={14} />
-                                  </button>
-                                </div>
-                              ) : null}
-                            </div>
-                            {calDay.loading ? (
-                              <div className="day-loading">正在生成该日总结…</div>
-                            ) : calDay.text ? (
-                              <pre className="day-text">{calDay.text}</pre>
-                            ) : (
-                              <div className="cal-day-empty">
-                                <div className="day-empty">该日没有归档总结</div>
-                                <button
-                                  type="button"
-                                  className="welcome-btn primary"
-                                  onClick={() => void generateDayFor(calDay.date)}
-                                >
-                                  <Sparkles size={14} />
-                                  <span>找回当日总结</span>
-                                </button>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="day-empty">点击日历某天查看 / 找回当日总结</div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="history-list">
-                      {summaryHistory.months.length ? (
-                        <div className="history-group">
-                          <div className="history-group-label">月度总结</div>
-                          {summaryHistory.months.map((item) => (
-                            <button
-                              key={item.key}
-                              type="button"
-                              className="history-item"
-                              onClick={() => void viewHistoryItem('month', item.key)}
-                            >
-                              <span className="history-key">{item.key}</span>
-                              <span className="history-preview">{item.preview}</span>
-                            </button>
-                          ))}
-                        </div>
-                      ) : null}
-                      {summaryHistory.days.length ? (
-                        <div className="history-group">
-                          <div className="history-group-label">每日总结</div>
-                          {summaryHistory.days.map((item) => (
-                            <button
-                              key={item.key}
-                              type="button"
-                              className="history-item"
-                              onClick={() => void viewHistoryItem('day', item.key)}
-                            >
-                              <span className="history-key">{item.key}</span>
-                              <span className="history-preview">{item.preview}</span>
-                            </button>
-                          ))}
-                        </div>
-                      ) : null}
-                      {!summaryHistory.days.length && !summaryHistory.months.length ? (
-                        <div className="day-empty">还没有归档的总结</div>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+        <Suspense fallback={null}>
+          <LazySummaryModal
+            state={{
+              summaryTab,
+              dayText,
+              monthText,
+              summarizing,
+              summaryHistory,
+              calMonth,
+              selectedDay,
+              calDay,
+              viewing,
+              sessionCounts,
+            }}
+            actions={{
+              setSummaryTab,
+              close: () => setSummaryOpen(false),
+              setViewing,
+              generateDay: () => void generateDaySummary(),
+              generateMonth: () => void generateMonthSummary(),
+              loadDay: (date) => void loadDayFor(date),
+              generateDayFor: (date) => void generateDayFor(date),
+              shiftMonth,
+              loadHistory: () => void loadSummaryHistory(),
+              viewHistoryItem: (kind, key) => void viewHistoryItem(kind, key),
+              buildCells: buildCalendarCells,
+              todayKey,
+            }}
+          />
+        </Suspense>
       ) : null}
 
       {paletteOpen ? (
-        <div className="palette-overlay" onClick={() => setPaletteOpen(false)}>
-          <div className="palette" onClick={(event) => event.stopPropagation()}>
-            <input
-              autoFocus
-              value={paletteQuery}
-              onChange={(event) => {
-                setPaletteQuery(event.target.value);
-                setPaletteIndex(0);
-              }}
-              onKeyDown={onPaletteKeyDown}
-              placeholder="输入命令或搜索会话…（Ctrl+P）"
-              aria-label="命令面板"
-            />
-            <ul className="palette-list">
-              {paletteFiltered.length === 0 ? (
-                <li className="palette-empty">无匹配</li>
-              ) : (
-                paletteFiltered.map((item, i) => (
-                  <li
-                    key={item.key}
-                    className={`palette-item ${i === paletteSafeIndex ? 'active' : ''}`}
-                    onMouseEnter={() => setPaletteIndex(i)}
-                    onClick={() => runPaletteItem(item)}
-                  >
-                    <span className="palette-label">{item.label}</span>
-                    {item.hint ? <span className="palette-hint">{item.hint}</span> : null}
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-        </div>
+        <Suspense fallback={null}>
+          <LazyCommandPalette
+            items={paletteItems}
+            query={paletteQuery}
+            index={paletteSafeIndex}
+            onQueryChange={(value) => {
+              setPaletteQuery(value);
+              setPaletteIndex(0);
+            }}
+            onHoverIndex={setPaletteIndex}
+            onKeyDown={onPaletteKeyDown}
+            onSelect={runPaletteItem}
+            onClose={() => setPaletteOpen(false)}
+          />
+        </Suspense>
       ) : null}
 
-      {menu ? (
-        <div
-          className="context-menu"
-          role="menu"
-          style={{ left: menu.x, top: menu.y }}
-          onClick={(event) => event.stopPropagation()}
-        >
-          <button
-            type="button"
-            disabled={!menuSession || menu.archived}
-            onClick={() => {
-              setRenamingId(menu.sessionId);
-              setMenu(null);
-            }}
-          >
-            <span className="context-menu-icon">
-              <Pencil size={14} />
-            </span>
-            重命名
-          </button>
-          <button
-            type="button"
-            disabled={!menuSession || menu.archived}
-            onClick={() => {
-              if (menuSession) void archiveSession(menu.sessionId, menu.cwd);
-              setMenu(null);
-            }}
-          >
-            <span className="context-menu-icon">
-              <Archive size={14} />
-            </span>
-            归档
-          </button>
-          <button
-            type="button"
-            disabled={!menuSession || menu.archived}
-            onClick={() => {
-              const running = sessions.find((session) => session.sessionId === menu.sessionId);
-              if (running) {
-                setActiveId(running.id);
-              } else {
-                const record = records.find((item) => item.sessionId === menu.sessionId);
-                if (record) void openHistory(record);
-              }
-              setMenu(null);
-            }}
-          >
-            <span className="context-menu-icon">
-              <RotateCcw size={14} />
-            </span>
-            恢复会话
-          </button>
-          <button
-            type="button"
-            disabled={!menuSession}
-            onClick={() => {
-              void openDetailById(menu.sessionId);
-              setMenu(null);
-            }}
-          >
-            <span className="context-menu-icon">
-              <BookOpen size={14} />
-            </span>
-            查看详情
-          </button>
-          {menu.archived ? (
-            <button
-              type="button"
-              disabled={!menuSession}
-              onClick={() => {
-                if (menuSession) void restoreArchived(menu.sessionId, menu.cwd);
-                setMenu(null);
-              }}
-            >
-              <span className="context-menu-icon">
-                <ArchiveRestore size={14} />
-              </span>
-              恢复
-            </button>
-          ) : null}
-          <div className="context-menu-separator" />
-          <button
-            type="button"
-            disabled={!menuSession}
-            onClick={() => {
-              if (menuSession) void copySessionText(menu.sessionId);
-              setMenu(null);
-            }}
-          >
-            <span className="context-menu-icon">
-              <Copy size={14} />
-            </span>
-            复制内容
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (menu.cwd) void navigator.clipboard.writeText(menu.cwd);
-              setMenu(null);
-            }}
-          >
-            <span className="context-menu-icon">
-              <Link2 size={14} />
-            </span>
-            复制路径
-          </button>
-        </div>
-      ) : null}
+      <ContextMenus data={contextMenusData} actions={contextMenusActions} />
     </div>
   );
 }
