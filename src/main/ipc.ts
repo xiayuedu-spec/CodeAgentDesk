@@ -231,6 +231,8 @@ export function registerIpcHandlers(
       if (runningId) {
         sessions.close(runningId);
         await sessions.waitForExit(runningId, 3000);
+        // pty 未及时退出时兜底清理，避免僵尸会话阻塞后续删除/归档。
+        sessions.remove(runningId);
       }
 
       const claudeHome = resolveClaudeHome(readConfig());
@@ -338,11 +340,18 @@ export function registerIpcHandlers(
         ? payload.sessionIds.filter((item): item is string => typeof item === 'string' && Boolean(item.trim()))
         : [];
       if (ids.length === 0) return { ok: false, message: '没有选择要删除的会话' };
+      const claudeHome = resolveClaudeHome(readConfig());
       const archiveRoot = path.join(app.getPath('userData'), 'archive');
       const deleted: string[] = [];
+      const errors: string[] = [];
       for (const sessionId of ids) {
-        // 借出运行中的归档会话不能删除（JSONL 在 projects 下）。
-        if (sessions.findBySessionId(sessionId)) continue;
+        // 借出运行中的会话：先关闭 pty（超时兜底清理僵尸记录），再删文件。
+        const runningId = sessions.findBySessionId(sessionId);
+        if (runningId) {
+          sessions.close(runningId);
+          await sessions.waitForExit(runningId, 1500);
+          sessions.remove(runningId);
+        }
         const meta = metaStore.get(sessionId);
         let filePath =
           meta.archivedPath && fs.existsSync(meta.archivedPath) ? meta.archivedPath : '';
@@ -350,18 +359,25 @@ export function registerIpcHandlers(
           const found = await findSessionFile(archiveRoot, sessionId);
           if (found) filePath = found;
         }
+        if (!filePath) {
+          // 借出未收回时文件在 projects 下；找不到任何文件则只清理元数据。
+          const foundProject = await findSessionFile(claudeHome, sessionId);
+          if (foundProject) filePath = foundProject;
+        }
         if (filePath) {
           try {
             fs.rmSync(filePath, { force: true });
-          } catch {
-            continue; // 单个删除失败不影响其他会话。
+          } catch (error) {
+            errors.push(`${sessionId}: ${error instanceof Error ? error.message : String(error)}`);
+            continue;
           }
         }
         metaStore.remove(sessionId);
         deleted.push(sessionId);
       }
       if (deleted.length === 0) {
-        return { ok: false, message: '没有可删除的会话（运行中的已跳过）' };
+        const detail = errors.length > 0 ? `（${errors[0]}）` : '';
+        return { ok: false, message: `没有可删除的会话${detail}` };
       }
       return { ok: true, deleted };
     },

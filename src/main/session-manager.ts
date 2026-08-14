@@ -92,6 +92,17 @@ export class SessionManager {
     }
   }
 
+  /**
+   * 强制从运行表移除（归档/删除时兜底清理僵尸 pty 记录）。
+   * 若 pty 稍后才触发 onExit，此时 map 已无此会话，回调安全降级为无操作。
+   */
+  remove(id: string): void {
+    const session = this.sessions.get(id);
+    if (!session) return;
+    this.sessions.delete(id);
+    this.exitWaiters.delete(id);
+  }
+
   /** 等待会话从运行表移除（进程退出），超时兜底。 */
   waitForExit(id: string, timeoutMs: number): Promise<void> {
     if (!this.sessions.has(id)) return Promise.resolve();
