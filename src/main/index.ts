@@ -51,15 +51,14 @@ if (!hasSingleInstanceLock) {
     const sessions = new SessionManager({
       onData: (id, data) =>
         broadcast(IpcChannel.sessionData, { id, data } satisfies SessionDataEvent),
-      onExit: (id, exitCode, sessionId, cwd) => {
+      onExit: (id, exitCode, sessionId, cwd, expected) => {
         broadcast(IpcChannel.sessionExited, { id, exitCode } satisfies SessionExitedEvent);
-        // 系统通知：会话结束 / 异常退出（点击聚焦窗口）。
-        if (Notification.isSupported()) {
+        // 仅"意外异常退出"发系统通知；主动关闭（关标签/归档/退出应用）与正常结束（/exit）不打扰。
+        if (!expected && Notification.isSupported() && typeof exitCode === 'number' && exitCode !== 0) {
           const name = cwd ? path.basename(cwd) : '会话';
-          const abnormal = typeof exitCode === 'number' && exitCode !== 0;
           const notification = new Notification({
             title: `CodeAgentDesk · ${name}`,
-            body: abnormal ? `会话已异常退出（代码 ${exitCode}）` : '会话运行结束',
+            body: `会话已异常退出（代码 ${exitCode}）`,
           });
           notification.on('click', () => {
             const [window] = BrowserWindow.getAllWindows();

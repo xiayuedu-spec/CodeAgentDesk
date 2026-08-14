@@ -5,7 +5,7 @@ import { spawn, type IPty } from 'node-pty';
 
 export interface SessionCallbacks {
   onData(id: string, data: string): void;
-  onExit(id: string, exitCode?: number, sessionId?: string, cwd?: string): void;
+  onExit(id: string, exitCode?: number, sessionId?: string, cwd?: string, expected?: boolean): void;
   onBound(id: string, sessionId: string): void;
   onError(id: string, message: string): void;
 }
@@ -21,6 +21,7 @@ export class SessionManager {
   private readonly sessions = new Map<string, RunningSession>();
   private readonly sequences = new Map<string, number>();
   private readonly exitWaiters = new Map<string, () => void>();
+  private readonly expectedExits = new Set<string>();
 
   constructor(private readonly callbacks: SessionCallbacks) {}
 
@@ -78,6 +79,8 @@ export class SessionManager {
   close(id: string): void {
     const session = this.sessions.get(id);
     if (!session) return;
+    // 应用主动终止（关闭标签/归档/删除/退出）标记为预期退出，onExit 据此不发异常通知。
+    this.expectedExits.add(id);
     try {
       session.pty.kill();
     } catch {
@@ -151,10 +154,12 @@ export class SessionManager {
       const session = this.sessions.get(id);
       const sessionId = session?.sessionId;
       const cwd = session?.cwd;
+      const expected = this.expectedExits.has(id);
+      this.expectedExits.delete(id);
       this.sessions.delete(id);
       this.exitWaiters.get(id)?.();
       this.exitWaiters.delete(id);
-      this.callbacks.onExit(id, exitCode, sessionId, cwd);
+      this.callbacks.onExit(id, exitCode, sessionId, cwd, expected);
     });
 
     return { id };
