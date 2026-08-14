@@ -3191,3 +3191,154 @@ button:active:not(:disabled),
 .markdown-text strong {
   font-weight: 650;
 }
+/* ================================================================
+   v4 精修：结构性视觉（渐变描边 / 浮起体系 / 入场动效 / 区域精修）
+   ================================================================ */
+
+/* ---- 1. 激活标签：渐变描边（内层底色 + 外层渐变边框） ---- */
+.tab.active {
+  border-color: transparent;
+  background:
+    linear-gradient(color-mix(in srgb, var(--bg-inset) 96%, var(--accent-soft)), var(--bg-inset))
+      padding-box,
+    linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 35%, transparent))
+      border-box;
+  box-shadow: 0 2px 14px var(--accent-glow);
+}
+
+/* ---- 2. 浮起体系：可点击卡片 hover 上浮 + 柔影 ---- */
+.history-item:hover,
+.search-session-header:hover,
+.tool-card:hover,
+.welcome-btn:not(.primary):hover,
+.theme-chip:hover,
+.status-day:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+}
+
+/* ---- 3. 新条目入场动画（React key 复用 DOM，不重复播放） ---- */
+.session-list li,
+.search-group,
+.history-item {
+  animation: listIn 200ms ease both;
+}
+@keyframes listIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- 4. 信息面板精修 ---- */
+.info-panel {
+  overflow: hidden;
+}
+.info-item {
+  position: relative;
+  padding: 13px 14px 12px;
+}
+.info-item strong {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1px;
+}
+.usage-badge {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.usage-bar {
+  height: 9px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* ---- 5. 空状态：图标光晕 + 呼吸 ---- */
+.empty-state svg,
+.archive-empty svg {
+  color: var(--accent);
+  filter: drop-shadow(0 0 10px var(--accent-glow));
+  opacity: 0.85;
+}
+
+/* ---- 6. 欢迎页：背景装饰光晕 ---- */
+.welcome {
+  position: relative;
+  overflow: hidden;
+}
+.welcome::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(420px 240px at 50% 18%, var(--accent-soft), transparent 70%),
+    radial-gradient(380px 220px at 50% 85%, var(--accent-soft), transparent 70%);
+}
+.welcome > * {
+  position: relative;
+}
+
+/* ---- 7. 终端面板：顶部渐变高光条 ---- */
+.terminal-pane {
+  position: relative;
+}
+.terminal-pane::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  z-index: 1;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 45%, transparent),
+    transparent
+  );
+}
+
+/* ---- 8. 滚动条 hover 加宽 ---- */
+::-webkit-scrollbar-thumb {
+  transition: background-color 120ms ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent-dim);
+}
+
+/* ---- 9. 图标按钮 hover 微动 ---- */
+.icon-button:hover svg,
+.tab-close:hover svg,
+.titlebar-button:hover svg {
+  transform: scale(1.08);
+}
+.icon-button svg,
+.tab-close svg,
+.titlebar-button svg {
+  transition: transform 120ms ease;
+}
+
+/* ---- 10. 搜索命中 / 日历选中细节 ---- */
+.search-hit:hover {
+  background: color-mix(in srgb, var(--accent-soft) 35%, transparent);
+}
+.cal-cell.selected {
+  box-shadow: 0 0 0 1px var(--accent-dim), 0 2px 8px var(--accent-glow);
+}
+.cal-cell:hover:not(.empty) {
+  transform: translateY(-1px);
+}
+
+/* ---- 11. 品牌区图标：常驻微光 ---- */
+.brand-icon {
+  box-shadow:
+    0 2px 10px var(--accent-glow),
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+/* ---- 12. 分割线渐变（详情/面板头部） ---- */
+.detail-header {
+  border-bottom-color: color-mix(in srgb, var(--border) 70%, transparent);
+}
