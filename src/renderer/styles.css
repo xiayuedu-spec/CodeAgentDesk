@@ -774,13 +774,67 @@ button, input {
 
 .search-hit {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  gap: 4px;
   padding: 6px 10px;
   border-left: 2px solid var(--border-strong);
   color: var(--text-muted);
   font-family: var(--mono);
   font-size: 11px;
   transition: background 120ms ease;
+}
+
+.search-hit:hover {
+  background: color-mix(in srgb, var(--bg-raised) 70%, transparent);
+}
+
+.search-hit-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.search-hit-count {
+  margin-left: auto;
+  flex: none;
+  color: var(--text-faint);
+  font-size: 10px;
+}
+
+.search-context {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.search-context-line {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.search-context-line.hit {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent-soft) 55%, transparent);
+  border-radius: 4px;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+
+.search-context-no {
+  flex: none;
+  min-width: 26px;
+  text-align: right;
+  color: var(--text-faint);
+}
+
+.search-context-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .search-line {

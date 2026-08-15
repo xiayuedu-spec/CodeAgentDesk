@@ -31,11 +31,32 @@ export function SearchResults({ results, query, onOpen, onOpenHit }: SearchResul
                   title="在详情中定位该命中"
                   onClick={() => onOpenHit(result, hit)}
                 >
-                  <span className="search-line">{hit.line}</span>
-                  <span className={`search-role ${hit.role}`}>
-                    {hit.role === 'user' ? '用户' : 'Claude'}
+                  <span className="search-hit-head">
+                    <span className="search-line">{hit.line}</span>
+                    <span className={`search-role ${hit.role}`}>
+                      {hit.role === 'user' ? '用户' : 'Claude'}
+                    </span>
+                    {hit.context?.length ? (
+                      <span className="search-hit-count">{hit.context.length} 行</span>
+                    ) : null}
                   </span>
-                  <span className="search-snippet">{highlight(hit.snippet, query)}</span>
+                  {hit.context?.length ? (
+                    <span className="search-context">
+                      {hit.context.map((ctx, index) => (
+                        <span
+                          key={ctx.line}
+                          className={`search-context-line${index === hit.hitIndex ? ' hit' : ''}`}
+                        >
+                          <span className="search-context-no">{ctx.line}</span>
+                          <span className="search-context-text">
+                            {index === hit.hitIndex ? highlight(ctx.text, query) : ctx.text}
+                          </span>
+                        </span>
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="search-snippet">{highlight(hit.snippet, query)}</span>
+                  )}
                 </button>
               </li>
             ))}

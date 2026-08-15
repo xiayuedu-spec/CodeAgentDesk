@@ -4,6 +4,7 @@ import readline from 'node:readline';
 import { app } from 'electron';
 import type {
   ChatEntry,
+  SearchContextLine,
   SearchHit,
   SessionDetailEntry,
   SearchResult,
@@ -216,24 +217,37 @@ export async function searchSessions(
   return results.filter((result) => result.hits.length > 0);
 }
 
+/** 搜索命中内联预览：命中行前后各保留的行数（含命中行最多 5 行）。 */
+const SEARCH_CONTEXT_RADIUS = 2;
+
 async function searchFile(filePath: string, needle: string): Promise<SearchHit[]> {
   const hits: SearchHit[] = [];
+  const readableLines: SearchContextLine[] = [];
   let lineNumber = 0;
+  // 收集文件内全部可读行（行号对齐原始 JSONL），再按命中位置截取上下文窗口。
   await scanLines(filePath, MAX_SEARCH_LINES, (line) => {
-    if (hits.length >= MAX_HITS_PER_SESSION) {
-      // scanLines 行数上限不足以约束命中数，这里提前停止（剩余行将被跳过）。
-      return;
-    }
     lineNumber += 1;
     const readable = extractReadableLine(line);
-    if (readable && readable.text.toLowerCase().includes(needle)) {
-      hits.push({
-        line: lineNumber,
-        snippet: readable.text.trim().slice(0, 240),
-        role: readable.role,
-      });
-    }
+    if (!readable) return;
+    readableLines.push({
+      line: lineNumber,
+      text: readable.text.replace(/\s+/g, ' ').trim(),
+      role: readable.role,
+    });
   });
+  for (let i = 0; i < readableLines.length && hits.length < MAX_HITS_PER_SESSION; i += 1) {
+    const entry = readableLines[i];
+    if (!entry.text.toLowerCase().includes(needle)) continue;
+    const from = Math.max(0, i - SEARCH_CONTEXT_RADIUS);
+    const to = Math.min(readableLines.length, i + SEARCH_CONTEXT_RADIUS + 1);
+    hits.push({
+      line: entry.line,
+      snippet: entry.text.slice(0, 240),
+      role: entry.role,
+      context: readableLines.slice(from, to),
+      hitIndex: i - from,
+    });
+  }
   return hits;
 }
 

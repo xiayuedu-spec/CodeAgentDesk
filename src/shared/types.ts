@@ -124,10 +124,19 @@ export interface ReadSessionTextResult {
   message?: string;
 }
 
+export interface SearchContextLine {
+  line: number;
+  text: string;
+  role: 'user' | 'assistant';
+}
+
 export interface SearchHit {
   line: number;
   snippet: string;
   role: 'user' | 'assistant';
+  /** 内联预览：命中行 + 前后各若干行（含命中行，hitIndex 指向命中行）。 */
+  context?: SearchContextLine[];
+  hitIndex?: number;
 }
 
 export interface SearchResult {
