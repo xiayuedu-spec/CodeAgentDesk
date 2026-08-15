@@ -62,6 +62,14 @@ export function useUiState() {
     }
   }
 
+  async function refreshClaudeInfo(): Promise<void> {
+    try {
+      setClaudeInfo(await window.codeagentdesk.getClaudeConfig());
+    } catch {
+      // 静默忽略配置刷新失败。
+    }
+  }
+
   async function handlePickClaudeDir(): Promise<void> {
     const picked = await window.codeagentdesk.pickClaudeDir();
     if (!picked.dir) return;
@@ -86,6 +94,7 @@ export function useUiState() {
     setSettingsOpen,
     recentDirs,
     refreshRecentDirs,
+    refreshClaudeInfo,
     error,
     setError,
     handlePickClaudeDir,

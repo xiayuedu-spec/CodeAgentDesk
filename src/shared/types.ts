@@ -253,6 +253,7 @@ export interface CodeAgentDeskApi {
   getClaudeConfig(): Promise<ClaudeConfigInfo>;
   setClaudeDir(dir: string | null): Promise<ClaudeConfigInfo>;
   setTheme(theme: ThemeName): Promise<ClaudeConfigInfo>;
+  setTokenLimit(limit: number): Promise<ClaudeConfigInfo>;
   pickClaudeDir(): Promise<PickClaudeDirResult>;
   listSessions(): Promise<SessionRecord[]>;
   listGroups(): Promise<GroupRecord[]>;

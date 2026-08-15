@@ -3923,3 +3923,67 @@ body,
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
+/* ---- 左下角每小时用量小窗（跟随限额卡片，原位弹出） ---- */
+.footer-limit-wrap {
+  position: relative;
+  width: 100%;
+}
+.hourly-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: 300px;
+  max-width: calc(100vw - 24px);
+  padding: 14px 16px 12px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--bg-raised) 94%, transparent);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-pop);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  color: var(--text);
+  z-index: 60;
+  animation: popoverIn 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hourly-popover-title {
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+.hourly-popover-empty {
+  padding: 14px 0 10px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.hourly-chart-compact {
+  height: 96px;
+  gap: 3px;
+  padding: 6px 2px 0;
+  border-bottom: 1px solid var(--border);
+}
+.hourly-chart-compact .hourly-bar {
+  max-width: 14px;
+  border-radius: 2px 2px 0 0;
+}
+.hourly-legend-compact {
+  margin-top: 8px;
+  font-size: 10px;
+  gap: 4px 12px;
+}
+.hourly-legend-compact .hourly-dot {
+  width: 7px;
+  height: 7px;
+}
+@keyframes popoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

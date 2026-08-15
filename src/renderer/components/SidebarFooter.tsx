@@ -1,7 +1,11 @@
 import { Check, FolderOpen, Plus, RotateCcw, Settings2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { AppInfo, ClaudeConfigInfo, DashboardStats, ThemeName } from '../../shared/types';
 import { folderName } from '../session-utils';
 import { THEMES, THEME_SWATCHES } from '../theme';
+import { HourlyUsagePopover } from './HourlyUsagePopover';
+
+export const DEFAULT_HOURLY_LIMIT = 10_000_000;
 
 function formatTokens(value: number): string {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
@@ -25,7 +29,7 @@ interface SidebarFooterActions {
   handleSetTheme: (theme: ThemeName) => void;
   handlePickClaudeDir: () => void;
   handleResetClaudeDir: () => void;
-  onOpenDashboard: () => void;
+  handleSetTokenLimit: (limit: number) => void;
 }
 
 export function SidebarFooter({
@@ -43,10 +47,28 @@ export function SidebarFooter({
     handleSetTheme,
     handlePickClaudeDir,
     handleResetClaudeDir,
-    onOpenDashboard,
+    handleSetTokenLimit,
   } = actions;
 
   const limitTier = stats.hourlyPercent >= 100 ? 'danger' : stats.hourlyPercent >= 80 ? 'warn' : '';
+  const [limitInput, setLimitInput] = useState(
+    String(claudeInfo?.config.tokenLimitPerHour ?? DEFAULT_HOURLY_LIMIT),
+  );
+  const [hourlyOpen, setHourlyOpen] = useState(false);
+
+  useEffect(() => {
+    if (!hourlyOpen) return;
+    const close = () => setHourlyOpen(false);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setHourlyOpen(false);
+    };
+    window.addEventListener('click', close);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [hourlyOpen]);
 
   return (
     <div className="sidebar-footer">
@@ -95,24 +117,32 @@ export function SidebarFooter({
         ) : null}
       </div>
 
-      {/* 本小时 Token 限额统计（新建会话下方，点击打开今日概览） */}
-      <button
-        type="button"
-        className="footer-limit"
-        title="本小时 Token 消耗（整点刷新）· 点击查看每小时用量"
-        onClick={onOpenDashboard}
-      >
-        <div className="footer-limit-head">
-          <span className="footer-limit-label">本小时消耗</span>
-          <span className={`footer-limit-percent ${limitTier}`}>{stats.hourlyPercent}%</span>
-        </div>
-        <div className={`footer-limit-bar ${limitTier}`}>
-          <span style={{ width: `${Math.min(100, stats.hourlyPercent)}%` }} />
-        </div>
-        <div className="footer-limit-sub">
-          {formatTokens(stats.hourlyTokens)} / {formatTokens(stats.hourlyLimit)} · 整点刷新
-        </div>
-      </button>
+      {/* 本小时 Token 限额统计（新建会话下方，点击查看每小时用量小窗） */}
+      <div className="footer-limit-wrap">
+        <button
+          type="button"
+          className="footer-limit"
+          title="本小时 Token 消耗（整点刷新）· 点击查看每小时用量"
+          onClick={(event) => {
+            event.stopPropagation();
+            setHourlyOpen((open) => !open);
+          }}
+        >
+          <div className="footer-limit-head">
+            <span className="footer-limit-label">本小时消耗</span>
+            <span className={`footer-limit-percent ${limitTier}`}>{stats.hourlyPercent}%</span>
+          </div>
+          <div className={`footer-limit-bar ${limitTier}`}>
+            <span style={{ width: `${Math.min(100, stats.hourlyPercent)}%` }} />
+          </div>
+          <div className="footer-limit-sub">
+            {formatTokens(stats.hourlyTokens)} / {formatTokens(stats.hourlyLimit)} · 整点刷新
+          </div>
+        </button>
+        {hourlyOpen ? (
+          <HourlyUsagePopover limit={claudeInfo?.config.tokenLimitPerHour ?? DEFAULT_HOURLY_LIMIT} />
+        ) : null}
+      </div>
 
       <div className="status-line">
         <span className={`status-dot ${appInfo ? 'ok' : 'pending'}`} />
@@ -168,6 +198,30 @@ export function SidebarFooter({
                 onClick={() => void handleResetClaudeDir()}
               >
                 <RotateCcw size={14} />
+              </button>
+            </div>
+            <div className="settings-label">小时 Token 限额（整点刷新）</div>
+            <div className="settings-row">
+              <input
+                type="number"
+                className="settings-limit-input"
+                value={limitInput}
+                min={1}
+                step={100000}
+                onChange={(event) => setLimitInput(event.target.value)}
+                aria-label="小时 Token 限额"
+              />
+              <button
+                type="button"
+                className="settings-action settings-limit-save"
+                onClick={() => {
+                  const value = Number(limitInput);
+                  if (Number.isFinite(value) && value > 0) {
+                    handleSetTokenLimit(Math.floor(value));
+                  }
+                }}
+              >
+                保存
               </button>
             </div>
           </div>

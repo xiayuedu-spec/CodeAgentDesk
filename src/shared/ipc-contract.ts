@@ -3,6 +3,7 @@ export const IpcChannel = {
   configGet: 'config:get',
   configSetClaudeDir: 'config:set-claude-dir',
   configSetTheme: 'config:set-theme',
+  configSetTokenLimit: 'config:set-token-limit',
   configPickClaudeDir: 'config:pick-claude-dir',
   sessionsList: 'sessions:list',
   sessionsChanged: 'sessions:changed',
