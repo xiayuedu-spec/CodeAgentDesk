@@ -23,6 +23,7 @@ import type {
   SummarizeSessionResult,
   DaySummarizeResult,
   DeleteSessionsResult,
+  DashboardStats,
   KnowledgeExportResult,
   SummaryHistoryResult,
   SummaryGetResult,
@@ -59,6 +60,7 @@ import {
 } from './knowledge-store';
 import { summarizeDayText, summarizeMonthText, summarizeSession, summarizeWeekText } from './summarize';
 import { getSummaryText, listSummaries, saveSummary, type SummaryKind } from './summary-store';
+import { listKnowledge as listKnowledgeItems } from './knowledge-store';
 import { readUiState, writeUiState } from './ui-state';
 import type { GroupStore } from './group-store';
 import type { SessionMetaStore } from './session-meta-store';
@@ -550,6 +552,42 @@ export function registerIpcHandlers(
   );
 
   ipcMain.handle(IpcChannel.knowledgeList, (): KnowledgeItem[] => listKnowledge());
+
+  ipcMain.handle(IpcChannel.dashboardStats, async (): Promise<DashboardStats> => {
+    const claudeHome = resolveClaudeHome(readConfig());
+    const records = await listSessions(claudeHome, metaStore);
+    const today = new Date().toISOString().slice(0, 10);
+    const todayRecords = records.filter(
+      (record) => !record.archived && (record.updatedAt || '').slice(0, 10) === today,
+    );
+    const projectMap = new Map<string, number>();
+    for (const record of todayRecords) {
+      if (!record.cwd) continue;
+      projectMap.set(record.cwd, (projectMap.get(record.cwd) ?? 0) + 1);
+    }
+    const trend = await getUsageTrend(claudeHome, metaStore, 1);
+    const todayTokens = trend[0] ?? {
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheReadTokens: 0,
+      cacheCreationTokens: 0,
+    };
+    return {
+      runningCount: sessions.list().length,
+      todaySessionCount: todayRecords.length,
+      todayTokens: {
+        inputTokens: todayTokens.inputTokens,
+        outputTokens: todayTokens.outputTokens,
+        cacheReadTokens: todayTokens.cacheReadTokens,
+      },
+      todayProjects: [...projectMap.entries()]
+        .map(([cwd, count]) => ({ cwd, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5),
+      knowledgeCount: listKnowledgeItems().length,
+      hasTodaySummary: Boolean(getSummaryText('day', today)),
+    };
+  });
 
   ipcMain.handle(
     IpcChannel.knowledgeGet,

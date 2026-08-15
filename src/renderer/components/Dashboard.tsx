@@ -1,0 +1,110 @@
+import { BookOpen, Plus, Sparkles, X } from 'lucide-react';
+import { useDashboardStats } from '../hooks/useDashboardStats';
+import { folderName } from '../session-utils';
+
+interface DashboardProps {
+  onClose: () => void;
+  onNew: () => void;
+  onFocusHistory: () => void;
+  onOpenSummary: () => void;
+  onOpenKnowledge: () => void;
+  onOpenUsageTrend: () => void;
+}
+
+function formatTokens(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}k`;
+  return String(value);
+}
+
+/** 今日概览弹窗（Ctrl+P 入口，随时查看"现在"）。 */
+export function Dashboard({
+  onClose,
+  onNew,
+  onFocusHistory,
+  onOpenSummary,
+  onOpenKnowledge,
+  onOpenUsageTrend,
+}: DashboardProps) {
+  const { stats } = useDashboardStats();
+  const { todaySessionCount, todayTokens, runningCount, todayProjects, knowledgeCount, hasTodaySummary } = stats;
+
+  return (
+    <div className="day-overlay" onClick={onClose}>
+      <div className="day-panel dashboard-panel" onClick={(event) => event.stopPropagation()}>
+        <div className="day-header">
+          <span className="day-title">今日概览</span>
+          <div className="day-actions">
+            <button type="button" className="icon-button" title="关闭" onClick={onClose}>
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+        <div className="day-body">
+          <div className="dashboard-grid">
+            <div className="dashboard-card">
+              <span className="dashboard-card-value">{runningCount}</span>
+              <span className="dashboard-card-label">运行中会话</span>
+            </div>
+            <div className="dashboard-card">
+              <span className="dashboard-card-value">{todaySessionCount}</span>
+              <span className="dashboard-card-label">今日会话</span>
+            </div>
+            <div className="dashboard-card">
+              <span className="dashboard-card-value">{formatTokens(todayTokens.inputTokens)}</span>
+              <span className="dashboard-card-label">今日输入 token</span>
+            </div>
+            <div className="dashboard-card">
+              <span className="dashboard-card-value">{formatTokens(todayTokens.outputTokens)}</span>
+              <span className="dashboard-card-label">今日输出 token</span>
+            </div>
+            <div className="dashboard-card">
+              <span className="dashboard-card-value">{knowledgeCount}</span>
+              <span className="dashboard-card-label">知识库项目</span>
+            </div>
+            <div className="dashboard-card">
+              <span className={`dashboard-card-value ${hasTodaySummary ? 'ok' : ''}`}>
+                {hasTodaySummary ? '✓' : '—'}
+              </span>
+              <span className="dashboard-card-label">今日总结</span>
+            </div>
+          </div>
+
+          {todayProjects.length > 0 ? (
+            <div className="dashboard-projects">
+              <span className="dashboard-projects-label">今日活跃项目</span>
+              <div className="dashboard-project-chips">
+                {todayProjects.map((project) => (
+                  <span key={project.cwd} className="dashboard-project-chip" title={project.cwd}>
+                    {folderName(project.cwd)} · {project.count}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="dashboard-actions">
+            <button type="button" className="welcome-btn primary" onClick={onNew}>
+              <Plus size={14} />
+              新建会话
+            </button>
+            <button type="button" className="welcome-btn" onClick={onFocusHistory}>
+              <BookOpen size={14} />
+              历史会话
+            </button>
+            <button type="button" className="welcome-btn" onClick={onOpenSummary}>
+              <Sparkles size={14} />
+              今日总结
+            </button>
+            <button type="button" className="welcome-btn" onClick={onOpenKnowledge}>
+              知识库
+            </button>
+            <button type="button" className="welcome-btn" onClick={onOpenUsageTrend}>
+              用量趋势
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -24,6 +24,7 @@ import type {
   SearchResult,
   SessionUsage,
   KnowledgeExportResult,
+  DashboardStats,
   KnowledgeItem,
   UsageTrendDay,
   SummarizeSessionResult,
@@ -70,6 +71,7 @@ const CHANNELS = {
   knowledgeGet: 'knowledge:get',
   knowledgeSave: 'knowledge:save',
   knowledgeExport: 'knowledge:export',
+  dashboardStats: 'dashboard:stats',
   sessionExport: 'session:export',
   sessionReadText: 'session:read-text',
   uiGetState: 'ui:get-state',
@@ -153,6 +155,8 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.knowledgeGenerate, cwd, force) as Promise<SummaryGetResult>,
   exportKnowledge: (cwd) =>
     ipcRenderer.invoke(CHANNELS.knowledgeExport, cwd) as Promise<KnowledgeExportResult>,
+  getDashboardStats: () =>
+    ipcRenderer.invoke(CHANNELS.dashboardStats) as Promise<DashboardStats>,
   listKnowledge: () => ipcRenderer.invoke(CHANNELS.knowledgeList) as Promise<KnowledgeItem[]>,
   getKnowledge: (key) =>
     ipcRenderer.invoke(CHANNELS.knowledgeGet, key) as Promise<SummaryGetResult>,

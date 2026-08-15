@@ -62,6 +62,15 @@ export class SessionManager {
     return session ? { cwd: session.cwd, sessionId: session.sessionId } : null;
   }
 
+  /** 当前全部运行中会话（供统计/仪表盘使用）。 */
+  list(): { id: string; cwd: string; sessionId?: string }[] {
+    return [...this.sessions.values()].map((session) => ({
+      id: session.id,
+      cwd: session.cwd,
+      sessionId: session.sessionId,
+    }));
+  }
+
   write(id: string, data: string): void {
     this.sessions.get(id)?.pty.write(data);
   }

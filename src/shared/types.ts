@@ -198,6 +198,15 @@ export interface KnowledgeExportResult {
   message?: string;
 }
 
+export interface DashboardStats {
+  runningCount: number;
+  todaySessionCount: number;
+  todayTokens: { inputTokens: number; outputTokens: number; cacheReadTokens: number };
+  todayProjects: { cwd: string; count: number }[];
+  knowledgeCount: number;
+  hasTodaySummary: boolean;
+}
+
 export interface ArchiveSessionResult {
   ok: boolean;
   message?: string;
@@ -268,6 +277,7 @@ export interface CodeAgentDeskApi {
   getKnowledge(key: string): Promise<SummaryGetResult>;
   saveKnowledge(key: string, text: string): Promise<SummaryGetResult>;
   exportKnowledge(cwd: string): Promise<KnowledgeExportResult>;
+  getDashboardStats(): Promise<DashboardStats>;
   exportSessionMarkdown(sessionId: string, cwd?: string): Promise<ExportResult>;
   readSessionText(sessionId: string): Promise<ReadSessionTextResult>;
   getUiState(): Promise<UiState>;

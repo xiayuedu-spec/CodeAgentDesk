@@ -35,6 +35,7 @@ import { useUiState } from './hooks/useUiState';
 import { useSearch } from './hooks/useSearch';
 import { usePalette } from './hooks/usePalette';
 import { useSummary } from './hooks/useSummary';
+import { useDashboardStats } from './hooks/useDashboardStats';
 import { TerminalPane } from './components/TerminalPane';
 import { TitleBar } from './components/TitleBar';
 import { TabBar } from './components/TabBar';
@@ -62,6 +63,9 @@ const LazyUsageTrendModal = lazy(() =>
 );
 const LazyKnowledgeModal = lazy(() =>
   import('./components/KnowledgeModal').then((module) => ({ default: module.KnowledgeModal })),
+);
+const LazyDashboard = lazy(() =>
+  import('./components/Dashboard').then((module) => ({ default: module.Dashboard })),
 );
 
 export default function App() {
@@ -159,6 +163,8 @@ export default function App() {
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const [usageTrendOpen, setUsageTrendOpen] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const [dashboardOpen, setDashboardOpen] = useState(false);
+  const dashboard = useDashboardStats();
   const sidebarBodyRef = useRef<HTMLDivElement | null>(null);
   const sidebarWidthRef = useRef(232);
   const infoWidthRef = useRef(260);
@@ -1042,6 +1048,11 @@ export default function App() {
       run: () => setKnowledgeOpen(true),
     });
     items.push({
+      key: 'dashboard',
+      label: '今日概览',
+      run: () => setDashboardOpen(true),
+    });
+    items.push({
       key: 'settings',
       label: '打开设置',
       run: () => setSettingsOpen(true),
@@ -1432,11 +1443,14 @@ export default function App() {
                 />
               ) : (
                 <Welcome
+                  stats={dashboard.stats}
                   historyCount={historyRecords.length}
                   error={error}
                   onNew={() => void handleNewSession()}
                   onFocusHistory={() => sidebarBodyRef.current?.focus()}
                   onOpenSummary={openSummary}
+                  onOpenKnowledge={() => setKnowledgeOpen(true)}
+                  onOpenUsageTrend={() => setUsageTrendOpen(true)}
                 />
               )}
             </>
@@ -1511,6 +1525,19 @@ export default function App() {
       {knowledgeOpen ? (
         <Suspense fallback={null}>
           <LazyKnowledgeModal onClose={() => setKnowledgeOpen(false)} />
+        </Suspense>
+      ) : null}
+
+      {dashboardOpen ? (
+        <Suspense fallback={null}>
+          <LazyDashboard
+            onClose={() => setDashboardOpen(false)}
+            onNew={() => void handleNewSession()}
+            onFocusHistory={() => sidebarBodyRef.current?.focus()}
+            onOpenSummary={openSummary}
+            onOpenKnowledge={() => setKnowledgeOpen(true)}
+            onOpenUsageTrend={() => setUsageTrendOpen(true)}
+          />
         </Suspense>
       ) : null}
 
