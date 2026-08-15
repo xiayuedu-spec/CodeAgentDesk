@@ -1,6 +1,7 @@
-import { BookOpen, History, Plus, Sparkles, TrendingUp, X } from 'lucide-react';
+import { Activity, BookOpen, Database, History, Plus, Sparkles, TrendingUp, X } from 'lucide-react';
 import { useDashboardStats } from '../hooks/useDashboardStats';
 import { useEscape } from '../hooks/useEscape';
+import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 import { folderName } from '../session-utils';
 
 interface DashboardProps {
@@ -46,6 +47,9 @@ export function Dashboard({
 }: DashboardProps) {
   const { stats } = useDashboardStats();
   useEscape(true, onClose);
+  const animatedInput = useAnimatedNumber(stats.todayTokens.inputTokens);
+  const animatedOutput = useAnimatedNumber(stats.todayTokens.outputTokens);
+  const animatedHourly = useAnimatedNumber(stats.hourlyTokens);
   const {
     todaySessionCount,
     todayTokens,
@@ -53,7 +57,6 @@ export function Dashboard({
     todayProjects,
     knowledgeCount,
     hasTodaySummary,
-    hourlyTokens,
     hourlyPercent,
     hourlyLimit,
   } = stats;
@@ -82,11 +85,11 @@ export function Dashboard({
               <span className="dashboard-card-label">今日会话</span>
             </div>
             <div className="dashboard-card">
-              <span className="dashboard-card-value">{formatTokens(todayTokens.inputTokens)}</span>
+              <span className="dashboard-card-value">{formatTokens(animatedInput)}</span>
               <span className="dashboard-card-label">今日输入 token</span>
             </div>
             <div className="dashboard-card">
-              <span className="dashboard-card-value">{formatTokens(todayTokens.outputTokens)}</span>
+              <span className="dashboard-card-value">{formatTokens(animatedOutput)}</span>
               <span className="dashboard-card-label">今日输出 token</span>
             </div>
             <div className="dashboard-card">
@@ -111,7 +114,7 @@ export function Dashboard({
             <div className="dashboard-limit-head">
               <span className="dashboard-limit-label">本小时消耗（整点刷新）</span>
               <span className={`dashboard-limit-value ${limitTier}`}>
-                {formatTokens(hourlyTokens)} / {formatTokens(hourlyLimit)}（{hourlyPercent}%）
+                {formatTokens(animatedHourly)} / {formatTokens(hourlyLimit)}（{hourlyPercent}%）
               </span>
             </div>
             <div className={`dashboard-limit-bar ${limitTier}`}>
@@ -146,9 +149,11 @@ export function Dashboard({
               今日总结
             </button>
             <button type="button" className="welcome-btn" onClick={onOpenKnowledge}>
+              <Database size={14} />
               知识库
             </button>
             <button type="button" className="welcome-btn" onClick={onOpenUsageTrend}>
+              <Activity size={14} />
               用量趋势
             </button>
             <button type="button" className="welcome-btn" onClick={onOpenEfficiency}>

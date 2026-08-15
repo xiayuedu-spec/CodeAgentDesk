@@ -4,6 +4,7 @@ import type { AppInfo, AgentStatusStyle, ClaudeConfigInfo, DashboardStats, Theme
 import { folderName } from '../session-utils';
 import { THEMES, THEME_SWATCHES } from '../theme';
 import { HourlyUsagePopover } from './HourlyUsagePopover';
+import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 
 export const DEFAULT_HOURLY_LIMIT = 10_000_000;
 
@@ -55,6 +56,8 @@ export function SidebarFooter({
   } = actions;
 
   const limitTier = stats.hourlyPercent >= 100 ? 'danger' : stats.hourlyPercent >= 80 ? 'warn' : '';
+  const animatedPercent = useAnimatedNumber(stats.hourlyPercent);
+  const animatedTokens = useAnimatedNumber(stats.hourlyTokens);
   const [limitInput, setLimitInput] = useState(
     String(claudeInfo?.config.tokenLimitPerHour ?? DEFAULT_HOURLY_LIMIT),
   );
@@ -167,13 +170,13 @@ export function SidebarFooter({
         >
           <div className="footer-limit-head">
             <span className="footer-limit-label">本小时消耗</span>
-            <span className={`footer-limit-percent ${limitTier}`}>{stats.hourlyPercent}%</span>
+            <span className={`footer-limit-percent ${limitTier}`}>{Math.round(animatedPercent)}%</span>
           </div>
           <div className={`footer-limit-bar ${limitTier}`}>
             <span style={{ width: `${Math.min(100, stats.hourlyPercent)}%` }} />
           </div>
           <div className="footer-limit-sub">
-            {formatTokens(stats.hourlyTokens)} / {formatTokens(stats.hourlyLimit)} · 整点刷新
+            {formatTokens(animatedTokens)} / {formatTokens(stats.hourlyLimit)} · 整点刷新
           </div>
         </button>
         {hourlyOpen ? (

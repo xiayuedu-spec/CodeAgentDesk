@@ -1,5 +1,7 @@
+import { SearchX } from 'lucide-react';
 import type { SearchHit, SearchResult } from '../../shared/types';
 import { folderName, highlight } from '../session-utils';
+import { EmptyState } from './EmptyState';
 
 interface SearchResultsProps {
   results: SearchResult[];
@@ -10,7 +12,13 @@ interface SearchResultsProps {
 
 export function SearchResults({ results, query, onOpen, onOpenHit }: SearchResultsProps) {
   if (results.length === 0) {
-    return <div className="archive-empty">没有匹配结果</div>;
+    return (
+      <EmptyState
+        icon={<SearchX size={40} strokeWidth={1.4} />}
+        title="没有匹配结果"
+        hint="换个关键词试试，支持会话全文检索"
+      />
+    );
   }
   return (
     <div className="search-results" role="log">

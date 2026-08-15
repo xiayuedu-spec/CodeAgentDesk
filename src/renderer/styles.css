@@ -4738,3 +4738,152 @@ body,
 .palette input::placeholder {
   color: var(--text-faint);
 }
+
+/* ---- 视觉统一性：滚动条 / 空状态 / hover / 渐变色点缀 ---- */
+/* 1. 自定义滚动条（细窄圆角，随主题） */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--border-strong) 65%, transparent) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--border-strong) 60%, transparent);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--accent-dim) 70%, transparent);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* 2. 空状态插画化 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 36px 16px;
+  text-align: center;
+}
+.empty-state-icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--accent-soft) 55%, transparent);
+  color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.empty-state-title {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.empty-state-hint {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+/* 3. 状态栏「更多」菜单 */
+.status-more-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.status-more-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 152px;
+  padding: 4px;
+  background: color-mix(in srgb, var(--bg-raised) 92%, transparent);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  z-index: 80;
+  animation: popoverIn 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.status-more-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.status-more-menu button:hover {
+  background: var(--bg-inset);
+}
+.status-more-icon {
+  display: inline-flex;
+  color: var(--text-muted);
+}
+.status-more.active {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* 4. 渐变色点缀：侧边栏顶部光晕 / 首页图标光晕 */
+.sidebar {
+  position: relative;
+}
+.sidebar::before {
+  content: '';
+  position: absolute;
+  top: -90px;
+  left: -70px;
+  width: 320px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--accent-soft), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+.sidebar-body,
+.sidebar-footer {
+  position: relative;
+  z-index: 1;
+}
+.welcome-icon {
+  position: relative;
+}
+.welcome-icon::after {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--accent-soft), transparent 70%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* 5. 卡片 hover 统一：上浮 + 主题边框 */
+.dashboard-card,
+.eff-card,
+.summary-card {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms ease,
+    background 220ms ease,
+    box-shadow 220ms ease;
+}
+.dashboard-card:hover,
+.eff-card:hover,
+.summary-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent-dim) 45%, var(--border));
+}

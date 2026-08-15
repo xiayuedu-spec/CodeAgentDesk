@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { History, X } from 'lucide-react';
+import { CalendarX, History, X } from 'lucide-react';
 import type { DayTimelineResult } from '../../shared/types';
 import { useEscape } from '../hooks/useEscape';
+import { EmptyState } from './EmptyState';
 
 interface TimelineModalProps {
   onClose: () => void;
@@ -116,7 +117,11 @@ export function TimelineModal({ onClose, onOpenDetail }: TimelineModalProps) {
           {data === null ? (
             <div className="day-loading">正在统计…</div>
           ) : events.length === 0 ? (
-            <div className="archive-empty">这一天没有会话记录</div>
+            <EmptyState
+              icon={<CalendarX size={40} strokeWidth={1.4} />}
+              title="这一天没有会话记录"
+              hint="点击 ‹ › 切换日期"
+            />
           ) : (
             <>
               <div className="timeline-summary">

@@ -1,4 +1,15 @@
 import { useState } from 'react';
+import {
+  BookOpen,
+  Gauge,
+  History,
+  Home,
+  LayoutDashboard,
+  MoreHorizontal,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react';
+import { useDismiss } from '../hooks/useDismiss';
 
 interface StatusBarProps {
   sessionCount: number;
@@ -9,9 +20,10 @@ interface StatusBarProps {
   onOpenUsageTrend: () => void;
   onOpenKnowledge: () => void;
   onOpenEfficiency: () => void;
-  onUnlockNeon: () => void;
   onOpenDashboard: () => void;
+  onOpenTimeline: () => void;
   onOpenHome: () => void;
+  onUnlockNeon: () => void;
   agentEmoji: string;
   agentStatusLabel: string;
   pomodoroRunning: boolean;
@@ -33,9 +45,10 @@ export function StatusBar({
   onOpenUsageTrend,
   onOpenKnowledge,
   onOpenEfficiency,
-  onUnlockNeon,
   onOpenDashboard,
+  onOpenTimeline,
   onOpenHome,
+  onUnlockNeon,
   agentEmoji,
   agentStatusLabel,
   pomodoroRunning,
@@ -45,6 +58,8 @@ export function StatusBar({
   onPomodoroReset,
 }: StatusBarProps) {
   const [versionClicks, setVersionClicks] = useState(0);
+  const [moreOpen, setMoreOpen] = useState(false);
+  useDismiss(moreOpen, () => setMoreOpen(false));
 
   const handleVersionClick = (): void => {
     const next = versionClicks + 1;
@@ -56,6 +71,14 @@ export function StatusBar({
     }
   };
 
+  const moreItems: { key: string; label: string; icon: React.ReactNode; run: () => void }[] = [
+    { key: 'usage', label: '用量趋势', icon: <TrendingUp size={13} />, run: onOpenUsageTrend },
+    { key: 'knowledge', label: '项目知识库', icon: <BookOpen size={13} />, run: onOpenKnowledge },
+    { key: 'efficiency', label: '效率洞察', icon: <Gauge size={13} />, run: onOpenEfficiency },
+    { key: 'dashboard', label: '今日概览', icon: <LayoutDashboard size={13} />, run: onOpenDashboard },
+    { key: 'timeline', label: '工作时间线', icon: <History size={13} />, run: onOpenTimeline },
+  ];
+
   return (
     <footer className="status-bar">
       <span className="agent-status" title={agentStatusLabel}>
@@ -64,23 +87,45 @@ export function StatusBar({
       <span>{sessionCount} 会话</span>
       <span>{archivedCount} 归档</span>
       <button type="button" className="status-day" title="返回首页" onClick={onOpenHome}>
+        <Home size={12} />
         首页
       </button>
       <button type="button" className="status-day" title="生成今日总结" onClick={onOpenSummary}>
+        <Sparkles size={12} />
         今日总结
       </button>
-      <button type="button" className="status-day" title="Token 用量趋势" onClick={onOpenUsageTrend}>
-        用量趋势
-      </button>
-      <button type="button" className="status-day" title="项目知识库" onClick={onOpenKnowledge}>
-        知识库
-      </button>
-      <button type="button" className="status-day" title="每周时长 / 省时估算" onClick={onOpenEfficiency}>
-        效率洞察
-      </button>
-      <button type="button" className="status-day" title="今日数据概览" onClick={onOpenDashboard}>
-        今日概览
-      </button>
+      <div className="status-more-wrap">
+        <button
+          type="button"
+          className={`status-day status-more${moreOpen ? ' active' : ''}`}
+          title="更多功能"
+          onClick={(event) => {
+            event.stopPropagation();
+            setMoreOpen((open) => !open);
+          }}
+        >
+          <MoreHorizontal size={13} />
+          更多
+        </button>
+        {moreOpen ? (
+          <div className="status-more-menu" role="menu" onClick={(event) => event.stopPropagation()}>
+            {moreItems.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMoreOpen(false);
+                  item.run();
+                }}
+              >
+                <span className="status-more-icon">{item.icon}</span>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
       <button
         type="button"
         className={`pomodoro${pomodoroRunning ? ' running' : ''}`}

@@ -1511,6 +1511,7 @@ export default function App() {
           onOpenEfficiency={() => setEfficiencyOpen(true)}
           onUnlockNeon={() => void handleUnlockNeon()}
           onOpenDashboard={() => setDashboardOpen(true)}
+          onOpenTimeline={() => setTimelineOpen(true)}
           onOpenHome={() => setHomeOpen(true)}
           agentEmoji={activeAgentMeta.emoji}
           agentStatusLabel={activeAgentMeta.label}

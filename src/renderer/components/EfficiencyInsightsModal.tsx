@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { TrendingUp, X } from 'lucide-react';
+import { CalendarX, FolderOpen, TrendingUp, X } from 'lucide-react';
 import type { EfficiencyInsights, FunStats } from '../../shared/types';
 import { folderName } from '../session-utils';
 import { useEscape } from '../hooks/useEscape';
+import { EmptyState } from './EmptyState';
 
 interface EfficiencyInsightsModalProps {
   onClose: () => void;
@@ -146,7 +147,11 @@ export function EfficiencyInsightsModal({ onClose }: EfficiencyInsightsModalProp
           {data === null ? (
             <div className="day-loading">正在统计…</div>
           ) : data.sessionCount === 0 ? (
-            <div className="archive-empty">该周没有会话记录</div>
+            <EmptyState
+              icon={<CalendarX size={40} strokeWidth={1.4} />}
+              title="该周没有会话记录"
+              hint="点击 ‹ › 切换周"
+            />
           ) : (
             <>
               <div className="eff-grid">
@@ -242,7 +247,11 @@ export function EfficiencyInsightsModal({ onClose }: EfficiencyInsightsModalProp
 
                   <div className="eff-section-title">项目性格标签</div>
                   {fun.personalities.length === 0 ? (
-                    <div className="archive-empty">还没有项目会话记录</div>
+                    <EmptyState
+                      icon={<FolderOpen size={32} strokeWidth={1.4} />}
+                      title="还没有项目会话记录"
+                      hint="积累会话后自动生成性格标签"
+                    />
                   ) : (
                     <ul className="fun-personality-list">
                       {fun.personalities.map((item) => (

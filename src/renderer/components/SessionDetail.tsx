@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { Download, Sparkles, X } from 'lucide-react';
+import { Download, MessageSquare, Sparkles, X } from 'lucide-react';
 import type { SessionDetailResult } from '../../shared/types';
 import { useEscape } from '../hooks/useEscape';
+import { EmptyState } from './EmptyState';
 
 interface SessionDetailProps {
   detail: SessionDetailResult;
@@ -95,7 +96,11 @@ export function SessionDetail({
           </div>
         ) : null}
         {detail.entries.length === 0 ? (
-          <div className="archive-empty">暂无内容</div>
+          <EmptyState
+            icon={<MessageSquare size={36} strokeWidth={1.4} />}
+            title="暂无内容"
+            hint="这个会话还没有可展示的对话记录"
+          />
         ) : (
           detail.entries.map((entry, index) =>
             entry.role === 'tool' ? (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, Plus, Sparkles, Terminal } from 'lucide-react';
+import { Activity, BookOpen, Database, Plus, Sparkles, Terminal } from 'lucide-react';
 import type { DashboardStats, GroupRecord, SessionRecord } from '../../shared/types';
 import { folderName } from '../session-utils';
 import { computeMbti } from '../mbti';
@@ -257,10 +257,12 @@ export function Welcome({
           <span>今日总结</span>
         </button>
         <button type="button" className="welcome-btn" onClick={onOpenKnowledge}>
-          知识库
+          <Database size={14} />
+          <span>知识库</span>
         </button>
         <button type="button" className="welcome-btn" onClick={onOpenUsageTrend}>
-          用量趋势
+          <Activity size={14} />
+          <span>用量趋势</span>
         </button>
       </div>
       <div className="welcome-hint">Ctrl+K 全局搜索 · Ctrl+T 新建会话 · Ctrl+1..9 切换标签</div>
