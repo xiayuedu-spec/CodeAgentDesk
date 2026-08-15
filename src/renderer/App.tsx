@@ -67,6 +67,9 @@ const LazyKnowledgeModal = lazy(() =>
 const LazyDashboard = lazy(() =>
   import('./components/Dashboard').then((module) => ({ default: module.Dashboard })),
 );
+const LazyHourlyUsage = lazy(() =>
+  import('./components/HourlyUsageModal').then((module) => ({ default: module.HourlyUsageModal })),
+);
 
 export default function App() {
   const ui = useUiState();
@@ -162,6 +165,7 @@ export default function App() {
   const [usageTrendOpen, setUsageTrendOpen] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [hourlyOpen, setHourlyOpen] = useState(false);
   const dashboard = useDashboardStats();
   const toast = useToast();
   const sidebarBodyRef = useRef<HTMLDivElement | null>(null);
@@ -1295,7 +1299,7 @@ export default function App() {
     handleResetClaudeDir: () => {
       void handleResetClaudeDir().then(() => void refreshRecords());
     },
-    onOpenDashboard: () => setDashboardOpen(true),
+    onOpenDashboard: () => setHourlyOpen(true),
   };
 
   const contextMenusData = {
@@ -1506,6 +1510,12 @@ export default function App() {
       {knowledgeOpen ? (
         <Suspense fallback={null}>
           <LazyKnowledgeModal onClose={() => setKnowledgeOpen(false)} />
+        </Suspense>
+      ) : null}
+
+      {hourlyOpen ? (
+        <Suspense fallback={null}>
+          <LazyHourlyUsage onClose={() => setHourlyOpen(false)} />
         </Suspense>
       ) : null}
 

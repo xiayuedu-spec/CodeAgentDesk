@@ -99,7 +99,7 @@ export function SidebarFooter({
       <button
         type="button"
         className="footer-limit"
-        title="本小时 Token 消耗（整点刷新）· 点击查看今日概览"
+        title="本小时 Token 消耗（整点刷新）· 点击查看每小时用量"
         onClick={onOpenDashboard}
       >
         <div className="footer-limit-head">

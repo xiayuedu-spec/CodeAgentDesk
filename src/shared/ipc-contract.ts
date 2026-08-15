@@ -46,6 +46,7 @@ export const IpcChannel = {
   windowMaximizedChanged: 'window:maximized-changed',
   sessionUsage: 'session:usage',
   usageTrend: 'usage:trend',
+  usageHourly: 'usage:hourly',
   searchQuery: 'search:query',
   sessionWrite: 'session:write',
   sessionResize: 'session:resize',

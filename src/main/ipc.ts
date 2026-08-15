@@ -24,6 +24,7 @@ import type {
   DaySummarizeResult,
   DeleteSessionsResult,
   DashboardStats,
+  HourlyUsage,
   KnowledgeExportResult,
   SummaryHistoryResult,
   SummaryGetResult,
@@ -41,6 +42,7 @@ import { getMainWindow } from './window-manager';
 import {
   findSessionFile,
   getCurrentHourUsage,
+  getHourlyUsageToday,
   getUsageTrend,
   listSessions,
   readChatEntries,
@@ -724,6 +726,10 @@ export function registerIpcHandlers(
       return getUsageTrend(resolveClaudeHome(readConfig()), metaStore, safeDays);
     },
   );
+
+  ipcMain.handle(IpcChannel.usageHourly, async (): Promise<HourlyUsage[]> => {
+    return getHourlyUsageToday(resolveClaudeHome(readConfig()), metaStore);
+  });
 
   ipcMain.handle(
     IpcChannel.sessionWrite,

@@ -152,6 +152,11 @@ export interface UsageTrendDay {
   cacheCreationTokens: number;
 }
 
+export interface HourlyUsage {
+  hour: number;
+  tokens: number;
+}
+
 export interface RenameSessionResult {
   ok: boolean;
   message?: string;
@@ -294,6 +299,7 @@ export interface CodeAgentDeskApi {
   onWindowMaximizedChanged(callback: (maximized: boolean) => void): () => void;
   getSessionUsage(id: string): Promise<SessionUsage>;
   getUsageTrend(days: number): Promise<UsageTrendDay[]>;
+  getHourlyUsageToday(): Promise<HourlyUsage[]>;
   searchSessions(query: string): Promise<SearchResult[]>;
   writeSession(id: string, data: string): Promise<void>;
   resizeSession(id: string, cols: number, rows: number): Promise<void>;

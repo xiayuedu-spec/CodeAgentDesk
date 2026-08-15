@@ -8,6 +8,7 @@ import type {
   DeleteSessionsResult,
   ExportResult,
   GroupOpResult,
+  HourlyUsage,
   GroupRecord,
   PickDirectoryResult,
   PickClaudeDirResult,
@@ -84,6 +85,7 @@ const CHANNELS = {
   windowMaximizedChanged: 'window:maximized-changed',
   sessionUsage: 'session:usage',
   usageTrend: 'usage:trend',
+  usageHourly: 'usage:hourly',
   searchQuery: 'search:query',
   sessionWrite: 'session:write',
   sessionResize: 'session:resize',
@@ -181,6 +183,8 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.sessionUsage, id) as Promise<SessionUsage>,
   getUsageTrend: (days) =>
     ipcRenderer.invoke(CHANNELS.usageTrend, days) as Promise<UsageTrendDay[]>,
+  getHourlyUsageToday: () =>
+    ipcRenderer.invoke(CHANNELS.usageHourly) as Promise<HourlyUsage[]>,
   searchSessions: (query) =>
     ipcRenderer.invoke(CHANNELS.searchQuery, query) as Promise<SearchResult[]>,
   writeSession: (id, data) =>

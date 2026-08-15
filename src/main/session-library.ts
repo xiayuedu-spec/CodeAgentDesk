@@ -362,6 +362,34 @@ export interface UsageTrendDay {
   cacheCreationTokens: number;
 }
 
+/** 今日每个自然小时的 token 总消耗（会话按 updatedAt 归入所在小时），用于每小时用量柱状图。 */
+export async function getHourlyUsageToday(
+  claudeHome: string,
+  metaStore: SessionMetaStore,
+): Promise<{ hour: number; tokens: number }[]> {
+  const records = await listSessions(claudeHome, metaStore);
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const sinceMs = todayStart.getTime();
+  const byHour = new Array<number>(24).fill(0);
+  for (const record of records) {
+    const time = new Date(record.updatedAt).getTime();
+    if (time < sinceMs) continue;
+    const hour = new Date(record.updatedAt).getHours();
+    try {
+      const usage = await readSessionUsage(record.filePath);
+      byHour[hour] +=
+        usage.inputTokens +
+        usage.outputTokens +
+        usage.cacheReadTokens +
+        usage.cacheCreationTokens;
+    } catch {
+      // 跳过无法读取的会话。
+    }
+  }
+  return byHour.map((tokens, hour) => ({ hour, tokens }));
+}
+
 /** 当前自然小时（整点起）内的 token 总消耗（会话按 updatedAt 归入所在小时），用于按小时限额预警。 */
 export async function getCurrentHourUsage(
   claudeHome: string,
