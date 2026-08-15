@@ -18,7 +18,6 @@ const MAX_DETAIL_LINES = 2000;
 const MAX_SEARCH_LINES = 5000;
 const MAX_HITS_PER_SESSION = 20;
 const MAX_TEXT_LENGTH = 4000;
-const MAX_USAGE_INCREMENT_LINES = 2000;
 
 /** 逐行扫描 JSONL（带行数上限与静默吞错），供各解析函数复用。 */
 function scanLines(filePath: string, limit: number, onLine: (line: string) => void): Promise<void> {
@@ -376,7 +375,13 @@ export interface UsageTrendDay {
   cacheCreationTokens: number;
 }
 
-/** 今日每个自然小时的 token 总消耗（会话按 updatedAt 归入所在小时），用于每小时用量柱状图。 */
+/**
+ * 今日每个自然小时的 token 总消耗（会话按 updatedAt 归入所在小时），用于每小时用量柱状图。
+ *
+ * 口径说明：用量按会话文件的 updatedAt（最后一次写入时间）整段归入该小时。
+ * 跨小时的长任务会把全部用量堆到最后一小时，导致柱状图/限额预警在小时边界处
+ * 出现延迟或集中（按 event 时间戳精确分摊需要增量缓存记录每条消息的时间，暂未实现）。
+ */
 export async function getHourlyUsageToday(
   claudeHome: string,
   metaStore: SessionMetaStore,
@@ -404,7 +409,12 @@ export async function getHourlyUsageToday(
   return byHour.map((tokens, hour) => ({ hour, tokens }));
 }
 
-/** 当前自然小时（整点起）内的 token 总消耗（会话按 updatedAt 归入所在小时），用于按小时限额预警。 */
+/**
+ * 当前自然小时（整点起）内的 token 总消耗（会话按 updatedAt 归入所在小时），用于按小时限额预警。
+ *
+ * 口径说明：同上——按 updatedAt 归小时，跨小时长任务的用量会集中到结束小时，
+ * 预警可能在任务进行中漏报、结束后补报。精确分摊需按事件时间戳统计（暂未实现）。
+ */
 export async function getCurrentHourUsage(
   claudeHome: string,
   metaStore: SessionMetaStore,

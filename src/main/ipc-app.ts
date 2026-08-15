@@ -16,6 +16,7 @@ import {
 import { getMainWindow } from './window-manager';
 import { getRecentDirs } from './recent-dirs';
 import { readUiState, writeUiState } from './ui-state';
+import { invalidateDashboardCache } from './ipc-usage';
 
 const startedAt = new Date().toISOString();
 
@@ -62,6 +63,7 @@ export function registerAppIpc({ onClaudeDirChanged }: AppIpcDeps): void {
           ? Math.floor(limit)
           : undefined;
       writeConfig({ ...readConfig(), tokenLimitPerHour: safeLimit });
+      invalidateDashboardCache(); // 限额变化立即反映到统计缓存。
       return readClaudeConfigInfo();
     },
   );

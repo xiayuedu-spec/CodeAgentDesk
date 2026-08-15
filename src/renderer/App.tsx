@@ -35,6 +35,7 @@ import { useSearch } from './hooks/useSearch';
 import { usePalette } from './hooks/usePalette';
 import { useSummary } from './hooks/useSummary';
 import { useDashboardStats } from './hooks/useDashboardStats';
+import { useDismiss } from './hooks/useDismiss';
 import { useToast } from './toast';
 import { TerminalPane } from './components/TerminalPane';
 import { TitleBar } from './components/TitleBar';
@@ -168,6 +169,7 @@ export default function App() {
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<Set<string>>(new Set());
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
+  const [confirmDeleteOne, setConfirmDeleteOne] = useState<string | null>(null);
   const [usageTrendOpen, setUsageTrendOpen] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
@@ -209,12 +211,22 @@ export default function App() {
 
   const activeSessionId = sessions.find((item) => item.id === activeId)?.sessionId;
 
+  // 窗口最小化/隐藏时暂停高频轮询，减少无意义 IPC 与扫描。
+  const [pageHidden, setPageHidden] = useState(document.hidden);
+  useEffect(() => {
+    const onVisibility = () => setPageHidden(document.hidden);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
   useEffect(() => {
     const session = sessions.find((item) => item.id === activeId);
     if (!session?.sessionId) {
       setUsage(EMPTY_USAGE);
       return;
     }
+    // 信息面板折叠或窗口隐藏时暂停轮询。
+    if (!infoOpen || pageHidden) return;
     let cancelled = false;
     const refresh = () => {
       window.codeagentdesk
@@ -232,7 +244,7 @@ export default function App() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [activeId, activeSessionId]);
+  }, [activeId, activeSessionId, infoOpen, pageHidden]);
 
   useEffect(() => {
     const ids = sessions
@@ -398,73 +410,23 @@ export default function App() {
     );
   }, [activeId]);
 
-  useEffect(() => {
-    if (!menu) return;
-    const close = () => setMenu(null);
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMenu(null);
-    };
-    window.addEventListener('click', close);
-    window.addEventListener('contextmenu', close);
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('click', close);
-      window.removeEventListener('contextmenu', close);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [menu]);
-
-  useEffect(() => {
-    if (!groupMenu) return;
-    const close = () => setGroupMenu(null);
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setGroupMenu(null);
-    };
-    window.addEventListener('click', close);
-    window.addEventListener('contextmenu', close);
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('click', close);
-      window.removeEventListener('contextmenu', close);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [groupMenu]);
-
-  useEffect(() => {
-    if (!moveMenu) return;
-    const close = () => {
+  useDismiss(Boolean(menu), () => setMenu(null));
+  useDismiss(Boolean(groupMenu), () => setGroupMenu(null));
+  useDismiss(
+    Boolean(moveMenu),
+    () => {
       setMoveMenu(null);
       setMoveNewOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        if (moveNewOpen) setMoveNewOpen(false);
-        else close();
+    },
+    () => {
+      if (moveNewOpen) setMoveNewOpen(false);
+      else {
+        setMoveMenu(null);
+        setMoveNewOpen(false);
       }
-    };
-    window.addEventListener('click', close);
-    window.addEventListener('contextmenu', close);
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('click', close);
-      window.removeEventListener('contextmenu', close);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [moveMenu, moveNewOpen]);
-
-  useEffect(() => {
-    if (!newMenuOpen) return;
-    const close = () => setNewMenuOpen(false);
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setNewMenuOpen(false);
-    };
-    window.addEventListener('click', close);
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('click', close);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [newMenuOpen]);
+    },
+  );
+  useDismiss(newMenuOpen, () => setNewMenuOpen(false));
 
   useEffect(() => {
     const onDragOver = (event: DragEvent): void => {
@@ -575,7 +537,6 @@ export default function App() {
   }
 
   async function handleDeleteArchivedOne(sessionId: string): Promise<void> {
-    if (!window.confirm('确定删除该归档会话？此操作不可恢复。')) return;
     const result = await window.codeagentdesk.deleteSessions([sessionId]);
     if (!result.ok) {
       setError(result.message ?? '删除失败');
@@ -1103,17 +1064,21 @@ export default function App() {
     runPaletteItem,
   } = palette;
 
+  // 会话 → 分组/置顶映射预建一次，分组与未分组计算共用（避免 filter 内逐会话 find）。
+  const recordGroupBySession = useMemo(
+    () => new Map(records.map((record) => [record.sessionId, record.group])),
+    [records],
+  );
+  const recordPinnedBySession = useMemo(
+    () => new Map(records.map((record) => [record.sessionId, record.pinned === true])),
+    [records],
+  );
+
   // 分组是会话管理的核心容器：运行中 + 历史会话都按组归类（运行中在前），分组区块默认在上方。
   // 未分组的会话分别回落到"当前会话 / 历史会话"区块，不单独建"未分组"区块。
   // 置顶会话在各自区块内排到最前。
   const groupSections = useMemo<GroupSection[]>(() => {
     const groupById = new Map(groups.map((group) => [group.id, group]));
-    const recordGroupBySession = new Map(
-      records.map((record) => [record.sessionId, record.group]),
-    );
-    const recordPinnedBySession = new Map(
-      records.map((record) => [record.sessionId, record.pinned === true]),
-    );
     const byGroup = new Map<string, GroupSectionItem[]>();
     const pushItem = (item: GroupSectionItem): void => {
       const groupId = item.sessionId
@@ -1159,19 +1124,14 @@ export default function App() {
       withPinnedFirst(
         sessions.filter((session) => {
           const groupId = session.sessionId
-            ? records.find((record) => record.sessionId === session.sessionId)?.group
+            ? recordGroupBySession.get(session.sessionId)
             : undefined;
           return !groupId || !groups.some((group) => group.id === groupId);
         }),
         (session) =>
-          session.sessionId
-            ? records.some(
-                (record) =>
-                  record.sessionId === session.sessionId && record.pinned === true,
-              )
-            : false,
+          session.sessionId ? Boolean(recordPinnedBySession.get(session.sessionId)) : false,
       ),
-    [groups, records, sessions],
+    [groups, recordGroupBySession, recordPinnedBySession, sessions],
   );
 
   const ungroupedHistory = useMemo(
@@ -1372,7 +1332,7 @@ export default function App() {
     openDetailById: (sessionId: string) => void openDetailById(sessionId),
     restoreArchived: (sessionId: string, cwd: string) => void restoreArchived(sessionId, cwd),
     copySessionText: (sessionId: string) => void copySessionText(sessionId),
-    onDeleteSession: (sessionId: string) => void handleDeleteArchivedOne(sessionId),
+    onDeleteSession: (sessionId: string) => setConfirmDeleteOne(sessionId),
     handleDeleteGroup: (id: string) => void handleDeleteGroup(id),
     moveToGroup: (sessionId: string, groupId: string | null) => void moveToGroup(sessionId, groupId),
     togglePin: (sessionId: string, pinned: boolean) => void handleTogglePin(sessionId, pinned),
@@ -1568,6 +1528,40 @@ export default function App() {
             onOpenUsageTrend={() => setUsageTrendOpen(true)}
           />
         </Suspense>
+      ) : null}
+
+      {confirmDeleteOne ? (
+        <div className="confirm-overlay" onClick={() => setConfirmDeleteOne(null)}>
+          <div
+            className="confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="confirm-title">删除归档会话</div>
+            <div className="confirm-text">确定删除该归档会话？此操作不可恢复。</div>
+            <div className="confirm-actions">
+              <button
+                type="button"
+                className="confirm-btn"
+                onClick={() => setConfirmDeleteOne(null)}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className="confirm-btn danger"
+                onClick={() => {
+                  const sessionId = confirmDeleteOne;
+                  setConfirmDeleteOne(null);
+                  void handleDeleteArchivedOne(sessionId);
+                }}
+              >
+                删除
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {paletteOpen ? (

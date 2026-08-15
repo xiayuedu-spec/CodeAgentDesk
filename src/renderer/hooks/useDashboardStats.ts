@@ -27,6 +27,14 @@ export function useDashboardStats() {
 
   useEffect(() => {
     void refresh();
+    // 会话变化（新建/归档/删除/绑定）时刷新；主进程有 60s TTL 缓存兜底，不会反复全量扫描。
+    const unsubscribe = window.codeagentdesk.onSessionsChanged(() => void refresh());
+    // 兜底定时刷新：主进程缓存过期后最多 60s 内更新一次。
+    const timer = setInterval(() => void refresh(), 60_000);
+    return () => {
+      unsubscribe();
+      clearInterval(timer);
+    };
   }, [refresh]);
 
   return { stats, refresh };
