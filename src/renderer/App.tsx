@@ -22,7 +22,6 @@ import {
   EMPTY_USAGE,
   folderName,
   formatSessionTitle,
-  recordTitle,
   type ContextMenuState,
   type GroupMenuState,
   type GroupSection,
@@ -1000,22 +999,6 @@ export default function App() {
         run: () => void handleNewSession(dir),
       });
     }
-    for (const record of historyRecords) {
-      items.push({
-        key: `h:${record.sessionId}`,
-        label: `恢复会话 → ${recordTitle(record)}`,
-        hint: record.cwd,
-        run: () => void openHistory(record),
-      });
-    }
-    for (const record of archivedRecords) {
-      items.push({
-        key: `a:${record.sessionId}`,
-        label: `打开归档 → ${recordTitle(record)}`,
-        hint: record.cwd,
-        run: () => void openArchivedSession(record),
-      });
-    }
     items.push({
       key: 'search',
       label: '全文搜索…',
@@ -1024,19 +1007,6 @@ export default function App() {
         searchInputRef.current?.focus();
       },
     });
-    if (activeSession?.sessionId) {
-      const sessionId = activeSession.sessionId;
-      items.push({
-        key: 'export',
-        label: '导出当前会话为 Markdown',
-        hint: activeSession.cwd,
-        run: () => {
-          void window.codeagentdesk.exportSessionMarkdown(sessionId).then((result) => {
-            if (!result.ok) setError(result.message ?? '导出失败');
-          });
-        },
-      });
-    }
     for (const theme of THEMES) {
       items.push({
         key: `theme:${theme.name}`,
