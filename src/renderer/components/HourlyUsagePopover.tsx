@@ -11,6 +11,9 @@ function formatTokens(value: number): string {
   return String(value);
 }
 
+/** 水位线取限额的 20% / 50% / 80%。 */
+const WATERLINE_RATIOS = [0.2, 0.5, 0.8] as const;
+
 /** 左下角小窗：今日每小时 Token 用量柱状图（无遮罩，跟随卡片定位）。 */
 export function HourlyUsagePopover({ limit }: HourlyUsagePopoverProps) {
   const [hours, setHours] = useState<HourlyUsage[] | null>(null);
@@ -34,6 +37,10 @@ export function HourlyUsagePopover({ limit }: HourlyUsagePopoverProps) {
   const visible = hours ?? [];
   const maxTokens = Math.max(1, ...visible.map((item) => item.tokens), limit);
   const total = visible.reduce((sum, item) => sum + item.tokens, 0);
+  const waterlines = WATERLINE_RATIOS.map((ratio) => ({
+    ratio,
+    tokens: limit * ratio,
+  }));
 
   return (
     <div className="hourly-popover" onClick={(event) => event.stopPropagation()}>
@@ -45,6 +52,17 @@ export function HourlyUsagePopover({ limit }: HourlyUsagePopoverProps) {
       ) : (
         <>
           <div className="hourly-chart hourly-chart-compact">
+            {waterlines.map((line) => (
+              <div
+                key={line.ratio}
+                className="hourly-waterline"
+                style={{ top: `${(1 - line.tokens / maxTokens) * 100}%` }}
+              >
+                <span className="hourly-waterline-label">
+                  {(line.tokens / 1_000_000).toFixed(2)}M
+                </span>
+              </div>
+            ))}
             {visible.map((item) => {
               const isCurrent = item.hour === currentHour;
               const overLimit = item.tokens > limit;
@@ -54,7 +72,7 @@ export function HourlyUsagePopover({ limit }: HourlyUsagePopoverProps) {
                   <div
                     className={`hourly-bar${isCurrent ? ' current' : ''}${overLimit ? ' over' : ''}`}
                     style={{ height: `${height}%` }}
-                    title={`${item.hour}:00 - ${item.tokens.toLocaleString()} token${
+                    title={`${item.hour}:00 - ${(item.tokens / 1_000_000).toFixed(2)}M${
                       overLimit ? '（超限）' : ''
                     }`}
                   />

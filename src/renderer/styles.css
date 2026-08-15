@@ -3959,6 +3959,7 @@ body,
   color: var(--text-faint);
 }
 .hourly-chart-compact {
+  position: relative;
   height: 96px;
   gap: 3px;
   padding: 6px 2px 0;
@@ -3967,6 +3968,28 @@ body,
 .hourly-chart-compact .hourly-bar {
   max-width: 14px;
   border-radius: 2px 2px 0 0;
+}
+.hourly-waterline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--border-strong) 55%, transparent);
+  pointer-events: none;
+}
+.hourly-waterline-label {
+  position: absolute;
+  left: 2px;
+  top: 0;
+  transform: translateY(-50%);
+  padding: 0 3px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
+  color: var(--text-faint);
+  font-size: 8px;
+  line-height: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .hourly-legend-compact {
   margin-top: 8px;
