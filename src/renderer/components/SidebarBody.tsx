@@ -18,6 +18,7 @@ import {
   type Mode,
   type SessionView,
 } from '../session-utils';
+import { AGENT_STATUS_META, type AgentStatus } from '../hooks/useAgentStatus';
 
 interface SidebarBodyData {
   mode: Mode;
@@ -25,6 +26,7 @@ interface SidebarBodyData {
   loadingList: boolean;
   sessions: SessionView[];
   records: SessionRecord[];
+  sessionStatuses: Record<string, AgentStatus>;
   activeId: string | null;
   detailSessionId: string | null;
   renamingId: string | null;
@@ -74,6 +76,7 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
     loadingList,
     sessions,
     records,
+    sessionStatuses,
     activeId,
     detailSessionId,
     renamingId,
@@ -158,9 +161,11 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
           }}
         >
           <span
-            className={`session-dot ${session.status}`}
-            title={statusLabel(session.status)}
-          />
+            className="session-agent"
+            title={`${AGENT_STATUS_META[sessionStatuses[session.id] ?? 'idle'].label} · ${statusLabel(session.status)}`}
+          >
+            {AGENT_STATUS_META[sessionStatuses[session.id] ?? 'idle'].emoji}
+          </span>
           {records.find((r) => r.sessionId === session.sessionId)?.pinned ? (
             <Pin size={10} className="session-pin" />
           ) : null}

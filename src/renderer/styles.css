@@ -479,6 +479,16 @@ button, input {
     color 200ms ease;
 }
 
+/* 会话行左侧：agent 状态表情（替换运行中会话的彩色圆点） */
+.session-agent {
+  flex: none;
+  width: 16px;
+  font-size: 12px;
+  line-height: 1;
+  text-align: center;
+  user-select: none;
+}
+
 .session-dot.starting, .tab-dot.starting, .terminal-status.starting {
   background: var(--warn);
   animation: startingPulse 1.2s ease-in-out infinite;

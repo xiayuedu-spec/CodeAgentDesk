@@ -36,7 +36,7 @@ import { usePalette } from './hooks/usePalette';
 import { useSummary } from './hooks/useSummary';
 import { useDashboardStats } from './hooks/useDashboardStats';
 import { useDismiss } from './hooks/useDismiss';
-import { useAgentStatus } from './hooks/useAgentStatus';
+import { AGENT_STATUS_META, useSessionAgentStatuses } from './hooks/useAgentStatus';
 import { useToast } from './toast';
 import { TerminalPane } from './components/TerminalPane';
 import { TitleBar } from './components/TitleBar';
@@ -1072,7 +1072,8 @@ export default function App() {
   }
 
   const activeSession = sessions.find((session) => session.id === activeId) ?? null;
-  const { agentEmoji, agentStatusLabel } = useAgentStatus(activeId);
+  const sessionStatuses = useSessionAgentStatuses();
+  const activeAgentMeta = AGENT_STATUS_META[activeId ? (sessionStatuses[activeId] ?? 'idle') : 'idle'];
 
   // 打开首页后，激活任何会话/标签自动退出首页。
   useEffect(() => {
@@ -1276,6 +1277,7 @@ export default function App() {
     loadingList,
     sessions,
     records,
+    sessionStatuses,
     activeId,
     detailSessionId,
     renamingId,
@@ -1513,8 +1515,8 @@ export default function App() {
           onUnlockNeon={() => void handleUnlockNeon()}
           onOpenDashboard={() => setDashboardOpen(true)}
           onOpenHome={() => setHomeOpen(true)}
-          agentEmoji={agentEmoji}
-          agentStatusLabel={agentStatusLabel}
+          agentEmoji={activeAgentMeta.emoji}
+          agentStatusLabel={activeAgentMeta.label}
         />
         </main>
       </div>

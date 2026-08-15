@@ -30,45 +30,69 @@ export const AGENT_STATUS_META: Record<AgentStatus, { emoji: string; label: stri
 };
 
 /**
- * 当前活动会话的 agent 状态：
+ * 每个运行中会话的 agent 状态（按 pty id 跟踪）：
  * 输出数据流动 → 🧠 思考中；停止 2.5s → ✨ 回合完成（4s）→ 😴 空闲；
  * 最近输出含审批提示特征 → 🚨 有待处理审批。
  */
-export function useAgentStatus(activeId: string | null) {
-  const [status, setStatus] = useState<AgentStatus>('idle');
-  const activeIdRef = useRef(activeId);
-  activeIdRef.current = activeId;
-  const bufferRef = useRef('');
-  const timersRef = useRef<{ done?: ReturnType<typeof setTimeout>; idle?: ReturnType<typeof setTimeout> }>({});
-
-  // 切换会话时重置状态与缓冲。
-  useEffect(() => {
-    bufferRef.current = '';
-    const { done, idle } = timersRef.current;
-    if (done) clearTimeout(done);
-    if (idle) clearTimeout(idle);
-    timersRef.current = {};
-    setStatus('idle');
-  }, [activeId]);
+export function useSessionAgentStatuses() {
+  const [statuses, setStatuses] = useState<Record<string, AgentStatus>>({});
+  const buffersRef = useRef<Record<string, string>>({});
+  const timersRef = useRef<
+    Record<string, { done?: ReturnType<typeof setTimeout>; idle?: ReturnType<typeof setTimeout> }>
+  >({});
 
   useEffect(() => {
-    return window.codeagentdesk.onSessionData((event) => {
-      if (event.id !== activeIdRef.current) return;
-      bufferRef.current = (bufferRef.current + event.data).slice(-BUFFER_CHARS);
-      const { done, idle } = timersRef.current;
-      if (done) clearTimeout(done);
-      if (idle) clearTimeout(idle);
-      const tail = bufferRef.current.slice(-TAIL_CHARS);
+    const clearTimers = (id: string): void => {
+      const timers = timersRef.current[id];
+      if (!timers) return;
+      if (timers.done) clearTimeout(timers.done);
+      if (timers.idle) clearTimeout(timers.idle);
+      delete timersRef.current[id];
+    };
+
+    const unsubscribeData = window.codeagentdesk.onSessionData((event) => {
+      const { id, data } = event;
+      buffersRef.current[id] = (buffersRef.current[id] ?? '') + data;
+      buffersRef.current[id] = buffersRef.current[id].slice(-BUFFER_CHARS);
+      clearTimers(id);
+      const tail = buffersRef.current[id].slice(-TAIL_CHARS);
       if (APPROVAL_PATTERNS.some((pattern) => pattern.test(tail))) {
-        setStatus('approval');
+        setStatuses((previous) => ({ ...previous, [id]: 'approval' }));
         return;
       }
-      setStatus('thinking');
-      timersRef.current.done = setTimeout(() => setStatus('done'), IDLE_DELAY_MS);
-      timersRef.current.idle = setTimeout(() => setStatus('idle'), IDLE_DELAY_MS + DONE_HOLD_MS);
+      setStatuses((previous) => ({ ...previous, [id]: 'thinking' }));
+      timersRef.current[id] = {
+        done: setTimeout(() => {
+          setStatuses((previous) => ({ ...previous, [id]: 'done' }));
+        }, IDLE_DELAY_MS),
+        idle: setTimeout(() => {
+          setStatuses((previous) => ({ ...previous, [id]: 'idle' }));
+        }, IDLE_DELAY_MS + DONE_HOLD_MS),
+      };
     });
+
+    // 会话退出后清理其状态与定时器。
+    const unsubscribeExited = window.codeagentdesk.onSessionExited(({ id }) => {
+      clearTimers(id);
+      delete buffersRef.current[id];
+      setStatuses((previous) => {
+        if (!(id in previous)) return previous;
+        const next = { ...previous };
+        delete next[id];
+        return next;
+      });
+    });
+
+    return () => {
+      unsubscribeData();
+      unsubscribeExited();
+      for (const timers of Object.values(timersRef.current)) {
+        if (timers.done) clearTimeout(timers.done);
+        if (timers.idle) clearTimeout(timers.idle);
+      }
+      timersRef.current = {};
+    };
   }, []);
 
-  const meta = AGENT_STATUS_META[status];
-  return { agentStatus: status, agentEmoji: meta.emoji, agentStatusLabel: meta.label };
+  return statuses;
 }
