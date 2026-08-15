@@ -4423,8 +4423,7 @@ body,
 .status-style-row {
   display: flex;
   gap: 6px;
-}
-.status-style-btn {
+}.status-style-btn {
   flex: 1;
   padding: 6px 8px;
   border: 1px solid var(--border);
@@ -4703,4 +4702,39 @@ body,
   margin-right: 2px;
   cursor: default;
   user-select: none;
+}
+
+/* ---- 设置弹窗数字输入（限额/番茄钟）：与主题一致，避免浏览器默认白底 ---- */
+.settings-limit-input {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: 0;
+  background: var(--bg-inset);
+  color: var(--text);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.settings-limit-input::-webkit-outer-spin-button,
+.settings-limit-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.settings-limit-input:focus {
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+/* 防御规则：设置弹窗内任何输入控件都不回落到浏览器默认配色 */
+.settings-popover input {
+  background-color: var(--bg-inset);
+  color: var(--text);
+}
+/* 命令面板输入框占位符配色与主题一致 */
+.palette input::placeholder {
+  color: var(--text-faint);
 }
