@@ -38,6 +38,7 @@ import { useSummary } from './hooks/useSummary';
 import { useDashboardStats } from './hooks/useDashboardStats';
 import { useDismiss } from './hooks/useDismiss';
 import { AGENT_STATUS_META, useSessionAgentStatuses } from './hooks/useAgentStatus';
+import { usePomodoro } from './hooks/usePomodoro';
 import { useToast } from './toast';
 import { TerminalPane } from './components/TerminalPane';
 import { TitleBar } from './components/TitleBar';
@@ -1080,6 +1081,10 @@ export default function App() {
   const activeSession = sessions.find((session) => session.id === activeId) ?? null;
   const sessionStatuses = useSessionAgentStatuses();
   const activeAgentMeta = AGENT_STATUS_META[activeId ? (sessionStatuses[activeId] ?? 'idle') : 'idle'];
+  const pomodoro = usePomodoro();
+  useEffect(() => {
+    if (pomodoro.finished) toast.success('🍅 番茄钟完成，休息一下！');
+  }, [pomodoro.finished]);
 
   // 打开首页后，激活任何会话/标签自动退出首页。
   useEffect(() => {
@@ -1525,6 +1530,11 @@ export default function App() {
           onOpenHome={() => setHomeOpen(true)}
           agentEmoji={activeAgentMeta.emoji}
           agentStatusLabel={activeAgentMeta.label}
+          pomodoroRunning={pomodoro.running}
+          pomodoroText={pomodoro.remainingText}
+          pomodoroProgress={pomodoro.progress}
+          onPomodoroToggle={pomodoro.toggle}
+          onPomodoroReset={pomodoro.reset}
         />
         </main>
       </div>

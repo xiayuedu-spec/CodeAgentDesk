@@ -5,6 +5,7 @@ const EMPTY_STATS: DashboardStats = {
   runningCount: 0,
   todaySessionCount: 0,
   todayTokens: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 },
+  totalOutputTokens: 0,
   todayProjects: [],
   knowledgeCount: 0,
   hasTodaySummary: false,

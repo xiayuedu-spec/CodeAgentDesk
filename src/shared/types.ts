@@ -230,6 +230,8 @@ export interface DashboardStats {
   runningCount: number;
   todaySessionCount: number;
   todayTokens: { inputTokens: number; outputTokens: number; cacheReadTokens: number };
+  /** 累计输出 token（全部会话，供电子宠物树成长）。 */
+  totalOutputTokens: number;
   todayProjects: { cwd: string; count: number }[];
   knowledgeCount: number;
   hasTodaySummary: boolean;

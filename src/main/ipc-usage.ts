@@ -67,36 +67,36 @@ export function registerUsageIpc({ sessions, metaStore }: UsageIpcDeps): void {
       0,
     ).getTime();
 
-    // 单次遍历同时累计：今日会话数/项目分布、今日 token 总量、当前小时 token 量。
+    // 单次遍历同时累计：今日会话数/项目分布、今日 token 总量、当前小时 token 量、累计输出。
     let todaySessionCount = 0;
     let todayInput = 0;
     let todayOutput = 0;
     let todayCacheRead = 0;
     let hourTokens = 0;
+    let totalOutputTokens = 0;
     const projectMap = new Map<string, number>();
     for (const record of records) {
       if (record.archived) continue;
       const updatedMs = new Date(record.updatedAt).getTime();
       if (Number.isNaN(updatedMs)) continue;
-      if (updatedMs >= todayStartMs) {
-        todaySessionCount += 1;
-        if (record.cwd) {
-          projectMap.set(record.cwd, (projectMap.get(record.cwd) ?? 0) + 1);
-        }
-      } else {
-        continue; // 今天之前的会话不贡献今日用量。
-      }
       try {
         const usage = await readSessionUsage(record.filePath);
-        todayInput += usage.inputTokens;
-        todayOutput += usage.outputTokens;
-        todayCacheRead += usage.cacheReadTokens;
-        if (updatedMs >= hourStartMs) {
-          hourTokens +=
-            usage.inputTokens +
-            usage.outputTokens +
-            usage.cacheReadTokens +
-            usage.cacheCreationTokens;
+        totalOutputTokens += usage.outputTokens; // 累计输出：全部会话。
+        if (updatedMs >= todayStartMs) {
+          todaySessionCount += 1;
+          if (record.cwd) {
+            projectMap.set(record.cwd, (projectMap.get(record.cwd) ?? 0) + 1);
+          }
+          todayInput += usage.inputTokens;
+          todayOutput += usage.outputTokens;
+          todayCacheRead += usage.cacheReadTokens;
+          if (updatedMs >= hourStartMs) {
+            hourTokens +=
+              usage.inputTokens +
+              usage.outputTokens +
+              usage.cacheReadTokens +
+              usage.cacheCreationTokens;
+          }
         }
       } catch {
         // 跳过无法读取的会话。
@@ -112,6 +112,7 @@ export function registerUsageIpc({ sessions, metaStore }: UsageIpcDeps): void {
         outputTokens: todayOutput,
         cacheReadTokens: todayCacheRead,
       },
+      totalOutputTokens,
       todayProjects: [...projectMap.entries()]
         .map(([cwd, count]) => ({ cwd, count }))
         .sort((a, b) => b.count - a.count)

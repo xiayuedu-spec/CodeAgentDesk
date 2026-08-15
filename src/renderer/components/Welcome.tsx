@@ -19,6 +19,41 @@ function formatTokens(value: number): string {
   return String(value);
 }
 
+/** 电子宠物树成长阶段（按累计输出 token）。 */
+const TREE_STAGES: { min: number; emoji: string; label: string; next: number | null }[] = [
+  { min: 0, emoji: '🌰', label: '种子', next: 100_000 },
+  { min: 100_000, emoji: '🌱', label: '幼苗', next: 1_000_000 },
+  { min: 1_000_000, emoji: '🌿', label: '小树', next: 5_000_000 },
+  { min: 5_000_000, emoji: '🌳', label: '大树', next: 20_000_000 },
+  { min: 20_000_000, emoji: '🌟🌳', label: '发光大树', next: null },
+];
+
+function treeInfo(totalOutput: number): {
+  emoji: string;
+  label: string;
+  progress: number;
+  gap: number;
+} {
+  let stage = TREE_STAGES[0];
+  for (const candidate of TREE_STAGES) {
+    if (totalOutput >= candidate.min) stage = candidate;
+  }
+  const next = stage.next;
+  const progress = next
+    ? Math.min(100, ((totalOutput - stage.min) / (next - stage.min)) * 100)
+    : 100;
+  const gap = next ? Math.max(0, next - totalOutput) : 0;
+  return { emoji: stage.emoji, label: stage.label, progress, gap };
+}
+
+/** 今日摸鱼指数（纯娱乐，按今日输出 token 估算）。 */
+function slackingInfo(output: number): { index: number; text: string } {
+  if (output < 10_000) return { index: 88, text: '鱼都快忘了你是程序员' };
+  if (output < 50_000) return { index: 52, text: '摸鱼与工作五五开' };
+  if (output < 150_000) return { index: 23, text: '状态不错，继续' };
+  return { index: 8, text: '卷王本王' };
+}
+
 /** 欢迎页：今日概览（打开即见"现在"）。 */
 export function Welcome({
   stats,
@@ -44,6 +79,8 @@ export function Welcome({
 
   const limitTier =
     hourlyPercent >= 100 ? 'danger' : hourlyPercent >= 80 ? 'warn' : '';
+  const tree = treeInfo(stats.totalOutputTokens);
+  const slack = slackingInfo(todayTokens.outputTokens);
 
   return (
     <div className="welcome">
@@ -91,6 +128,23 @@ export function Welcome({
         </div>
         <div className={`dashboard-limit-bar ${limitTier}`}>
           <span style={{ width: `${Math.min(100, hourlyPercent)}%` }} />
+        </div>
+      </div>
+
+      <div className="fun-row">
+        <div className="fun-tree" title={`累计输出 ${formatTokens(stats.totalOutputTokens)} token`}>
+          <span className="fun-tree-emoji">{tree.emoji}</span>
+          <span className="fun-tree-label">电子宠物树 · {tree.label}</span>
+          <div className="fun-tree-bar">
+            <span style={{ width: `${tree.progress}%` }} />
+          </div>
+          <span className="fun-tree-sub">
+            {tree.gap > 0 ? `距下一阶段还需 ${formatTokens(tree.gap)} 输出` : '已满级，点亮全场 ✨'}
+          </span>
+        </div>
+        <div className="fun-slack">
+          <span className="fun-slack-index">🐟 今日摸鱼指数 {slack.index}%</span>
+          <span className="fun-slack-text">{slack.text}</span>
         </div>
       </div>
 

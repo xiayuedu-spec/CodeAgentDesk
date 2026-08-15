@@ -14,6 +14,11 @@ interface StatusBarProps {
   onOpenHome: () => void;
   agentEmoji: string;
   agentStatusLabel: string;
+  pomodoroRunning: boolean;
+  pomodoroText: string;
+  pomodoroProgress: number;
+  onPomodoroToggle: () => void;
+  onPomodoroReset: () => void;
 }
 
 /** 彩蛋：连点版本号次数达到该值解锁隐藏主题。 */
@@ -33,6 +38,11 @@ export function StatusBar({
   onOpenHome,
   agentEmoji,
   agentStatusLabel,
+  pomodoroRunning,
+  pomodoroText,
+  pomodoroProgress,
+  onPomodoroToggle,
+  onPomodoroReset,
 }: StatusBarProps) {
   const [versionClicks, setVersionClicks] = useState(0);
 
@@ -70,6 +80,18 @@ export function StatusBar({
       </button>
       <button type="button" className="status-day" title="今日数据概览" onClick={onOpenDashboard}>
         今日概览
+      </button>
+      <button
+        type="button"
+        className={`pomodoro${pomodoroRunning ? ' running' : ''}`}
+        title={`番茄钟 · 已完成 ${Math.round(pomodoroProgress * 100)}% · 左键开始/暂停，右键重置`}
+        onClick={onPomodoroToggle}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          onPomodoroReset();
+        }}
+      >
+        🍅 {pomodoroText}
       </button>
       <span className="status-bar-spacer" />
       <span>{claudeDirName}</span>
