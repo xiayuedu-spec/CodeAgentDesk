@@ -4601,6 +4601,32 @@ body,
   color: var(--text-faint);
 }
 
+/* 首页：程序员幸运签 + 打字机开场 */
+.fun-fortune {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.fun-fortune b {
+  margin: 0 2px;
+  color: var(--accent);
+  font-weight: 700;
+}
+.type-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  vertical-align: -2px;
+  background: var(--accent);
+  animation: cursorBlink 1s steps(1) infinite;
+}
+@keyframes cursorBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
 /* 首页：全宽展示（隐藏右侧信息列） */
 .content.home {
   grid-template-columns: minmax(0, 1fr);

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { BookOpen, Plus, Sparkles, Terminal } from 'lucide-react';
 import type { DashboardStats, GroupRecord, SessionRecord } from '../../shared/types';
 import { folderName } from '../session-utils';
@@ -57,6 +58,51 @@ function slackingInfo(output: number): { index: number; text: string } {
   return { index: 8, text: '卷王本王' };
 }
 
+/** 程序员幸运签（按日期确定性轮换）。 */
+const FORTUNES: { good: string; bad: string }[] = [
+  { good: '重构', bad: '加需求' },
+  { good: '写测试', bad: '删测试' },
+  { good: '早睡', bad: '半夜改代码' },
+  { good: '小步提交', bad: '一次性大提交' },
+  { good: '读文档', bad: '盲猜 API' },
+  { good: '清理 TODO', bad: '新开 TODO' },
+  { good: '喝咖啡', bad: '喝第三杯咖啡' },
+  { good: '备份', bad: '相信"应该没事"' },
+  { good: '问同事', bad: '独自硬刚三小时' },
+  { good: '写注释', bad: '写"// 这里很复杂"' },
+  { good: '优化慢查询', bad: '多加索引' },
+  { good: '代码评审', bad: '直接合并' },
+  { good: '摸鱼五分钟', bad: '摸鱼五小时' },
+  { good: '小步升级', bad: '立刻升到最新版' },
+  { good: '写提交信息', bad: '提交"update"' },
+  { good: '删死代码', bad: '留着"以后可能用"' },
+];
+
+function fortuneOf(dateKey: string): { good: string; bad: string } {
+  let hash = 0;
+  for (const char of dateKey) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return FORTUNES[hash % FORTUNES.length];
+}
+
+/** 打字机开场：逐字显示标题。 */
+function useTypewriter(text: string, speedMs = 90): string {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    setCount(0);
+    const timer = setInterval(() => {
+      setCount((current) => {
+        if (current >= text.length) {
+          clearInterval(timer);
+          return current;
+        }
+        return current + 1;
+      });
+    }, speedMs);
+    return () => clearInterval(timer);
+  }, [text, speedMs]);
+  return text.slice(0, count);
+}
+
 /** 欢迎页：今日概览（打开即见"现在"）。 */
 export function Welcome({
   stats,
@@ -87,13 +133,18 @@ export function Welcome({
   const tree = treeInfo(stats.totalOutputTokens);
   const slack = slackingInfo(todayTokens.outputTokens);
   const mbti = computeMbti(records, groups, todayTokens.inputTokens, todayTokens.outputTokens);
+  const fortune = fortuneOf(new Date().toISOString().slice(0, 10));
+  const typedTitle = useTypewriter('CodeAgentDesk');
 
   return (
     <div className="welcome">
       <div className="welcome-icon">
         <Terminal size={26} strokeWidth={1.6} />
       </div>
-      <div className="welcome-title">CodeAgentDesk</div>
+      <div className="welcome-title">
+        {typedTitle}
+        <span className="type-cursor" />
+      </div>
       <div className="welcome-sub">Claude Code 统一窗口管理器</div>
 
       <div className="dashboard-grid">
@@ -172,6 +223,10 @@ export function Welcome({
       ) : (
         <div className="fun-mbti fun-mbti-empty">积累一些会话后，解锁基于习惯的 MBTI 推断 🧭</div>
       )}
+
+      <div className="fun-fortune" title="按日期轮换的今日签">
+        🥠 今日宜<b>{fortune.good}</b> · 忌<b>{fortune.bad}</b>
+      </div>
 
       {todayProjects.length > 0 ? (
         <div className="dashboard-projects">
