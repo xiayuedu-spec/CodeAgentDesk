@@ -593,6 +593,8 @@ async function toRecord(
       summary: meta.summary,
       tags: meta.tags,
       group: meta.group,
+      pinned: meta.pinned,
+      pinnedAt: meta.pinnedAt,
       startedAt: info.startedAt ?? stat.birthtime.toISOString(),
       updatedAt: stat.mtime.toISOString(),
     };

@@ -48,6 +48,14 @@ import { SidebarFooter } from './components/SidebarFooter';
 import { ContextMenus } from './components/ContextMenus';
 import type { PaletteItem } from './components/CommandPalette';
 
+/** 稳定分区：置顶项排到最前，其余保持原顺序（Array.prototype.sort 在 V8 中稳定，但显式分区更清晰）。 */
+function withPinnedFirst<T>(items: T[], isPinned: (item: T) => boolean): T[] {
+  const pinned: T[] = [];
+  const rest: T[] = [];
+  for (const item of items) (isPinned(item) ? pinned : rest).push(item);
+  return [...pinned, ...rest];
+}
+
 // 首屏不渲染的重组件按需加载，减小主 chunk。
 const LazySessionDetail = lazy(() =>
   import('./components/SessionDetail').then((module) => ({ default: module.SessionDetail })),
@@ -660,6 +668,15 @@ export default function App() {
     await refreshRecords();
   }
 
+  async function handleTogglePin(sessionId: string, pinned: boolean): Promise<void> {
+    const result = await window.codeagentdesk.setSessionPinned(sessionId, pinned);
+    if (!result.ok) {
+      toast.error(result.message ?? '操作失败');
+      return;
+    }
+    await refreshRecords();
+  }
+
   function openGroupMenu(id: string, name: string, x: number, y: number): void {
     setGroupMenu({ id, name, x, y });
   }
@@ -1080,10 +1097,14 @@ export default function App() {
 
   // 分组是会话管理的核心容器：运行中 + 历史会话都按组归类（运行中在前），分组区块默认在上方。
   // 未分组的会话分别回落到"当前会话 / 历史会话"区块，不单独建"未分组"区块。
+  // 置顶会话在各自区块内排到最前。
   const groupSections = useMemo<GroupSection[]>(() => {
     const groupById = new Map(groups.map((group) => [group.id, group]));
     const recordGroupBySession = new Map(
       records.map((record) => [record.sessionId, record.group]),
+    );
+    const recordPinnedBySession = new Map(
+      records.map((record) => [record.sessionId, record.pinned === true]),
     );
     const byGroup = new Map<string, GroupSectionItem[]>();
     const pushItem = (item: GroupSectionItem): void => {
@@ -1117,7 +1138,9 @@ export default function App() {
       .map((group) => ({
         key: group.id,
         group,
-        items: byGroup.get(group.id) ?? [],
+        items: withPinnedFirst(byGroup.get(group.id) ?? [], (item) =>
+          item.sessionId ? Boolean(recordPinnedBySession.get(item.sessionId)) : false,
+        ),
         collapsed: collapsedGroups.has(group.id),
       }))
       .filter((section) => section.items.length > 0);
@@ -1125,21 +1148,33 @@ export default function App() {
 
   const ungroupedRunning = useMemo(
     () =>
-      sessions.filter((session) => {
-        const groupId = session.sessionId
-          ? records.find((record) => record.sessionId === session.sessionId)?.group
-          : undefined;
-        return !groupId || !groups.some((group) => group.id === groupId);
-      }),
+      withPinnedFirst(
+        sessions.filter((session) => {
+          const groupId = session.sessionId
+            ? records.find((record) => record.sessionId === session.sessionId)?.group
+            : undefined;
+          return !groupId || !groups.some((group) => group.id === groupId);
+        }),
+        (session) =>
+          session.sessionId
+            ? records.some(
+                (record) =>
+                  record.sessionId === session.sessionId && record.pinned === true,
+              )
+            : false,
+      ),
     [groups, records, sessions],
   );
 
   const ungroupedHistory = useMemo(
     () =>
-      historyRecords.filter((record) => {
-        const groupId = record.group;
-        return !groupId || !groups.some((group) => group.id === groupId);
-      }),
+      withPinnedFirst(
+        historyRecords.filter((record) => {
+          const groupId = record.group;
+          return !groupId || !groups.some((group) => group.id === groupId);
+        }),
+        (record) => record.pinned === true,
+      ),
     [groups, historyRecords],
   );
 
@@ -1332,6 +1367,7 @@ export default function App() {
     onDeleteSession: (sessionId: string) => void handleDeleteArchivedOne(sessionId),
     handleDeleteGroup: (id: string) => void handleDeleteGroup(id),
     moveToGroup: (sessionId: string, groupId: string | null) => void moveToGroup(sessionId, groupId),
+    togglePin: (sessionId: string, pinned: boolean) => void handleTogglePin(sessionId, pinned),
     setMoveNewOpen,
     setMoveNewName,
     createGroupAndMove: () => void createGroupAndMove(),

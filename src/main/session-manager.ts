@@ -5,7 +5,14 @@ import { spawn, type IPty } from 'node-pty';
 
 export interface SessionCallbacks {
   onData(id: string, data: string): void;
-  onExit(id: string, exitCode?: number, sessionId?: string, cwd?: string, expected?: boolean): void;
+  onExit(
+    id: string,
+    exitCode?: number,
+    sessionId?: string,
+    cwd?: string,
+    expected?: boolean,
+    durationMs?: number,
+  ): void;
   onBound(id: string, sessionId: string): void;
   onError(id: string, message: string): void;
 }
@@ -22,6 +29,7 @@ export class SessionManager {
   private readonly sequences = new Map<string, number>();
   private readonly exitWaiters = new Map<string, () => void>();
   private readonly expectedExits = new Set<string>();
+  private readonly startedAt = new Map<string, number>();
 
   constructor(private readonly callbacks: SessionCallbacks) {}
 
@@ -113,6 +121,7 @@ export class SessionManager {
     if (!session) return;
     this.sessions.delete(id);
     this.exitWaiters.delete(id);
+    this.startedAt.delete(id);
   }
 
   /** 等待会话从运行表移除（进程退出），超时兜底。 */
@@ -158,17 +167,20 @@ export class SessionManager {
     }
 
     this.sessions.set(id, { id, cwd, pty });
+    this.startedAt.set(id, Date.now());
     pty.onData((data) => this.callbacks.onData(id, data));
     pty.onExit(({ exitCode }) => {
       const session = this.sessions.get(id);
       const sessionId = session?.sessionId;
       const cwd = session?.cwd;
+      const durationMs = this.startedAt.get(id) ?? 0;
+      this.startedAt.delete(id);
       const expected = this.expectedExits.has(id);
       this.expectedExits.delete(id);
       this.sessions.delete(id);
       this.exitWaiters.get(id)?.();
       this.exitWaiters.delete(id);
-      this.callbacks.onExit(id, exitCode, sessionId, cwd, expected);
+      this.callbacks.onExit(id, exitCode, sessionId, cwd, expected, durationMs);
     });
 
     return { id };

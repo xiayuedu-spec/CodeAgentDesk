@@ -2070,6 +2070,14 @@ button:active, .tab:active, .session-row:active {
   min-width: 0;
 }
 
+/* 置顶会话的图钉标记 */
+.session-pin {
+  flex: none;
+  color: var(--accent);
+  opacity: 0.9;
+  margin-right: 1px;
+}
+
 .session-tags i {
   font-style: normal;
   font-size: 9px;

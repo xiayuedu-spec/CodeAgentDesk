@@ -1,6 +1,7 @@
 import {
   ChevronRight,
   FolderOpen,
+  Pin,
   Search,
   Terminal,
   Trash2,
@@ -160,6 +161,9 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
             className={`session-dot ${session.status}`}
             title={statusLabel(session.status)}
           />
+          {records.find((r) => r.sessionId === session.sessionId)?.pinned ? (
+            <Pin size={10} className="session-pin" />
+          ) : null}
           <span className="session-title">{formatSessionTitle(session)}</span>
           <span className="session-cwd" title={session.cwd}>
             {session.cwd}
@@ -203,6 +207,7 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
           <span className="session-dot ended" title="已结束" />
           <div className="session-main">
             <span className="session-title-line">
+              {record.pinned ? <Pin size={10} className="session-pin" /> : null}
               <span className="session-title">{recordTitle(record)}</span>
               {record.tags?.length ? (
                 <span className="session-tags">

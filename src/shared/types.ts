@@ -74,6 +74,8 @@ export interface SessionRecord {
   summary?: string;
   tags?: string[];
   group?: string;
+  pinned?: boolean;
+  pinnedAt?: string;
   startedAt: string;
   updatedAt: string;
 }
@@ -158,6 +160,11 @@ export interface HourlyUsage {
 }
 
 export interface RenameSessionResult {
+  ok: boolean;
+  message?: string;
+}
+
+export interface SessionOpResult {
   ok: boolean;
   message?: string;
 }
@@ -262,6 +269,7 @@ export interface CodeAgentDeskApi {
   deleteGroup(id: string): Promise<GroupOpResult>;
   setGroupColor(id: string, color: string): Promise<GroupOpResult>;
   setSessionGroup(sessionId: string, groupId: string | null): Promise<GroupOpResult>;
+  setSessionPinned(sessionId: string, pinned: boolean): Promise<SessionOpResult>;
   deleteSessions(sessionIds: string[]): Promise<DeleteSessionsResult>;
   getRecentDirs(): Promise<string[]>;
   pickDirectory(): Promise<PickDirectoryResult>;

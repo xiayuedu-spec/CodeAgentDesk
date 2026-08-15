@@ -11,6 +11,8 @@ export interface SessionMeta {
   summary?: string;
   tags?: string[];
   group?: string;
+  pinned?: boolean;
+  pinnedAt?: string;
 }
 
 type SessionMetaMap = Record<string, SessionMeta>;
@@ -70,6 +72,21 @@ export class SessionMetaStore {
     const next = { ...meta };
     if (groupId) next.group = groupId;
     else delete next.group;
+    this.set(sessionId, next);
+    return next;
+  }
+
+  /** 置顶/取消置顶会话（置顶时间用于同组内排序）。 */
+  setPinned(sessionId: string, pinned: boolean): SessionMeta {
+    const meta = this.get(sessionId);
+    const next = { ...meta };
+    if (pinned) {
+      next.pinned = true;
+      next.pinnedAt = new Date().toISOString();
+    } else {
+      delete next.pinned;
+      delete next.pinnedAt;
+    }
     this.set(sessionId, next);
     return next;
   }

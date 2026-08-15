@@ -14,6 +14,7 @@ import type {
   ResumeSessionResult,
   SearchResult,
   SessionDetailResult,
+  SessionOpResult,
   SessionRecord,
   SessionUsage,
   SummarizeSessionResult,
@@ -86,6 +87,16 @@ export function registerSessionsIpc({ sessions, watcher, metaStore }: SessionsIp
       if (!sessionId) return { ok: false, message: '会话尚未绑定，无法重命名' };
       if (!name) return { ok: false, message: '名称不能为空' };
       metaStore.rename(sessionId, name);
+      return { ok: true };
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.sessionSetPinned,
+    (_event, payload: { sessionId: string; pinned: boolean }): SessionOpResult => {
+      const sessionId = payload.sessionId.trim();
+      if (!sessionId) return { ok: false, message: '缺少会话信息' };
+      metaStore.setPinned(sessionId, payload.pinned === true);
       return { ok: true };
     },
   );

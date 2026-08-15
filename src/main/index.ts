@@ -20,6 +20,9 @@ import { broadcast, createMainWindow } from './window-manager';
 // Windows 通知/任务栏分组需要显式设置 AppUserModelID（与 electron-builder appId 一致）。
 app.setAppUserModelId('com.codeagentdesk.app');
 
+/** 长时间会话自然结束后弹"任务完成"通知的时长门槛（3 分钟）。 */
+const TASK_DONE_MIN_MS = 3 * 60_000;
+
 /** 主进程未捕获异常写入 userData/error.log，便于排查启动与运行期问题。 */
 function logMainError(kind: string, error: unknown): void {
   try {
@@ -29,6 +32,21 @@ function logMainError(kind: string, error: unknown): void {
   } catch {
     // 日志写入失败静默忽略。
   }
+}
+
+function focusMainWindow(): void {
+  const [window] = BrowserWindow.getAllWindows();
+  if (window) {
+    if (window.isMinimized()) window.restore();
+    window.focus();
+  }
+}
+
+function showSystemNotification(title: string, body: string): void {
+  if (!Notification.isSupported()) return;
+  const notification = new Notification({ title, body });
+  notification.on('click', focusMainWindow);
+  notification.show();
 }
 
 process.on('uncaughtException', (error) => logMainError('uncaughtException', error));
@@ -52,23 +70,30 @@ if (!hasSingleInstanceLock) {
     const sessions = new SessionManager({
       onData: (id, data) =>
         broadcast(IpcChannel.sessionData, { id, data } satisfies SessionDataEvent),
-      onExit: (id, exitCode, sessionId, cwd, expected) => {
+      onExit: (id, exitCode, sessionId, cwd, expected, durationMs) => {
         broadcast(IpcChannel.sessionExited, { id, exitCode } satisfies SessionExitedEvent);
+        const sessionName =
+          metaStore.get(sessionId ?? '')?.customName ?? (cwd ? path.basename(cwd) : '会话');
         // 仅"意外异常退出"发系统通知；主动关闭（关标签/归档/退出应用）与正常结束（/exit）不打扰。
-        if (!expected && Notification.isSupported() && typeof exitCode === 'number' && exitCode !== 0) {
-          const name = cwd ? path.basename(cwd) : '会话';
-          const notification = new Notification({
-            title: `CodeAgentDesk · ${name}`,
-            body: `会话已异常退出（代码 ${exitCode}）`,
-          });
-          notification.on('click', () => {
-            const [window] = BrowserWindow.getAllWindows();
-            if (window) {
-              if (window.isMinimized()) window.restore();
-              window.focus();
-            }
-          });
-          notification.show();
+        if (!expected && typeof exitCode === 'number' && exitCode !== 0) {
+          showSystemNotification(
+            `CodeAgentDesk · ${sessionName}`,
+            `会话已异常退出（代码 ${exitCode}）`,
+          );
+        }
+        // 长时间会话自然结束（运行 ≥ 3 分钟、退出码 0）且窗口不在前台时，提示任务已完成。
+        const appFocused = BrowserWindow.getAllWindows().some((window) => window.isFocused());
+        if (
+          typeof exitCode === 'number' &&
+          exitCode === 0 &&
+          (durationMs ?? 0) >= TASK_DONE_MIN_MS &&
+          !appFocused
+        ) {
+          const minutes = Math.round((durationMs ?? 0) / 60000);
+          showSystemNotification(
+            `CodeAgentDesk · ${sessionName}`,
+            `会话已结束，运行了 ${minutes} 分钟`,
+          );
         }
       },
       onBound: (id, sessionId) =>

@@ -5,6 +5,8 @@ import {
   Copy,
   Link2,
   Pencil,
+  Pin,
+  PinOff,
   Plus,
   RotateCcw,
   Tags,
@@ -48,6 +50,7 @@ interface ContextMenusActions {
   onDeleteSession: (sessionId: string) => void;
   handleDeleteGroup: (id: string) => void;
   moveToGroup: (sessionId: string, groupId: string | null) => void;
+  togglePin: (sessionId: string, pinned: boolean) => void;
   setMoveNewOpen: (open: boolean) => void;
   setMoveNewName: (name: string) => void;
   createGroupAndMove: () => void;
@@ -70,6 +73,7 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
     onDeleteSession,
     handleDeleteGroup,
     moveToGroup,
+    togglePin,
     setMoveNewOpen,
     setMoveNewName,
     createGroupAndMove,
@@ -122,6 +126,28 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
               <Tags size={14} />
             </span>
             移动到分组
+          </button>
+          <button
+            type="button"
+            disabled={!menuSession || menu.archived}
+            onClick={() => {
+              if (!menuSession) return;
+              const pinned =
+                records.find((record) => record.sessionId === menu.sessionId)?.pinned === true;
+              void togglePin(menu.sessionId, !pinned);
+              closeMenu();
+            }}
+          >
+            <span className="context-menu-icon">
+              {records.find((record) => record.sessionId === menu.sessionId)?.pinned ? (
+                <PinOff size={14} />
+              ) : (
+                <Pin size={14} />
+              )}
+            </span>
+            {records.find((record) => record.sessionId === menu.sessionId)?.pinned
+              ? '取消置顶'
+              : '置顶'}
           </button>
           <button
             type="button"

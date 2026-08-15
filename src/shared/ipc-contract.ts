@@ -14,6 +14,7 @@ export const IpcChannel = {
   groupsDelete: 'groups:delete',
   groupsSetColor: 'groups:set-color',
   sessionSetGroup: 'session:set-group',
+  sessionSetPinned: 'session:set-pinned',
   sessionPickDirectory: 'session:pick-directory',
   sessionCreate: 'session:create',
   sessionResume: 'session:resume',
