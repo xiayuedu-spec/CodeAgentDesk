@@ -108,6 +108,8 @@ export function TerminalPane({
     });
     const resizeDisposable = terminal.onResize(({ cols, rows }) => {
       void window.codeagentdesk.resizeSession(id, cols, rows);
+      // resize 会触发 Claude TUI 整屏重绘，通知状态机忽略随后的输出突发。
+      window.dispatchEvent(new CustomEvent<string>('agent-status-ignore', { detail: id }));
     });
     const selectionDisposable = terminal.onSelectionChange(() => {
       setHasSelection(terminal.getSelection().length > 0);
