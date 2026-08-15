@@ -5,6 +5,7 @@ export const IpcChannel = {
   configSetTheme: 'config:set-theme',
   configSetTokenLimit: 'config:set-token-limit',
   configSetAgentStatusStyle: 'config:set-agent-status-style',
+  configSetPomodoroMinutes: 'config:set-pomodoro-minutes',
   configPickClaudeDir: 'config:pick-claude-dir',
   sessionsList: 'sessions:list',
   sessionsChanged: 'sessions:changed',

@@ -32,12 +32,17 @@ function playChime(): void {
   }
 }
 
-/** 番茄钟：25 分钟倒计时，完成时提示音 + finished 标记（供上层弹 toast）。 */
+/** 番茄钟：倒计时，完成时提示音 + finished 标记（供上层弹 toast）。时长可配置。 */
 export function usePomodoro(durationMs: number = POMODORO_MS) {
   const [running, setRunning] = useState(false);
   const [remainingMs, setRemainingMs] = useState(durationMs);
   const [finished, setFinished] = useState(false);
   const endAtRef = useRef<number | null>(null);
+
+  // 时长配置变化且未运行时，同步剩余时间。
+  useEffect(() => {
+    if (!running) setRemainingMs(durationMs);
+  }, [durationMs, running]);
 
   useEffect(() => {
     if (!running) return;

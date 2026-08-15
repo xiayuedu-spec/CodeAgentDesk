@@ -679,6 +679,11 @@ export default function App() {
     await refreshClaudeInfo();
   }
 
+  async function handleSetPomodoroMinutes(minutes: number): Promise<void> {
+    await window.codeagentdesk.setPomodoroMinutes(minutes);
+    await refreshClaudeInfo();
+  }
+
   function openGroupMenu(id: string, name: string, x: number, y: number): void {
     setGroupMenu({ id, name, x, y });
   }
@@ -1053,7 +1058,7 @@ export default function App() {
   const activeSession = sessions.find((session) => session.id === activeId) ?? null;
   const sessionStatuses = useSessionAgentStatuses();
   const activeAgentMeta = AGENT_STATUS_META[activeId ? (sessionStatuses[activeId] ?? 'idle') : 'idle'];
-  const pomodoro = usePomodoro();
+  const pomodoro = usePomodoro((claudeInfo?.config.pomodoroMinutes ?? 25) * 60_000);
   useEffect(() => {
     if (pomodoro.finished) toast.success('🍅 番茄钟完成，休息一下！');
   }, [pomodoro.finished]);
@@ -1328,6 +1333,7 @@ export default function App() {
       void window.codeagentdesk.setTokenLimit(limit).then(refreshClaudeInfo);
     },
     handleSetAgentStatusStyle: (style: AgentStatusStyle) => void handleSetAgentStatusStyle(style),
+    handleSetPomodoroMinutes: (minutes: number) => void handleSetPomodoroMinutes(minutes),
   };
 
   const contextMenusData = {

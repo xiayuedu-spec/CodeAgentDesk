@@ -31,6 +31,7 @@ interface SidebarFooterActions {
   handleResetClaudeDir: () => void;
   handleSetTokenLimit: (limit: number) => void;
   handleSetAgentStatusStyle: (style: AgentStatusStyle) => void;
+  handleSetPomodoroMinutes: (minutes: number) => void;
 }
 
 export function SidebarFooter({
@@ -50,11 +51,15 @@ export function SidebarFooter({
     handleResetClaudeDir,
     handleSetTokenLimit,
     handleSetAgentStatusStyle,
+    handleSetPomodoroMinutes,
   } = actions;
 
   const limitTier = stats.hourlyPercent >= 100 ? 'danger' : stats.hourlyPercent >= 80 ? 'warn' : '';
   const [limitInput, setLimitInput] = useState(
     String(claudeInfo?.config.tokenLimitPerHour ?? DEFAULT_HOURLY_LIMIT),
+  );
+  const [pomodoroInput, setPomodoroInput] = useState(
+    String(claudeInfo?.config.pomodoroMinutes ?? 25),
   );
   const [hourlyOpen, setHourlyOpen] = useState(false);
   const newWrapRef = useRef<HTMLDivElement | null>(null);
@@ -273,6 +278,31 @@ export function SidebarFooter({
                 onClick={() => handleSetAgentStatusStyle('dot')}
               >
                 ● 颜色圆点
+              </button>
+            </div>
+            <div className="settings-label">番茄钟时长（分钟）</div>
+            <div className="settings-row">
+              <input
+                type="number"
+                className="settings-limit-input"
+                value={pomodoroInput}
+                min={1}
+                max={180}
+                step={5}
+                onChange={(event) => setPomodoroInput(event.target.value)}
+                aria-label="番茄钟时长（分钟）"
+              />
+              <button
+                type="button"
+                className="settings-action settings-limit-save"
+                onClick={() => {
+                  const value = Number(pomodoroInput);
+                  if (Number.isFinite(value) && value >= 1) {
+                    handleSetPomodoroMinutes(Math.min(180, Math.round(value)));
+                  }
+                }}
+              >
+                保存
               </button>
             </div>
           </div>

@@ -16,6 +16,10 @@ export function readConfig(): AppConfig {
           ? parsed.tokenLimitPerHour
           : undefined,
       agentStatusStyle: parsed.agentStatusStyle === 'dot' ? 'dot' : 'emoji',
+      pomodoroMinutes:
+        typeof parsed.pomodoroMinutes === 'number' && parsed.pomodoroMinutes >= 1
+          ? Math.min(180, Math.round(parsed.pomodoroMinutes))
+          : undefined,
     };
   } catch {
     return {};

@@ -76,6 +76,18 @@ export function registerAppIpc({ onClaudeDirChanged }: AppIpcDeps): void {
     },
   );
 
+  ipcMain.handle(
+    IpcChannel.configSetPomodoroMinutes,
+    (_event, minutes: number): ClaudeConfigInfo => {
+      const safe =
+        typeof minutes === 'number' && Number.isFinite(minutes) && minutes >= 1
+          ? Math.min(180, Math.round(minutes))
+          : undefined;
+      writeConfig({ ...readConfig(), pomodoroMinutes: safe });
+      return readClaudeConfigInfo();
+    },
+  );
+
   ipcMain.handle(IpcChannel.configPickClaudeDir, async (): Promise<PickClaudeDirResult> => {
     const result = await dialog.showOpenDialog({
       title: '选择 Claude 目录',

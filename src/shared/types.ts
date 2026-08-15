@@ -40,6 +40,8 @@ export interface AppConfig {
   claudeDir?: string;
   theme?: ThemeName;
   tokenLimitPerHour?: number;
+  /** 番茄钟时长（分钟，默认 25）。 */
+  pomodoroMinutes?: number;
   agentStatusStyle?: AgentStatusStyle;
   /** 彩蛋：是否已解锁隐藏主题（霓虹）。 */
   funUnlockedNeon?: boolean;
@@ -347,6 +349,7 @@ export interface CodeAgentDeskApi {
   setTheme(theme: ThemeName): Promise<ClaudeConfigInfo>;
   setTokenLimit(limit: number): Promise<ClaudeConfigInfo>;
   setAgentStatusStyle(style: AgentStatusStyle): Promise<ClaudeConfigInfo>;
+  setPomodoroMinutes(minutes: number): Promise<ClaudeConfigInfo>;
   pickClaudeDir(): Promise<PickClaudeDirResult>;
   listSessions(): Promise<SessionRecord[]>;
   listGroups(): Promise<GroupRecord[]>;
