@@ -10,6 +10,8 @@ interface StatusBarProps {
   onOpenKnowledge: () => void;
   onOpenEfficiency: () => void;
   onUnlockNeon: () => void;
+  onOpenDashboard: () => void;
+  onOpenHome: () => void;
 }
 
 /** 彩蛋：连点版本号次数达到该值解锁隐藏主题。 */
@@ -25,6 +27,8 @@ export function StatusBar({
   onOpenKnowledge,
   onOpenEfficiency,
   onUnlockNeon,
+  onOpenDashboard,
+  onOpenHome,
 }: StatusBarProps) {
   const [versionClicks, setVersionClicks] = useState(0);
 
@@ -53,6 +57,12 @@ export function StatusBar({
       </button>
       <button type="button" className="status-day" title="每周时长 / 省时估算" onClick={onOpenEfficiency}>
         效率洞察
+      </button>
+      <button type="button" className="status-day" title="今日数据概览" onClick={onOpenDashboard}>
+        今日概览
+      </button>
+      <button type="button" className="status-day" title="返回首页" onClick={onOpenHome}>
+        首页
       </button>
       <span className="status-bar-spacer" />
       <span>{claudeDirName}</span>

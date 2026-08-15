@@ -3600,8 +3600,7 @@ body,
 
 /* ---- 6. 留白：内容区 / 信息面板 ---- */
 .content {
-  padding: 16px;
-  gap: 16px;
+  padding: 16px;  gap: 16px;
 }
 .info-item {
   padding: 15px 16px 14px;
@@ -4417,4 +4416,9 @@ body,
 }
 .status-version:active {
   opacity: 0.6;
+}
+
+/* 首页：全宽展示（隐藏右侧信息列） */
+.content.home {
+  grid-template-columns: minmax(0, 1fr);
 }

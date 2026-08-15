@@ -179,6 +179,7 @@ export default function App() {
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [efficiencyOpen, setEfficiencyOpen] = useState(false);
+  const [homeOpen, setHomeOpen] = useState(false);
   const dashboard = useDashboardStats();
   const toast = useToast();
   const sidebarBodyRef = useRef<HTMLDivElement | null>(null);
@@ -1057,6 +1058,11 @@ export default function App() {
       run: () => setEfficiencyOpen(true),
     });
     items.push({
+      key: 'home',
+      label: '首页（今日概览）',
+      run: () => setHomeOpen(true),
+    });
+    items.push({
       key: 'settings',
       label: '打开设置',
       run: () => setSettingsOpen(true),
@@ -1065,6 +1071,11 @@ export default function App() {
   }
 
   const activeSession = sessions.find((session) => session.id === activeId) ?? null;
+
+  // 打开首页后，激活任何会话/标签自动退出首页。
+  useEffect(() => {
+    if (activeId) setHomeOpen(false);
+  }, [activeId]);
   const historyRecords = records.filter(
     (record) => !record.archived && !sessions.some((s) => s.sessionId === record.sessionId),
   );
@@ -1407,7 +1418,10 @@ export default function App() {
               return next;
             });
           }}
-          onSelect={setActiveId}
+          onSelect={(id) => {
+            setActiveId(id);
+            setHomeOpen(false);
+          }}
           onClose={(id) => void handleCloseSession(id)}
           onContextMenu={(event, sessionId, cwd) => {
             openContextMenu(
@@ -1425,10 +1439,23 @@ export default function App() {
         />
 
         <div
-          className={`content ${infoOpen ? '' : 'info-collapsed'}`}
-          style={infoOpen ? { gridTemplateColumns: `minmax(0, 1fr) ${infoWidth}px` } : undefined}
+          className={`content ${infoOpen ? '' : 'info-collapsed'}${homeOpen ? ' home' : ''}`}
+          style={
+            !homeOpen && infoOpen ? { gridTemplateColumns: `minmax(0, 1fr) ${infoWidth}px` } : undefined
+          }
         >
-          {mode === 'search' ? (
+          {homeOpen ? (
+            <Welcome
+              stats={dashboard.stats}
+              historyCount={historyRecords.length}
+              error={error}
+              onNew={() => void handleNewSession()}
+              onFocusHistory={() => sidebarBodyRef.current?.focus()}
+              onOpenSummary={openSummary}
+              onOpenKnowledge={() => setKnowledgeOpen(true)}
+              onOpenUsageTrend={() => setUsageTrendOpen(true)}
+            />
+          ) : mode === 'search' ? (
             <SearchResults
               results={searchResults}
               query={query}
@@ -1482,6 +1509,8 @@ export default function App() {
           onOpenKnowledge={() => setKnowledgeOpen(true)}
           onOpenEfficiency={() => setEfficiencyOpen(true)}
           onUnlockNeon={() => void handleUnlockNeon()}
+          onOpenDashboard={() => setDashboardOpen(true)}
+          onOpenHome={() => setHomeOpen(true)}
         />
         </main>
       </div>
