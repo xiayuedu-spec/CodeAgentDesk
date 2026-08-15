@@ -84,7 +84,7 @@ export function Dashboard({
 
           <div className="dashboard-limit">
             <div className="dashboard-limit-head">
-              <span className="dashboard-limit-label">近 1 小时消耗</span>
+              <span className="dashboard-limit-label">本小时消耗（整点刷新）</span>
               <span className={`dashboard-limit-value ${limitTier}`}>
                 {formatTokens(hourlyTokens)} / {formatTokens(hourlyLimit)}（{hourlyPercent}%）
               </span>

@@ -40,8 +40,8 @@ import {
 import { getMainWindow } from './window-manager';
 import {
   findSessionFile,
+  getCurrentHourUsage,
   getUsageTrend,
-  getUsageWindow,
   listSessions,
   readChatEntries,
   readSessionDetail,
@@ -575,7 +575,7 @@ export function registerIpcHandlers(
       cacheCreationTokens: 0,
     };
     const limitPerHour = readConfig().tokenLimitPerHour ?? DEFAULT_HOURLY_LIMIT;
-    const window = await getUsageWindow(claudeHome, metaStore, 1);
+    const hour = await getCurrentHourUsage(claudeHome, metaStore);
     return {
       runningCount: sessions.list().length,
       todaySessionCount: todayRecords.length,
@@ -590,9 +590,9 @@ export function registerIpcHandlers(
         .slice(0, 5),
       knowledgeCount: listKnowledgeItems().length,
       hasTodaySummary: Boolean(getSummaryText('day', today)),
-      hourlyTokens: window.tokens,
+      hourlyTokens: hour.tokens,
       hourlyLimit: limitPerHour,
-      hourlyPercent: Math.min(100, Math.round((window.tokens / limitPerHour) * 100)),
+      hourlyPercent: Math.min(100, Math.round((hour.tokens / limitPerHour) * 100)),
     };
   });
 

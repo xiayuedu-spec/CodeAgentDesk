@@ -1,6 +1,6 @@
 import { Notification } from 'electron';
 import { readConfig, resolveClaudeHome } from './config';
-import { getUsageWindow } from './session-library';
+import { getCurrentHourUsage } from './session-library';
 import type { SessionMetaStore } from './session-meta-store';
 
 /** 默认小时限额（token），工作环境限制；可通过 config.json 的 tokenLimitPerHour 覆盖。 */
@@ -19,23 +19,30 @@ function formatTokens(value: number): string {
 }
 
 /**
- * Token 限额预警：按近 1 小时窗口聚合消耗，达到 80% / 100% 时发系统通知（每档仅一次）。
- * 启动后每 5 分钟检查一次；正常节奏下每小时只触发 0~2 次，开销可忽略。
+ * Token 限额预警：统计当前自然小时（整点起，额度整点刷新）的消耗，
+ * 达到限额 80% / 100% 时发系统通知（每档每小时仅一次）。
  */
 export function startUsageWarning(metaStore: SessionMetaStore): void {
+  let notifiedHour = -1;
   const notified = new Set<string>();
   const check = async (): Promise<void> => {
     try {
       const claudeHome = resolveClaudeHome(readConfig());
       const limit = readConfig().tokenLimitPerHour ?? DEFAULT_HOURLY_LIMIT;
-      const { tokens } = await getUsageWindow(claudeHome, metaStore, 1);
+      const { tokens } = await getCurrentHourUsage(claudeHome, metaStore);
+      const hour = new Date().getHours();
+      // 跨小时（整点刷新额度）时重置通知档位。
+      if (hour !== notifiedHour) {
+        notifiedHour = hour;
+        notified.clear();
+      }
       for (const tier of TIERS) {
         if (tokens >= limit * tier.percent && !notified.has(tier.key)) {
           notified.add(tier.key);
           if (Notification.isSupported()) {
             new Notification({
               title: 'CodeAgentDesk · Token 限额预警',
-              body: `近 1 小时消耗 ${formatTokens(tokens)} token，已达限额的 ${tier.label}`,
+              body: `本小时已消耗 ${formatTokens(tokens)} token，已达限额的 ${tier.label}`,
             }).show();
           }
         }

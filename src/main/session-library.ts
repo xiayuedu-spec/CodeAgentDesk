@@ -362,14 +362,15 @@ export interface UsageTrendDay {
   cacheCreationTokens: number;
 }
 
-/** 近 N 小时窗口内的 token 总消耗（复用增量缓存，用于限额预警）。 */
-export async function getUsageWindow(
+/** 当前自然小时（整点起）内的 token 总消耗（会话按 updatedAt 归入所在小时），用于按小时限额预警。 */
+export async function getCurrentHourUsage(
   claudeHome: string,
   metaStore: SessionMetaStore,
-  hours: number,
 ): Promise<{ tokens: number }> {
   const records = await listSessions(claudeHome, metaStore);
-  const sinceMs = Date.now() - hours * 3_600_000;
+  const now = new Date();
+  const hourStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0, 0, 0);
+  const sinceMs = hourStart.getTime();
   let tokens = 0;
   for (const record of records) {
     if (new Date(record.updatedAt).getTime() < sinceMs) continue;
