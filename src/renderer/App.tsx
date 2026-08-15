@@ -1464,6 +1464,7 @@ export default function App() {
           onOpenSummary={openSummary}
           onOpenUsageTrend={() => setUsageTrendOpen(true)}
           onOpenKnowledge={() => setKnowledgeOpen(true)}
+          onOpenEfficiency={() => setEfficiencyOpen(true)}
         />
         </main>
       </div>
