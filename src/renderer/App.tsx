@@ -661,6 +661,12 @@ export default function App() {
     }
   }
 
+  async function handleUnlockNeon(): Promise<void> {
+    await window.codeagentdesk.unlockNeon();
+    await refreshClaudeInfo();
+    toast.success('🎉 已解锁隐藏主题：霓虹（赛博朋克），去设置里试试！');
+  }
+
   function openGroupMenu(id: string, name: string, x: number, y: number): void {
     setGroupMenu({ id, name, x, y });
   }
@@ -1475,6 +1481,7 @@ export default function App() {
           onOpenUsageTrend={() => setUsageTrendOpen(true)}
           onOpenKnowledge={() => setKnowledgeOpen(true)}
           onOpenEfficiency={() => setEfficiencyOpen(true)}
+          onUnlockNeon={() => void handleUnlockNeon()}
         />
         </main>
       </div>

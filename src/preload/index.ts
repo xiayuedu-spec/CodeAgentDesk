@@ -28,6 +28,7 @@ import type {
   KnowledgeExportResult,
   DashboardStats,
   EfficiencyInsights,
+  FunStats,
   KnowledgeItem,
   UsageTrendDay,
   SummarizeSessionResult,
@@ -79,6 +80,8 @@ const CHANNELS = {
   knowledgeExport: 'knowledge:export',
   dashboardStats: 'dashboard:stats',
   efficiencyInsights: 'efficiency:insights',
+  funStats: 'fun:stats',
+  funUnlockNeon: 'fun:unlock-neon',
   sessionExport: 'session:export',
   sessionReadText: 'session:read-text',
   uiGetState: 'ui:get-state',
@@ -173,6 +176,8 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.dashboardStats) as Promise<DashboardStats>,
   getEfficiencyInsights: (weekStart) =>
     ipcRenderer.invoke(CHANNELS.efficiencyInsights, weekStart) as Promise<EfficiencyInsights>,
+  getFunStats: () => ipcRenderer.invoke(CHANNELS.funStats) as Promise<FunStats>,
+  unlockNeon: () => ipcRenderer.invoke(CHANNELS.funUnlockNeon) as Promise<ClaudeConfigInfo>,
   listKnowledge: () => ipcRenderer.invoke(CHANNELS.knowledgeList) as Promise<KnowledgeItem[]>,
   getKnowledge: (key) =>
     ipcRenderer.invoke(CHANNELS.knowledgeGet, key) as Promise<SummaryGetResult>,

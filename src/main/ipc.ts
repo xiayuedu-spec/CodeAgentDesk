@@ -7,6 +7,7 @@ import { registerGroupsIpc } from './ipc-groups';
 import { registerSessionsIpc } from './ipc-sessions';
 import { registerSummaryIpc } from './ipc-summary';
 import { registerUsageIpc } from './ipc-usage';
+import { registerFunIpc } from './ipc-fun';
 
 /**
  * 按域注册全部 IPC 处理器：
@@ -14,7 +15,8 @@ import { registerUsageIpc } from './ipc-usage';
  * - ipc-sessions：会话列表/创建/恢复/重命名/归档/删除/详情/总结/导出/终端 IO、搜索
  * - ipc-groups：分组增删改查、会话分组归属
  * - ipc-summary：日报/周报/月报、知识库
- * - ipc-usage：今日概览、用量趋势、每小时用量
+ * - ipc-usage：今日概览、用量趋势、每小时用量、效率洞察
+ * - ipc-fun：成就徽章、项目性格、彩蛋
  */
 export function registerIpcHandlers(
   sessions: SessionManager,
@@ -28,4 +30,5 @@ export function registerIpcHandlers(
   registerGroupsIpc({ groups, metaStore });
   registerSummaryIpc({ metaStore });
   registerUsageIpc({ sessions, metaStore });
+  registerFunIpc({ metaStore });
 }

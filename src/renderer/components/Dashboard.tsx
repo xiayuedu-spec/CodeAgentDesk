@@ -18,6 +18,19 @@ function formatTokens(value: number): string {
   return String(value);
 }
 
+/** 今日 AI 段位：按今日输出 token 分档（纯趣味）。 */
+const RANKS: { min: number; icon: string; label: string }[] = [
+  { min: 400_000, icon: '👑', label: '王者' },
+  { min: 150_000, icon: '💎', label: '钻石' },
+  { min: 50_000, icon: '🥇', label: '黄金' },
+  { min: 10_000, icon: '🥈', label: '白银' },
+  { min: 0, icon: '🥉', label: '青铜' },
+];
+
+function todayRank(outputTokens: number): { icon: string; label: string } {
+  return RANKS.find((rank) => outputTokens >= rank.min) ?? RANKS[RANKS.length - 1];
+}
+
 /** 今日概览弹窗（Ctrl+P 入口，随时查看"现在"）。 */
 export function Dashboard({
   onClose,
@@ -75,6 +88,12 @@ export function Dashboard({
             <div className="dashboard-card">
               <span className="dashboard-card-value">{knowledgeCount}</span>
               <span className="dashboard-card-label">知识库项目</span>
+            </div>
+            <div className="dashboard-card">
+              <span className="dashboard-card-value">{todayRank(todayTokens.outputTokens).icon}</span>
+              <span className="dashboard-card-label">
+                今日段位 {todayRank(todayTokens.outputTokens).label}
+              </span>
             </div>
             <div className="dashboard-card">
               <span className={`dashboard-card-value ${hasTodaySummary ? 'ok' : ''}`}>

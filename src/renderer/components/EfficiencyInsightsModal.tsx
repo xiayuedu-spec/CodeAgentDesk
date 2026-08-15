@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TrendingUp, X } from 'lucide-react';
-import type { EfficiencyInsights } from '../../shared/types';
+import type { EfficiencyInsights, FunStats } from '../../shared/types';
 import { folderName } from '../session-utils';
 
 interface EfficiencyInsightsModalProps {
@@ -9,6 +9,10 @@ interface EfficiencyInsightsModalProps {
 
 /** 省时估算假设：人工完成同等任务约为 agent 耗时的倍数（透明可调整）。 */
 const HUMAN_MULTIPLIER = 2.5;
+/** Token 等价物：一本书约 10 万 token。 */
+const TOKENS_PER_BOOK = 100_000;
+/** 省时等价物：一个工作日约 8 小时。 */
+const WORKDAY_HOURS = 8;
 
 const WEEK_DAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
@@ -67,6 +71,7 @@ function weekRangeLabel(weekStart: string): string {
 export function EfficiencyInsightsModal({ onClose }: EfficiencyInsightsModalProps) {
   const [weekStart, setWeekStart] = useState(() => mondayKey());
   const [data, setData] = useState<EfficiencyInsights | null>(null);
+  const [fun, setFun] = useState<FunStats | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,6 +87,22 @@ export function EfficiencyInsightsModal({ onClose }: EfficiencyInsightsModalProp
       cancelled = true;
     };
   }, [weekStart]);
+
+  // 趣味数据（成就徽章 / 项目性格）与周无关，仅取一次。
+  useEffect(() => {
+    let cancelled = false;
+    window.codeagentdesk
+      .getFunStats()
+      .then((value) => {
+        if (!cancelled) setFun(value);
+      })
+      .catch(() => {
+        if (!cancelled) setFun(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const isCurrentWeek = weekStart === mondayKey();
   const maxDaily = Math.max(1, ...(data?.daily.map((day) => day.durationMs) ?? []));
@@ -187,6 +208,54 @@ export function EfficiencyInsightsModal({ onClose }: EfficiencyInsightsModalProp
                   );
                 })}
               </ul>
+
+              <div className="eff-section-title">本周趣味换算</div>
+              <div className="eff-equivalents">
+                <span>
+                  📚 本周 token ≈ <b>{Math.max(1, Math.round(data.totalTokens / TOKENS_PER_BOOK))} 本书</b>
+                </span>
+                <span>
+                  ⏳ 省时 ≈{' '}
+                  <b>
+                    {(savedMs / 3_600_000 / WORKDAY_HOURS).toFixed(1)} 个工作日
+                  </b>
+                </span>
+              </div>
+
+              {fun ? (
+                <>
+                  <div className="eff-section-title">成就徽章（数据说话）</div>
+                  <div className="fun-badges">
+                    {fun.achievements.map((badge) => (
+                      <div
+                        key={badge.id}
+                        className={`fun-badge${badge.unlocked ? ' unlocked' : ''}`}
+                        title={badge.desc}
+                      >
+                        <span className="fun-badge-icon">{badge.unlocked ? badge.icon : '🔒'}</span>
+                        <span className="fun-badge-label">{badge.label}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="eff-section-title">项目性格标签</div>
+                  {fun.personalities.length === 0 ? (
+                    <div className="archive-empty">还没有项目会话记录</div>
+                  ) : (
+                    <ul className="fun-personality-list">
+                      {fun.personalities.map((item) => (
+                        <li key={item.cwd} className="fun-personality">
+                          <span className="fun-personality-label">{item.label}</span>
+                          <span className="fun-personality-name" title={item.cwd}>
+                            {folderName(item.cwd) ?? item.cwd}
+                          </span>
+                          <span className="fun-personality-desc">{item.desc}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              ) : null}
 
               <div className="eff-note">
                 口径：时长按事件间隔 ≤ 5 分钟累计（排除挂机），会话按开始时间归入所在周/日。

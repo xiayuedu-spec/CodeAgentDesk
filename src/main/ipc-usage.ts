@@ -154,7 +154,7 @@ const EFFICIENCY_TOP_SESSIONS = 10;
  * 口径：会话按 startedAt 归周/归日；时长优先用活跃时长（事件间隔 ≤ 5 分钟累计），
  * 无时间戳时回退为会话跨度（updatedAt - startedAt）。
  */
-async function computeEfficiencyInsights(
+export async function computeEfficiencyInsights(
   claudeHome: string,
   metaStore: SessionMetaStore,
   weekStart?: string,

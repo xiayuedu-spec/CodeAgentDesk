@@ -31,12 +31,14 @@ export interface GroupOpResult {
   message?: string;
 }
 
-export type ThemeName = 'default' | 'mac' | 'green' | 'sepia' | 'amber' | 'mist';
+export type ThemeName = 'default' | 'mac' | 'green' | 'sepia' | 'amber' | 'mist' | 'neon';
 
 export interface AppConfig {
   claudeDir?: string;
   theme?: ThemeName;
   tokenLimitPerHour?: number;
+  /** 彩蛋：是否已解锁隐藏主题（霓虹）。 */
+  funUnlockedNeon?: boolean;
 }
 
 export interface ClaudeConfigInfo {
@@ -263,6 +265,28 @@ export interface EfficiencyInsights {
   topSessions: EfficiencySessionStat[];
 }
 
+/** 成就徽章：由真实使用数据解锁。 */
+export interface AchievementBadge {
+  id: string;
+  icon: string;
+  label: string;
+  desc: string;
+  unlocked: boolean;
+}
+
+/** 项目性格标签：按会话时长/输出占比自动归纳。 */
+export interface ProjectPersonality {
+  cwd: string;
+  label: string;
+  desc: string;
+}
+
+/** 趣味数据：成就徽章 + 项目性格。 */
+export interface FunStats {
+  achievements: AchievementBadge[];
+  personalities: ProjectPersonality[];
+}
+
 export interface ArchiveSessionResult {
   ok: boolean;
   message?: string;
@@ -338,6 +362,8 @@ export interface CodeAgentDeskApi {
   exportKnowledge(cwd: string): Promise<KnowledgeExportResult>;
   getDashboardStats(): Promise<DashboardStats>;
   getEfficiencyInsights(weekStart?: string): Promise<EfficiencyInsights>;
+  getFunStats(): Promise<FunStats>;
+  unlockNeon(): Promise<ClaudeConfigInfo>;
   exportSessionMarkdown(sessionId: string, cwd?: string): Promise<ExportResult>;
   readSessionText(sessionId: string): Promise<ReadSessionTextResult>;
   getUiState(): Promise<UiState>;

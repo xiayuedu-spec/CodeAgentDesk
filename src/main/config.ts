@@ -45,6 +45,14 @@ function configPath(): string {
 }
 
 function normalizeTheme(value: unknown): ThemeName {
-  const allowed: readonly ThemeName[] = ['default', 'mac', 'green', 'sepia', 'amber', 'mist'];
+  const allowed: readonly ThemeName[] = [
+    'default',
+    'mac',
+    'green',
+    'sepia',
+    'amber',
+    'mist',
+    'neon',
+  ];
   return allowed.includes(value as ThemeName) ? (value as ThemeName) : 'default';
 }

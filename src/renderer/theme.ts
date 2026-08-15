@@ -8,6 +8,7 @@ export const THEME_BACKGROUND: Record<ThemeName, string> = {
   sepia: '#f4ead8',
   amber: '#16120b',
   mist: '#131619',
+  neon: '#0a0614',
 };
 
 export const THEMES: { name: ThemeName; label: string }[] = [
@@ -17,6 +18,7 @@ export const THEMES: { name: ThemeName; label: string }[] = [
   { name: 'sepia', label: '暖纸米黄' },
   { name: 'amber', label: '琥珀夜间' },
   { name: 'mist', label: '柔雾深青' },
+  { name: 'neon', label: '霓虹·隐藏' },
 ];
 
 export const THEME_SWATCHES: Record<ThemeName, { bg: string; fg: string; accent: string }> = {
@@ -26,4 +28,5 @@ export const THEME_SWATCHES: Record<ThemeName, { bg: string; fg: string; accent:
   sepia: { bg: '#f4ead8', fg: '#3d3528', accent: '#a67c1f' },
   amber: { bg: '#16120b', fg: '#e2cfa5', accent: '#e0a64e' },
   mist: { bg: '#131619', fg: '#c6cdd4', accent: '#58a0a8' },
+  neon: { bg: '#0a0614', fg: '#e6e1ff', accent: '#00e5ff' },
 };

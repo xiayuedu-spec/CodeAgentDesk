@@ -1718,6 +1718,29 @@ button:focus-visible, input:focus-visible {
   --danger: #d06a6a;
 }
 
+/* 隐藏主题：霓虹（赛博朋克）——连点状态栏版本号解锁 */
+:root[data-theme='neon'] {
+  color-scheme: dark;
+  --bg: #0a0614;
+  --bg-raised: #140d26;
+  --bg-inset: #07040e;
+  --border: #2a1b4d;
+  --border-strong: #45297a;
+  --text: #e6e1ff;
+  --text-muted: #9b8ec9;
+  --text-faint: #6a5d99;
+  --accent: #00e5ff;
+  --accent-dim: #00a8c4;
+  --accent-glow: rgba(0, 229, 255, 0.4);
+  --accent-glow-strong: rgba(0, 229, 255, 0.7);
+  --accent-soft: rgba(0, 229, 255, 0.14);
+  --accent-strong: #6ff2ff;
+  --focus-ring: rgba(0, 229, 255, 0.55);
+  --selection: rgba(255, 0, 204, 0.28);
+  --warn: #ffd166;
+  --danger: #ff4d6d;
+}
+
 :root[data-theme='green'] .terminal-surface, :root[data-theme='green'] .info-panel, :root[data-theme='green'] .terminal-pane, :root[data-theme='green'] .session-detail, :root[data-theme='green'] .search-results, :root[data-theme='green'] .archive-detail {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6),
     0 1px 2px rgba(0, 0, 0, 0.1),
@@ -4292,4 +4315,106 @@ body,
   color: var(--text-faint);
   font-size: 10px;
   line-height: 1.6;
+}
+/* ---- 趣味数据：等价物 / 成就徽章 / 项目性格 ---- */
+.eff-equivalents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.eff-equivalents b {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.fun-badges {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+.fun-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--bg) 50%, transparent);
+  opacity: 0.45;
+  filter: grayscale(0.8);
+}
+.fun-badge.unlocked {
+  opacity: 1;
+  filter: none;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 40%, var(--bg));
+}
+.fun-badge-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+.fun-badge-label {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.fun-badge.unlocked .fun-badge-label {
+  color: var(--text);
+  font-weight: 600;
+}
+.fun-personality-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fun-personality {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg) 45%, transparent);
+  font-size: 11px;
+}
+.fun-personality-label {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 600;
+}
+.fun-personality-name {
+  flex: none;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-weight: 600;
+}
+.fun-personality-desc {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* 彩蛋：版本号连点 */
+.status-version {
+  cursor: pointer;
+  user-select: none;
+}
+.status-version:active {
+  opacity: 0.6;
 }

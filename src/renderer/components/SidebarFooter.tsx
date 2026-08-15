@@ -191,7 +191,9 @@ export function SidebarFooter({
           <div className="settings-popover settings-popover-compact">
             <div className="settings-label">皮肤</div>
             <div className="theme-grid">
-              {THEMES.map((item) => {
+              {THEMES.filter(
+                (item) => item.name !== 'neon' || claudeInfo.config.funUnlockedNeon === true,
+              ).map((item) => {
                 const swatch = THEME_SWATCHES[item.name];
                 const active = (claudeInfo.config.theme ?? 'default') === item.name;
                 return (

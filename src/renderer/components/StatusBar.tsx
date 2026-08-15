@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 interface StatusBarProps {
   sessionCount: number;
   archivedCount: number;
@@ -7,7 +9,11 @@ interface StatusBarProps {
   onOpenUsageTrend: () => void;
   onOpenKnowledge: () => void;
   onOpenEfficiency: () => void;
+  onUnlockNeon: () => void;
 }
+
+/** 彩蛋：连点版本号次数达到该值解锁隐藏主题。 */
+const NEON_CLICK_TARGET = 7;
 
 export function StatusBar({
   sessionCount,
@@ -18,7 +24,20 @@ export function StatusBar({
   onOpenUsageTrend,
   onOpenKnowledge,
   onOpenEfficiency,
+  onUnlockNeon,
 }: StatusBarProps) {
+  const [versionClicks, setVersionClicks] = useState(0);
+
+  const handleVersionClick = (): void => {
+    const next = versionClicks + 1;
+    if (next >= NEON_CLICK_TARGET) {
+      setVersionClicks(0);
+      onUnlockNeon();
+    } else {
+      setVersionClicks(next);
+    }
+  };
+
   return (
     <footer className="status-bar">
       <span>{sessionCount} 会话</span>
@@ -37,7 +56,9 @@ export function StatusBar({
       </button>
       <span className="status-bar-spacer" />
       <span>{claudeDirName}</span>
-      <span>v{version}</span>
+      <span className="status-version" title="连点有惊喜" onClick={handleVersionClick}>
+        v{version}
+      </span>
     </footer>
   );
 }
