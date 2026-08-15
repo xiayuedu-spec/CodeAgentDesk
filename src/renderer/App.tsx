@@ -36,6 +36,7 @@ import { useSearch } from './hooks/useSearch';
 import { usePalette } from './hooks/usePalette';
 import { useSummary } from './hooks/useSummary';
 import { useDashboardStats } from './hooks/useDashboardStats';
+import { useToast } from './toast';
 import { TerminalPane } from './components/TerminalPane';
 import { TitleBar } from './components/TitleBar';
 import { TabBar } from './components/TabBar';
@@ -165,6 +166,7 @@ export default function App() {
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const dashboard = useDashboardStats();
+  const toast = useToast();
   const sidebarBodyRef = useRef<HTMLDivElement | null>(null);
   const sidebarWidthRef = useRef(232);
   const infoWidthRef = useRef(260);
@@ -572,10 +574,12 @@ export default function App() {
     setSelectedArchiveIds(new Set());
     if (!result.ok) {
       setError(result.message ?? '删除失败');
+      toast.error(result.message ?? '删除失败');
       return;
     }
     setArchiveSelectMode(false);
     await refreshRecords();
+    toast.success(`已删除 ${ids.length} 个归档会话`);
   }
 
   async function handleDeleteArchivedOne(sessionId: string): Promise<void> {
@@ -583,9 +587,11 @@ export default function App() {
     const result = await window.codeagentdesk.deleteSessions([sessionId]);
     if (!result.ok) {
       setError(result.message ?? '删除失败');
+      toast.error(result.message ?? '删除失败');
       return;
     }
     await refreshRecords();
+    toast.success('已删除归档会话');
   }
 
   async function refreshGroups(): Promise<void> {
@@ -617,9 +623,12 @@ export default function App() {
     try {
       const group = await window.codeagentdesk.createGroup(trimmed);
       await refreshGroups();
+      toast.success(`已创建分组「${group.name}」`);
       return group;
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason));
+      const message = reason instanceof Error ? reason.message : String(reason);
+      setError(message);
+      toast.error(message);
       return null;
     }
   }
@@ -632,9 +641,11 @@ export default function App() {
     const result = await window.codeagentdesk.renameGroup(id, name);
     if (!result.ok) {
       setError(result.message ?? '重命名分组失败');
+      toast.error(result.message ?? '重命名分组失败');
       return;
     }
     await refreshGroups();
+    toast.success('已重命名分组');
   }
 
   async function handleDeleteGroup(id: string): Promise<void> {
@@ -642,6 +653,7 @@ export default function App() {
     const result = await window.codeagentdesk.deleteGroup(id);
     if (!result.ok) {
       setError(result.message ?? '删除分组失败');
+      toast.error(result.message ?? '删除分组失败');
       return;
     }
     setCollapsedGroups((previous) => {
@@ -651,6 +663,7 @@ export default function App() {
     });
     await refreshGroups();
     await refreshRecords();
+    toast.success('已删除分组');
   }
 
   async function cycleGroupColor(id: string, current: string): Promise<void> {
@@ -668,6 +681,7 @@ export default function App() {
     const result = await window.codeagentdesk.setSessionGroup(sessionId, groupId);
     if (!result.ok) {
       setError(result.message ?? '移动分组失败');
+      toast.error(result.message ?? '移动分组失败');
       return;
     }
     await refreshRecords();
@@ -805,7 +819,12 @@ export default function App() {
   async function exportFromDetail(): Promise<void> {
     if (!detailSessionId) return;
     const result = await window.codeagentdesk.exportSessionMarkdown(detailSessionId);
-    if (!result.ok) setError(result.message ?? '导出失败');
+    if (!result.ok) {
+      setError(result.message ?? '导出失败');
+      toast.error(result.message ?? '导出失败');
+      return;
+    }
+    toast.success('已导出 Markdown');
   }
 
   async function commitRename(sessionId: string, rawValue: string): Promise<void> {
@@ -816,6 +835,7 @@ export default function App() {
     const result = await window.codeagentdesk.renameSession(sessionId, name);
     if (!result.ok) {
       setError(result.message ?? '重命名失败');
+      toast.error(result.message ?? '重命名失败');
       return;
     }
     setSessions((previous) =>
@@ -828,12 +848,14 @@ export default function App() {
         record.sessionId === sessionId ? { ...record, customName: name } : record,
       ),
     );
+    toast.success('已重命名');
   }
 
   async function archiveSession(sessionId: string, cwd: string): Promise<void> {
     const result = await window.codeagentdesk.archiveSession(sessionId, cwd);
     if (!result.ok) {
       setError(result.message ?? '归档失败');
+      toast.error(result.message ?? '归档失败');
       return;
     }
     const removed = sessions.find((session) => session.sessionId === sessionId);
@@ -848,21 +870,25 @@ export default function App() {
     );
     setDetailSessionId((current) => (current === sessionId ? null : current));
     setDetail((current) => (current?.sessionId === sessionId ? null : current));
+    toast.success('已归档');
   }
 
   async function copySessionText(sessionId: string): Promise<void> {
     const result = await window.codeagentdesk.readSessionText(sessionId);
     if (!result.ok) {
       setError(result.message ?? '复制失败');
+      toast.error(result.message ?? '复制失败');
       return;
     }
     await navigator.clipboard.writeText(result.text);
+    toast.success('已复制会话内容');
   }
 
   async function restoreArchived(sessionId: string, cwd: string): Promise<void> {
     const result = await window.codeagentdesk.restoreArchivedSession(sessionId, cwd);
     if (!result.ok) {
       setError(result.message ?? '恢复失败');
+      toast.error(result.message ?? '恢复失败');
       return;
     }
     setRecords((previous) =>
@@ -876,6 +902,7 @@ export default function App() {
     setDetailSessionId((current) => (current === sessionId ? null : current));
     setDetail((current) => (current?.sessionId === sessionId ? null : current));
     setMode('sessions');
+    toast.success('已恢复归档会话');
   }
 
   async function openSearchResult(result: SearchResult): Promise<void> {
