@@ -4729,6 +4729,16 @@ body,
   border-color: var(--accent-dim);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
+/* 行内"保存"按钮：覆盖 .settings-action 的全宽/上边距，与输入框同行 */
+.settings-limit-save {
+  flex: none;
+  width: auto;
+  min-width: 52px;
+  height: 28px;
+  margin-top: 0;
+  padding: 0 12px;
+  white-space: nowrap;
+}
 /* 防御规则：设置弹窗内任何输入控件都不回落到浏览器默认配色 */
 .settings-popover input {
   background-color: var(--bg-inset);
