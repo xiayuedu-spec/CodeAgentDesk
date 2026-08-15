@@ -1,5 +1,5 @@
 import { Check, FolderOpen, Plus, RotateCcw, Settings2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { AppInfo, ClaudeConfigInfo, DashboardStats, ThemeName } from '../../shared/types';
 import { folderName } from '../session-utils';
 import { THEMES, THEME_SWATCHES } from '../theme';
@@ -55,6 +55,8 @@ export function SidebarFooter({
     String(claudeInfo?.config.tokenLimitPerHour ?? DEFAULT_HOURLY_LIMIT),
   );
   const [hourlyOpen, setHourlyOpen] = useState(false);
+  const newWrapRef = useRef<HTMLDivElement | null>(null);
+  const settingsWrapRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!hourlyOpen) return;
@@ -70,9 +72,37 @@ export function SidebarFooter({
     };
   }, [hourlyOpen]);
 
+  // 新建会话菜单 / 设置弹窗：点击自身区域外或按 Esc 关闭。
+  useEffect(() => {
+    if (!settingsOpen && !newMenuOpen) return;
+    const onDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (
+        target &&
+        (newWrapRef.current?.contains(target) || settingsWrapRef.current?.contains(target))
+      ) {
+        return;
+      }
+      setSettingsOpen(false);
+      setNewMenuOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSettingsOpen(false);
+        setNewMenuOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('mousedown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [settingsOpen, newMenuOpen]);
+
   return (
     <div className="sidebar-footer">
-      <div className="new-wrap">
+      <div className="new-wrap" ref={newWrapRef}>
         <button
           type="button"
           className="new-session"
@@ -148,7 +178,7 @@ export function SidebarFooter({
         <span className={`status-dot ${appInfo ? 'ok' : 'pending'}`} />
         <span>{appInfo ? `v${appInfo.appVersion}` : '启动中'}</span>
       </div>
-      <div className="settings-wrap">
+      <div className="settings-wrap" ref={settingsWrapRef}>
         <button
           type="button"
           className="icon-button"
