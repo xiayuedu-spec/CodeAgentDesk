@@ -29,7 +29,7 @@ import {
   type MoveMenuState,
   type SessionView,
 } from './session-utils';
-import { THEME_BACKGROUND, THEMES } from './theme';
+import { THEME_BACKGROUND } from './theme';
 import { useUiState } from './hooks/useUiState';
 import { useSearch } from './hooks/useSearch';
 import { usePalette } from './hooks/usePalette';
@@ -1007,13 +1007,6 @@ export default function App() {
         searchInputRef.current?.focus();
       },
     });
-    for (const theme of THEMES) {
-      items.push({
-        key: `theme:${theme.name}`,
-        label: `切换主题 → ${theme.label}`,
-        run: () => void handleSetTheme(theme.name),
-      });
-    }
     items.push({
       key: 'day',
       label: '生成今日总结',
