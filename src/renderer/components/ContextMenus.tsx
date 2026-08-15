@@ -14,6 +14,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+import { GROUP_COLORS } from '../../shared/types';
 import type { GroupRecord, SessionRecord } from '../../shared/types';
 import type {
   ContextMenuState,
@@ -53,6 +54,7 @@ interface ContextMenusActions {
   moveToGroup: (sessionId: string, groupId: string | null) => void;
   togglePin: (sessionId: string, pinned: boolean) => void;
   openCwd: (cwd: string) => void;
+  setGroupColor: (id: string, color: string) => void;
   setMoveNewOpen: (open: boolean) => void;
   setMoveNewName: (name: string) => void;
   createGroupAndMove: () => void;
@@ -77,6 +79,7 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
     moveToGroup,
     togglePin,
     openCwd,
+    setGroupColor,
     setMoveNewOpen,
     setMoveNewName,
     createGroupAndMove,
@@ -277,6 +280,31 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
             </span>
             重命名分组
           </button>
+          <div className="context-menu-separator" />
+          <div className="group-color-label">分组颜色</div>
+          <div className="group-color-picker" onClick={(event) => event.stopPropagation()}>
+            {GROUP_COLORS.map((color) => {
+              const active = groups.find((group) => group.id === groupMenu.id)?.color === color;
+              return (
+                <button
+                  key={color}
+                  type="button"
+                  role="menuitem"
+                  className={`group-color-swatch${active ? ' active' : ''}`}
+                  style={{ background: color }}
+                  aria-label={`颜色 ${color}`}
+                  onClick={() => void setGroupColor(groupMenu.id, color)}
+                />
+              );
+            })}
+            <label className="group-color-custom" title="自定义颜色">
+              <input
+                type="color"
+                value={groups.find((group) => group.id === groupMenu.id)?.color ?? '#34d3c0'}
+                onChange={(event) => void setGroupColor(groupMenu.id, event.target.value)}
+              />
+            </label>
+          </div>
           <button type="button" role="menuitem" onClick={() => void handleDeleteGroup(groupMenu.id)}>
             <span className="context-menu-icon">
               <Archive size={14} />

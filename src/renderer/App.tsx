@@ -625,6 +625,15 @@ export default function App() {
     toast.success('已删除分组');
   }
 
+  async function handleSetGroupColor(id: string, color: string): Promise<void> {
+    const result = await window.codeagentdesk.setGroupColor(id, color);
+    if (!result.ok) {
+      toast.error(result.message ?? '修改颜色失败');
+      return;
+    }
+    await refreshGroups();
+  }
+
   async function handleSetSessionGroup(sessionId: string, groupId: string | null): Promise<void> {
     const result = await window.codeagentdesk.setSessionGroup(sessionId, groupId);
     if (!result.ok) {
@@ -1348,6 +1357,7 @@ export default function App() {
     moveToGroup: (sessionId: string, groupId: string | null) => void moveToGroup(sessionId, groupId),
     togglePin: (sessionId: string, pinned: boolean) => void handleTogglePin(sessionId, pinned),
     openCwd: (cwd: string) => void handleOpenCwd(cwd),
+    setGroupColor: (id: string, color: string) => void handleSetGroupColor(id, color),
     setMoveNewOpen,
     setMoveNewName,
     createGroupAndMove: () => void createGroupAndMove(),
