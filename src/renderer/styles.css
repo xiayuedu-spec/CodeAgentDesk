@@ -3789,3 +3789,67 @@ body,
   background: linear-gradient(90deg, var(--danger), var(--danger));
   box-shadow: 0 0 8px color-mix(in srgb, var(--danger) 60%, transparent);
 }
+/* ---- 侧边栏底部：本小时限额统计（新建会话下方） ---- */
+.footer-limit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-inset);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+.footer-limit:hover {
+  border-color: var(--accent-dim);
+  background: color-mix(in srgb, var(--accent-soft) 20%, var(--bg-inset));
+}
+.footer-limit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.footer-limit-label {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.footer-limit-percent {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.footer-limit-percent.warn {
+  color: var(--warn);
+}
+.footer-limit-percent.danger {
+  color: var(--danger);
+}
+.footer-limit-bar {
+  height: 5px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.footer-limit-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  transition: width 400ms ease;
+}
+.footer-limit-bar.warn span {
+  background: var(--warn);
+}
+.footer-limit-bar.danger span {
+  background: var(--danger);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--danger) 60%, transparent);
+}
+.footer-limit-sub {
+  color: var(--text-faint);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}

@@ -17,7 +17,6 @@ import type {
   SessionUsage,
   ThemeName,
 } from '../shared/types';
-import { GROUP_COLORS } from '../shared/types';
 import {
   EMPTY_USAGE,
   folderName,
@@ -154,8 +153,6 @@ export default function App() {
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [groupRenameId, setGroupRenameId] = useState<string | null>(null);
   const [groupMenu, setGroupMenu] = useState<GroupMenuState | null>(null);
-  const [groupManageOpen, setGroupManageOpen] = useState(false);
-  const [newGroupName, setNewGroupName] = useState('');
   const [moveMenu, setMoveMenu] = useState<MoveMenuState | null>(null);
   const [moveNewOpen, setMoveNewOpen] = useState(false);
   const [moveNewName, setMoveNewName] = useState('');
@@ -461,20 +458,6 @@ export default function App() {
   }, [newMenuOpen]);
 
   useEffect(() => {
-    if (!groupManageOpen) return;
-    const close = () => setGroupManageOpen(false);
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setGroupManageOpen(false);
-    };
-    window.addEventListener('click', close);
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('click', close);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [groupManageOpen]);
-
-  useEffect(() => {
     const onDragOver = (event: DragEvent): void => {
       if (event.dataTransfer?.types?.includes('Files')) {
         event.preventDefault();
@@ -666,17 +649,6 @@ export default function App() {
     toast.success('已删除分组');
   }
 
-  async function cycleGroupColor(id: string, current: string): Promise<void> {
-    const index = GROUP_COLORS.indexOf(current as (typeof GROUP_COLORS)[number]);
-    const next = GROUP_COLORS[(index + 1) % GROUP_COLORS.length];
-    const result = await window.codeagentdesk.setGroupColor(id, next);
-    if (!result.ok) {
-      setError(result.message ?? '修改分组颜色失败');
-      return;
-    }
-    await refreshGroups();
-  }
-
   async function handleSetSessionGroup(sessionId: string, groupId: string | null): Promise<void> {
     const result = await window.codeagentdesk.setSessionGroup(sessionId, groupId);
     if (!result.ok) {
@@ -703,14 +675,6 @@ export default function App() {
     const group = await handleCreateGroup(name);
     setMoveNewOpen(false);
     if (group) await moveToGroup(moveMenu.sessionId, group.id);
-  }
-
-  async function createGroupFromManage(): Promise<void> {
-    const name = newGroupName.trim();
-    if (!name) return;
-    const group = await handleCreateGroup(name);
-    setNewGroupName('');
-    if (group) setGroupRenameId(null);
   }
 
   async function handleCloseSession(id: string): Promise<void> {
@@ -1315,21 +1279,14 @@ export default function App() {
   const sidebarFooterData = {
     appInfo,
     claudeInfo,
-    groups,
-    records,
     recentDirs,
     newMenuOpen,
     settingsOpen,
-    groupManageOpen,
-    newGroupName,
-    groupRenameId,
+    stats: dashboard.stats,
   };
   const sidebarFooterActions = {
     setNewMenuOpen,
     setSettingsOpen,
-    setGroupManageOpen,
-    setNewGroupName,
-    setGroupRenameId,
     handleNewSession: (cwd?: string) => void handleNewSession(cwd),
     handleSetTheme: (theme: ThemeName) => void handleSetTheme(theme),
     handlePickClaudeDir: () => {
@@ -1338,10 +1295,7 @@ export default function App() {
     handleResetClaudeDir: () => {
       void handleResetClaudeDir().then(() => void refreshRecords());
     },
-    createGroupFromManage: () => void createGroupFromManage(),
-    commitGroupRename: (id: string, name: string) => void commitGroupRename(id, name),
-    handleDeleteGroup: (id: string) => void handleDeleteGroup(id),
-    cycleGroupColor: (id: string, color: string) => void cycleGroupColor(id, color),
+    onOpenDashboard: () => setDashboardOpen(true),
   };
 
   const contextMenusData = {

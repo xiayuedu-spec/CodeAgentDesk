@@ -1,43 +1,31 @@
-import {
-  Check,
-  FolderOpen,
-  Plus,
-  RotateCcw,
-  Settings2,
-  Tags,
-  X,
-} from 'lucide-react';
-import type { AppInfo, ClaudeConfigInfo, GroupRecord, SessionRecord, ThemeName } from '../../shared/types';
+import { Check, FolderOpen, Plus, RotateCcw, Settings2 } from 'lucide-react';
+import type { AppInfo, ClaudeConfigInfo, DashboardStats, ThemeName } from '../../shared/types';
 import { folderName } from '../session-utils';
 import { THEMES, THEME_SWATCHES } from '../theme';
+
+function formatTokens(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}k`;
+  return String(value);
+}
 
 interface SidebarFooterData {
   appInfo: AppInfo | null;
   claudeInfo: ClaudeConfigInfo | null;
-  groups: GroupRecord[];
-  records: SessionRecord[];
   recentDirs: string[];
   newMenuOpen: boolean;
   settingsOpen: boolean;
-  groupManageOpen: boolean;
-  newGroupName: string;
-  groupRenameId: string | null;
+  stats: DashboardStats;
 }
 
 interface SidebarFooterActions {
   setNewMenuOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
-  setGroupManageOpen: (open: boolean) => void;
-  setNewGroupName: (name: string) => void;
-  setGroupRenameId: (id: string | null) => void;
   handleNewSession: (cwd?: string) => void;
   handleSetTheme: (theme: ThemeName) => void;
   handlePickClaudeDir: () => void;
   handleResetClaudeDir: () => void;
-  createGroupFromManage: () => void;
-  commitGroupRename: (id: string, name: string) => void;
-  handleDeleteGroup: (id: string) => void;
-  cycleGroupColor: (id: string, color: string) => void;
+  onOpenDashboard: () => void;
 }
 
 export function SidebarFooter({
@@ -47,33 +35,18 @@ export function SidebarFooter({
   data: SidebarFooterData;
   actions: SidebarFooterActions;
 }) {
-  const {
-    appInfo,
-    claudeInfo,
-    groups,
-    records,
-    recentDirs,
-    newMenuOpen,
-    settingsOpen,
-    groupManageOpen,
-    newGroupName,
-    groupRenameId,
-  } = data;
+  const { appInfo, claudeInfo, recentDirs, newMenuOpen, settingsOpen, stats } = data;
   const {
     setNewMenuOpen,
     setSettingsOpen,
-    setGroupManageOpen,
-    setNewGroupName,
-    setGroupRenameId,
     handleNewSession,
     handleSetTheme,
     handlePickClaudeDir,
     handleResetClaudeDir,
-    createGroupFromManage,
-    commitGroupRename,
-    handleDeleteGroup,
-    cycleGroupColor,
+    onOpenDashboard,
   } = actions;
+
+  const limitTier = stats.hourlyPercent >= 100 ? 'danger' : stats.hourlyPercent >= 80 ? 'warn' : '';
 
   return (
     <div className="sidebar-footer">
@@ -121,102 +94,29 @@ export function SidebarFooter({
           </div>
         ) : null}
       </div>
+
+      {/* 本小时 Token 限额统计（新建会话下方，点击打开今日概览） */}
+      <button
+        type="button"
+        className="footer-limit"
+        title="本小时 Token 消耗（整点刷新）· 点击查看今日概览"
+        onClick={onOpenDashboard}
+      >
+        <div className="footer-limit-head">
+          <span className="footer-limit-label">本小时消耗</span>
+          <span className={`footer-limit-percent ${limitTier}`}>{stats.hourlyPercent}%</span>
+        </div>
+        <div className={`footer-limit-bar ${limitTier}`}>
+          <span style={{ width: `${Math.min(100, stats.hourlyPercent)}%` }} />
+        </div>
+        <div className="footer-limit-sub">
+          {formatTokens(stats.hourlyTokens)} / {formatTokens(stats.hourlyLimit)} · 整点刷新
+        </div>
+      </button>
+
       <div className="status-line">
         <span className={`status-dot ${appInfo ? 'ok' : 'pending'}`} />
         <span>{appInfo ? `v${appInfo.appVersion}` : '启动中'}</span>
-      </div>
-      <div className="groups-wrap">
-        <button
-          type="button"
-          className="icon-button"
-          aria-label="分组管理"
-          title="分组管理"
-          onClick={() => setGroupManageOpen(!groupManageOpen)}
-        >
-          <Tags size={16} />
-        </button>
-        {groupManageOpen ? (
-          <div
-            className="settings-popover group-manage-popover"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="settings-label">分组管理</div>
-            <div className="group-manage-create">
-              <input
-                className="session-rename-input"
-                placeholder="新分组名称…"
-                value={newGroupName}
-                onChange={(event) => setNewGroupName(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') void createGroupFromManage();
-                }}
-              />
-              <button
-                type="button"
-                className="icon-button"
-                title="新建分组"
-                onClick={() => void createGroupFromManage()}
-              >
-                <Plus size={14} />
-              </button>
-            </div>
-            <div className="group-manage-list">
-              {groups.length === 0 ? (
-                <div className="group-manage-empty">还没有分组</div>
-              ) : (
-                groups.map((group) => (
-                  <div key={group.id} className="group-manage-row">
-                    <button
-                      type="button"
-                      className="group-manage-color"
-                      title="切换颜色"
-                      onClick={() => void cycleGroupColor(group.id, group.color)}
-                    >
-                      <span className="group-color-dot" style={{ background: group.color }} />
-                    </button>
-                    {groupRenameId === group.id ? (
-                      <input
-                        className="session-rename-input"
-                        autoFocus
-                        defaultValue={group.name}
-                        onBlur={(event) =>
-                          void commitGroupRename(group.id, event.currentTarget.value)
-                        }
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') {
-                            void commitGroupRename(group.id, event.currentTarget.value);
-                          } else if (event.key === 'Escape') {
-                            setGroupRenameId(null);
-                          }
-                        }}
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        className="group-manage-name"
-                        title="点击重命名"
-                        onClick={() => setGroupRenameId(group.id)}
-                      >
-                        {group.name}
-                      </button>
-                    )}
-                    <span className="group-manage-count">
-                      {records.filter((record) => record.group === group.id).length}
-                    </span>
-                    <button
-                      type="button"
-                      className="icon-button"
-                      title="删除分组"
-                      onClick={() => void handleDeleteGroup(group.id)}
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        ) : null}
       </div>
       <div className="settings-wrap">
         <button
