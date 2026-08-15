@@ -1,16 +1,25 @@
 import { ipcMain } from 'electron';
 import { IpcChannel } from '../shared/ipc-contract';
-import type { DashboardStats, HourlyUsage, UsageTrendDay } from '../shared/types';
+import type {
+  DashboardStats,
+  EfficiencyDayStat,
+  EfficiencyInsights,
+  EfficiencySessionStat,
+  HourlyUsage,
+  UsageTrendDay,
+} from '../shared/types';
 import { readConfig, resolveClaudeHome } from './config';
 import {
   getHourlyUsageToday,
   getUsageTrend,
   listSessions,
+  readSessionActiveMs,
   readSessionUsage,
 } from './session-library';
 import { listKnowledge } from './knowledge-store';
 import { getSummaryText } from './summary-store';
 import { DEFAULT_HOURLY_LIMIT } from './usage-warning';
+import { weekRangeFor } from './ipc-utils';
 import type { SessionMetaStore } from './session-meta-store';
 import type { SessionManager } from './session-manager';
 
@@ -128,4 +137,133 @@ export function registerUsageIpc({ sessions, metaStore }: UsageIpcDeps): void {
   ipcMain.handle(IpcChannel.usageHourly, async (): Promise<HourlyUsage[]> => {
     return getHourlyUsageToday(resolveClaudeHome(readConfig()), metaStore);
   });
+
+  ipcMain.handle(
+    IpcChannel.efficiencyInsights,
+    async (_event, weekStart?: string): Promise<EfficiencyInsights> => {
+      return computeEfficiencyInsights(resolveClaudeHome(readConfig()), metaStore, weekStart);
+    },
+  );
+}
+
+/** 效率洞察最多返回的会话明细条数。 */
+const EFFICIENCY_TOP_SESSIONS = 10;
+
+/**
+ * 计算指定周（缺省本周，周一起）的 agent 投入时间与产出/成本统计。
+ * 口径：会话按 startedAt 归周/归日；时长优先用活跃时长（事件间隔 ≤ 5 分钟累计），
+ * 无时间戳时回退为会话跨度（updatedAt - startedAt）。
+ */
+async function computeEfficiencyInsights(
+  claudeHome: string,
+  metaStore: SessionMetaStore,
+  weekStart?: string,
+): Promise<EfficiencyInsights> {
+  const [monday, sunday] = weekRangeFor(weekStart);
+  const prevStart = new Date(`${monday}T00:00:00`);
+  prevStart.setDate(prevStart.getDate() - 7);
+  const [prevMonday, prevSunday] = weekRangeFor(fmtDateKey(prevStart));
+
+  const records = await listSessions(claudeHome, metaStore);
+  const inWeek: { record: (typeof records)[number]; durationMs: number }[] = [];
+  let prevTotalDurationMs = 0;
+  let totalDurationMs = 0;
+  let outputTokens = 0;
+  let totalTokens = 0;
+  const dailyMap = new Map<string, EfficiencyDayStat>();
+
+  for (const record of records) {
+    const started = (record.startedAt || '').slice(0, 10);
+    if (!started) continue;
+    const durationMs = await sessionDurationMs(record);
+    if (started >= monday && started <= sunday) {
+      inWeek.push({ record, durationMs });
+      totalDurationMs += durationMs;
+      const day = dailyMap.get(started) ?? { date: started, durationMs: 0, sessionCount: 0 };
+      day.durationMs += durationMs;
+      day.sessionCount += 1;
+      dailyMap.set(started, day);
+      try {
+        const usage = await readSessionUsage(record.filePath);
+        outputTokens += usage.outputTokens;
+        totalTokens +=
+          usage.inputTokens +
+          usage.outputTokens +
+          usage.cacheReadTokens +
+          usage.cacheCreationTokens;
+      } catch {
+        // 跳过无法读取的会话。
+      }
+    } else if (started >= prevMonday && started <= prevSunday) {
+      prevTotalDurationMs += durationMs;
+    }
+  }
+
+  const daily = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(`${monday}T00:00:00`);
+    date.setDate(date.getDate() + index);
+    const key = fmtDateKey(date);
+    return dailyMap.get(key) ?? { date: key, durationMs: 0, sessionCount: 0 };
+  });
+
+  const topSessions: EfficiencySessionStat[] = [];
+  for (const { record, durationMs } of inWeek
+    .slice()
+    .sort((a, b) => b.durationMs - a.durationMs)
+    .slice(0, EFFICIENCY_TOP_SESSIONS)) {
+    let sessionOutput = 0;
+    let sessionTotal = 0;
+    try {
+      const usage = await readSessionUsage(record.filePath);
+      sessionOutput = usage.outputTokens;
+      sessionTotal =
+        usage.inputTokens +
+        usage.outputTokens +
+        usage.cacheReadTokens +
+        usage.cacheCreationTokens;
+    } catch {
+      // 跳过无法读取的会话。
+    }
+    topSessions.push({
+      sessionId: record.sessionId,
+      customName: record.customName,
+      cwd: record.cwd,
+      durationMs,
+      outputTokens: sessionOutput,
+      totalTokens: sessionTotal,
+    });
+  }
+
+  return {
+    weekStart: monday,
+    weekEnd: sunday,
+    sessionCount: inWeek.length,
+    totalDurationMs,
+    avgDurationMs: inWeek.length > 0 ? Math.round(totalDurationMs / inWeek.length) : 0,
+    prevTotalDurationMs,
+    outputTokens,
+    totalTokens,
+    daily,
+    topSessions,
+  };
+}
+
+async function sessionDurationMs(
+  record: { filePath: string; startedAt: string; updatedAt: string },
+): Promise<number> {
+  try {
+    const active = await readSessionActiveMs(record.filePath);
+    if (active > 0) return active;
+  } catch {
+    // 回退到跨度。
+  }
+  const span =
+    new Date(record.updatedAt).getTime() - new Date(record.startedAt).getTime();
+  return span > 0 ? span : 0;
+}
+
+function fmtDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate(),
+  ).padStart(2, '0')}`;
 }

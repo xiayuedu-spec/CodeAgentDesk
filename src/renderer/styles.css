@@ -4142,3 +4142,106 @@ body,
     opacity: 1;
   }
 }
+/* ---- 效率洞察弹窗 ---- */
+.eff-panel {
+  width: 680px;
+}
+.eff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+.eff-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+}
+.eff-card-value {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.eff-card-value.up {
+  color: var(--danger);
+}
+.eff-card-value.down {
+  color: var(--accent);
+}
+.eff-card-value.accent {
+  color: var(--accent);
+}
+.eff-card-label {
+  color: var(--text-faint);
+  font-size: 10px;
+}
+.eff-section-title {
+  margin: 16px 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.eff-chart {
+  height: 110px;
+}
+.eff-chart .hourly-bar.current {
+  background: linear-gradient(180deg, var(--accent-strong), var(--accent-dim));
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+.eff-session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.eff-session {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg) 45%, transparent);
+  font-size: 11px;
+}
+.eff-session-name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-weight: 600;
+}
+.eff-session-dur {
+  flex: none;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.eff-session-ratio {
+  flex: none;
+  width: 64px;
+  text-align: right;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.eff-session-tokens {
+  flex: none;
+  min-width: 44px;
+  text-align: right;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.eff-note {
+  margin-top: 14px;
+  color: var(--text-faint);
+  font-size: 10px;
+  line-height: 1.6;
+}

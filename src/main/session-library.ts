@@ -19,6 +19,9 @@ const MAX_SEARCH_LINES = 5000;
 const MAX_HITS_PER_SESSION = 20;
 const MAX_TEXT_LENGTH = 4000;
 
+/** 活跃时长判定：相邻事件间隔不超过该值时视为连续活跃（避免把挂机时间计入）。 */
+const ACTIVE_GAP_MS = 5 * 60_000;
+
 /** 逐行扫描 JSONL（带行数上限与静默吞错），供各解析函数复用。 */
 function scanLines(filePath: string, limit: number, onLine: (line: string) => void): Promise<void> {
   return new Promise((resolve) => {
@@ -656,6 +659,31 @@ export async function readSessionInfo(
     }
   });
   return { cwd, title, startedAt };
+}
+
+/**
+ * 估算会话的活跃时长（毫秒）：按事件 timestamp 顺序累计相邻间隔 ≤ 5 分钟的时长，
+ * 把挂机/长时间搁置排除在"投入时间"之外。无时间戳或全部间隔超限时返回 0。
+ */
+export async function readSessionActiveMs(filePath: string): Promise<number> {
+  let activeMs = 0;
+  let prevTs: number | null = null;
+  await scanLines(filePath, MAX_SCAN_LINES, (line) => {
+    try {
+      const event = JSON.parse(line) as { timestamp?: unknown };
+      if (typeof event.timestamp !== 'string') return;
+      const ts = new Date(event.timestamp).getTime();
+      if (Number.isNaN(ts)) return;
+      if (prevTs !== null && ts > prevTs) {
+        const gap = ts - prevTs;
+        if (gap <= ACTIVE_GAP_MS) activeMs += gap;
+      }
+      prevTs = ts;
+    } catch {
+      // Ignore malformed lines.
+    }
+  });
+  return activeMs;
 }
 
 function parseChatLine(line: string): ChatEntry | null {

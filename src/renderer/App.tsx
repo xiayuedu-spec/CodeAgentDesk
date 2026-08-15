@@ -76,6 +76,11 @@ const LazyKnowledgeModal = lazy(() =>
 const LazyDashboard = lazy(() =>
   import('./components/Dashboard').then((module) => ({ default: module.Dashboard })),
 );
+const LazyEfficiencyInsights = lazy(() =>
+  import('./components/EfficiencyInsightsModal').then((module) => ({
+    default: module.EfficiencyInsightsModal,
+  })),
+);
 
 export default function App() {
   const ui = useUiState();
@@ -173,6 +178,7 @@ export default function App() {
   const [usageTrendOpen, setUsageTrendOpen] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [efficiencyOpen, setEfficiencyOpen] = useState(false);
   const dashboard = useDashboardStats();
   const toast = useToast();
   const sidebarBodyRef = useRef<HTMLDivElement | null>(null);
@@ -1031,6 +1037,11 @@ export default function App() {
       run: () => setDashboardOpen(true),
     });
     items.push({
+      key: 'efficiency',
+      label: '效率洞察（每周时长 / 省时估算）',
+      run: () => setEfficiencyOpen(true),
+    });
+    items.push({
       key: 'settings',
       label: '打开设置',
       run: () => setSettingsOpen(true),
@@ -1526,7 +1537,14 @@ export default function App() {
             onOpenSummary={openSummary}
             onOpenKnowledge={() => setKnowledgeOpen(true)}
             onOpenUsageTrend={() => setUsageTrendOpen(true)}
+            onOpenEfficiency={() => setEfficiencyOpen(true)}
           />
+        </Suspense>
+      ) : null}
+
+      {efficiencyOpen ? (
+        <Suspense fallback={null}>
+          <LazyEfficiencyInsights onClose={() => setEfficiencyOpen(false)} />
         </Suspense>
       ) : null}
 

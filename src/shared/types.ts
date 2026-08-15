@@ -232,6 +232,37 @@ export interface DashboardStats {
   hourlyPercent: number;
 }
 
+/** 效率洞察：单个会话的时长与产出/成本。 */
+export interface EfficiencySessionStat {
+  sessionId: string;
+  customName?: string;
+  cwd: string;
+  /** 活跃时长（按事件时间戳累计，间隔 ≤ 5 分钟视为活跃；无时间戳时回退到会话跨度）。 */
+  durationMs: number;
+  outputTokens: number;
+  totalTokens: number;
+}
+
+export interface EfficiencyDayStat {
+  date: string;
+  durationMs: number;
+  sessionCount: number;
+}
+
+/** 效率洞察：指定周（周一起）的 agent 投入时间与产出/成本统计。 */
+export interface EfficiencyInsights {
+  weekStart: string;
+  weekEnd: string;
+  sessionCount: number;
+  totalDurationMs: number;
+  avgDurationMs: number;
+  prevTotalDurationMs: number;
+  outputTokens: number;
+  totalTokens: number;
+  daily: EfficiencyDayStat[];
+  topSessions: EfficiencySessionStat[];
+}
+
 export interface ArchiveSessionResult {
   ok: boolean;
   message?: string;
@@ -306,6 +337,7 @@ export interface CodeAgentDeskApi {
   saveKnowledge(key: string, text: string): Promise<SummaryGetResult>;
   exportKnowledge(cwd: string): Promise<KnowledgeExportResult>;
   getDashboardStats(): Promise<DashboardStats>;
+  getEfficiencyInsights(weekStart?: string): Promise<EfficiencyInsights>;
   exportSessionMarkdown(sessionId: string, cwd?: string): Promise<ExportResult>;
   readSessionText(sessionId: string): Promise<ReadSessionTextResult>;
   getUiState(): Promise<UiState>;
