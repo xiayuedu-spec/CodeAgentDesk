@@ -55,6 +55,7 @@ const CHANNELS = {
   groupsSetColor: 'groups:set-color',
   sessionSetGroup: 'session:set-group',
   sessionSetPinned: 'session:set-pinned',
+  sessionOpenCwd: 'session:open-cwd',
   sessionPickDirectory: 'session:pick-directory',
   sessionCreate: 'session:create',
   sessionResume: 'session:resume',
@@ -130,6 +131,8 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.sessionSetGroup, { sessionId, groupId }) as Promise<GroupOpResult>,
   setSessionPinned: (sessionId, pinned) =>
     ipcRenderer.invoke(CHANNELS.sessionSetPinned, { sessionId, pinned }) as Promise<SessionOpResult>,
+  openWorkingDirectory: (cwd) =>
+    ipcRenderer.invoke(CHANNELS.sessionOpenCwd, cwd) as Promise<SessionOpResult>,
   getRecentDirs: () => ipcRenderer.invoke(CHANNELS.recentDirsGet) as Promise<string[]>,
   pickDirectory: () =>
     ipcRenderer.invoke(CHANNELS.sessionPickDirectory) as Promise<PickDirectoryResult>,

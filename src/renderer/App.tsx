@@ -677,6 +677,14 @@ export default function App() {
     await refreshRecords();
   }
 
+  async function handleOpenCwd(cwd: string): Promise<void> {
+    if (!cwd) return;
+    const result = await window.codeagentdesk.openWorkingDirectory(cwd);
+    if (!result.ok) {
+      toast.error(result.message ?? '打开目录失败');
+    }
+  }
+
   function openGroupMenu(id: string, name: string, x: number, y: number): void {
     setGroupMenu({ id, name, x, y });
   }
@@ -1368,6 +1376,7 @@ export default function App() {
     handleDeleteGroup: (id: string) => void handleDeleteGroup(id),
     moveToGroup: (sessionId: string, groupId: string | null) => void moveToGroup(sessionId, groupId),
     togglePin: (sessionId: string, pinned: boolean) => void handleTogglePin(sessionId, pinned),
+    openCwd: (cwd: string) => void handleOpenCwd(cwd),
     setMoveNewOpen,
     setMoveNewName,
     createGroupAndMove: () => void createGroupAndMove(),

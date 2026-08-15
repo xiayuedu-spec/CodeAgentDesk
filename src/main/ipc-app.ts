@@ -1,9 +1,10 @@
-import { app, dialog, ipcMain } from 'electron';
+import { app, dialog, ipcMain, shell } from 'electron';
 import { IpcChannel } from '../shared/ipc-contract';
 import type {
   AppInfo,
   ClaudeConfigInfo,
   PickClaudeDirResult,
+  SessionOpResult,
   ThemeName,
   UiState,
 } from '../shared/types';
@@ -75,6 +76,24 @@ export function registerAppIpc({ onClaudeDirChanged }: AppIpcDeps): void {
   });
 
   ipcMain.handle(IpcChannel.recentDirsGet, (): string[] => getRecentDirs());
+
+  ipcMain.handle(
+    IpcChannel.sessionOpenCwd,
+    async (_event, cwd: string): Promise<SessionOpResult> => {
+      if (typeof cwd !== 'string' || !cwd.trim()) {
+        return { ok: false, message: '缺少工作目录' };
+      }
+      try {
+        const errorMessage = await shell.openPath(cwd.trim());
+        return errorMessage ? { ok: false, message: errorMessage } : { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  );
 
   ipcMain.handle(IpcChannel.uiGetState, (): UiState => readUiState());
 

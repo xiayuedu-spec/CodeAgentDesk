@@ -279,6 +279,7 @@ export interface CodeAgentDeskApi {
   setGroupColor(id: string, color: string): Promise<GroupOpResult>;
   setSessionGroup(sessionId: string, groupId: string | null): Promise<GroupOpResult>;
   setSessionPinned(sessionId: string, pinned: boolean): Promise<SessionOpResult>;
+  openWorkingDirectory(cwd: string): Promise<SessionOpResult>;
   deleteSessions(sessionIds: string[]): Promise<DeleteSessionsResult>;
   getRecentDirs(): Promise<string[]>;
   pickDirectory(): Promise<PickDirectoryResult>;

@@ -3,6 +3,7 @@ import {
   ArchiveRestore,
   BookOpen,
   Copy,
+  FolderOpen,
   Link2,
   Pencil,
   Pin,
@@ -51,6 +52,7 @@ interface ContextMenusActions {
   handleDeleteGroup: (id: string) => void;
   moveToGroup: (sessionId: string, groupId: string | null) => void;
   togglePin: (sessionId: string, pinned: boolean) => void;
+  openCwd: (cwd: string) => void;
   setMoveNewOpen: (open: boolean) => void;
   setMoveNewName: (name: string) => void;
   createGroupAndMove: () => void;
@@ -74,6 +76,7 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
     handleDeleteGroup,
     moveToGroup,
     togglePin,
+    openCwd,
     setMoveNewOpen,
     setMoveNewName,
     createGroupAndMove,
@@ -180,6 +183,19 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
               <BookOpen size={14} />
             </span>
             查看详情
+          </button>
+          <button
+            type="button"
+            disabled={!menuSession || !menu.cwd}
+            onClick={() => {
+              if (menu.cwd) void openCwd(menu.cwd);
+              closeMenu();
+            }}
+          >
+            <span className="context-menu-icon">
+              <FolderOpen size={14} />
+            </span>
+            打开工作目录
           </button>
           {menu.archived ? (
             <button
