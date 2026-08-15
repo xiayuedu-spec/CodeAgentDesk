@@ -1,10 +1,13 @@
 import { BookOpen, Plus, Sparkles, Terminal } from 'lucide-react';
-import type { DashboardStats } from '../../shared/types';
+import type { DashboardStats, GroupRecord, SessionRecord } from '../../shared/types';
 import { folderName } from '../session-utils';
+import { computeMbti } from '../mbti';
 
 interface WelcomeProps {
   stats: DashboardStats;
   historyCount: number;
+  records: SessionRecord[];
+  groups: GroupRecord[];
   error: string | null;
   onNew: () => void;
   onFocusHistory: () => void;
@@ -58,6 +61,8 @@ function slackingInfo(output: number): { index: number; text: string } {
 export function Welcome({
   stats,
   historyCount,
+  records,
+  groups,
   error,
   onNew,
   onFocusHistory,
@@ -81,6 +86,7 @@ export function Welcome({
     hourlyPercent >= 100 ? 'danger' : hourlyPercent >= 80 ? 'warn' : '';
   const tree = treeInfo(stats.totalOutputTokens);
   const slack = slackingInfo(todayTokens.outputTokens);
+  const mbti = computeMbti(records, groups, todayTokens.inputTokens, todayTokens.outputTokens);
 
   return (
     <div className="welcome">
@@ -147,6 +153,25 @@ export function Welcome({
           <span className="fun-slack-text">{slack.text}</span>
         </div>
       </div>
+
+      {mbti ? (
+        <div className="fun-mbti" title="基于使用习惯的娱乐推断，非严谨测评">
+          <div className="fun-mbti-head">
+            <span className="fun-mbti-code">{mbti.code}</span>
+            <span className="fun-mbti-title">你的 MBTI 属性（按使用习惯推断）</span>
+          </div>
+          <div className="fun-mbti-dims">
+            {mbti.dims.map((dim) => (
+              <span key={dim.trait} className="fun-mbti-dim" title={`${dim.label} ${dim.percent}%`}>
+                {dim.trait} {dim.percent}%
+              </span>
+            ))}
+          </div>
+          <div className="fun-mbti-summary">{mbti.summary}</div>
+        </div>
+      ) : (
+        <div className="fun-mbti fun-mbti-empty">积累一些会话后，解锁基于习惯的 MBTI 推断 🧭</div>
+      )}
 
       {todayProjects.length > 0 ? (
         <div className="dashboard-projects">

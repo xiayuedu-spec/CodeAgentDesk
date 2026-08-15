@@ -1465,6 +1465,8 @@ export default function App() {
             <Welcome
               stats={dashboard.stats}
               historyCount={historyRecords.length}
+              records={records}
+              groups={groups}
               error={error}
               onNew={() => void handleNewSession()}
               onFocusHistory={() => sidebarBodyRef.current?.focus()}
@@ -1505,6 +1507,8 @@ export default function App() {
                 <Welcome
                   stats={dashboard.stats}
                   historyCount={historyRecords.length}
+                  records={records}
+                  groups={groups}
                   error={error}
                   onNew={() => void handleNewSession()}
                   onFocusHistory={() => sidebarBodyRef.current?.focus()}

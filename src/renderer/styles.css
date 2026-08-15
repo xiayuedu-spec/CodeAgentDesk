@@ -4546,6 +4546,61 @@ body,
   color: var(--text-faint);
 }
 
+/* 首页：MBTI 属性卡（基于使用习惯的娱乐推断） */
+.fun-mbti {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 460px;
+  margin-top: 4px;
+  padding: 10px 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--bg) 50%, transparent);
+  text-align: center;
+}
+.fun-mbti-empty {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+.fun-mbti-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+}
+.fun-mbti-code {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+.fun-mbti-title {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.fun-mbti-dims {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.fun-mbti-dim {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.fun-mbti-summary {
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--text-faint);
+}
+
 /* 首页：全宽展示（隐藏右侧信息列） */
 .content.home {
   grid-template-columns: minmax(0, 1fr);
