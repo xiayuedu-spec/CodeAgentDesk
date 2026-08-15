@@ -68,6 +68,14 @@ export function registerAppIpc({ onClaudeDirChanged }: AppIpcDeps): void {
     },
   );
 
+  ipcMain.handle(
+    IpcChannel.configSetAgentStatusStyle,
+    (_event, style: unknown): ClaudeConfigInfo => {
+      writeConfig({ ...readConfig(), agentStatusStyle: style === 'dot' ? 'dot' : 'emoji' });
+      return readClaudeConfigInfo();
+    },
+  );
+
   ipcMain.handle(IpcChannel.configPickClaudeDir, async (): Promise<PickClaudeDirResult> => {
     const result = await dialog.showOpenDialog({
       title: '选择 Claude 目录',

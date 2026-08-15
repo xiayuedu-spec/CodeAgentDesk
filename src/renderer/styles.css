@@ -4419,6 +4419,32 @@ body,
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
+/* 状态显示方式切换（设置内） */
+.status-style-row {
+  display: flex;
+  gap: 6px;
+}
+.status-style-btn {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+}
+.status-style-btn:hover {
+  border-color: var(--accent-dim);
+  color: var(--text);
+}
+.status-style-btn.active {
+  border-color: var(--accent-dim);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
 /* 彩蛋：版本号连点 */
 .status-version {
   cursor: pointer;

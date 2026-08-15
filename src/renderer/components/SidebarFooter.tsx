@@ -1,6 +1,6 @@
 import { Check, FolderOpen, Plus, RotateCcw, Settings2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { AppInfo, ClaudeConfigInfo, DashboardStats, ThemeName } from '../../shared/types';
+import type { AppInfo, AgentStatusStyle, ClaudeConfigInfo, DashboardStats, ThemeName } from '../../shared/types';
 import { folderName } from '../session-utils';
 import { THEMES, THEME_SWATCHES } from '../theme';
 import { HourlyUsagePopover } from './HourlyUsagePopover';
@@ -30,6 +30,7 @@ interface SidebarFooterActions {
   handlePickClaudeDir: () => void;
   handleResetClaudeDir: () => void;
   handleSetTokenLimit: (limit: number) => void;
+  handleSetAgentStatusStyle: (style: AgentStatusStyle) => void;
 }
 
 export function SidebarFooter({
@@ -48,6 +49,7 @@ export function SidebarFooter({
     handlePickClaudeDir,
     handleResetClaudeDir,
     handleSetTokenLimit,
+    handleSetAgentStatusStyle,
   } = actions;
 
   const limitTier = stats.hourlyPercent >= 100 ? 'danger' : stats.hourlyPercent >= 80 ? 'warn' : '';
@@ -254,6 +256,23 @@ export function SidebarFooter({
                 }}
               >
                 保存
+              </button>
+            </div>
+            <div className="settings-label">会话状态显示</div>
+            <div className="status-style-row">
+              <button
+                type="button"
+                className={`status-style-btn${(claudeInfo.config.agentStatusStyle ?? 'emoji') === 'emoji' ? ' active' : ''}`}
+                onClick={() => handleSetAgentStatusStyle('emoji')}
+              >
+                🧠 表情图标
+              </button>
+              <button
+                type="button"
+                className={`status-style-btn${claudeInfo.config.agentStatusStyle === 'dot' ? ' active' : ''}`}
+                onClick={() => handleSetAgentStatusStyle('dot')}
+              >
+                ● 颜色圆点
               </button>
             </div>
           </div>

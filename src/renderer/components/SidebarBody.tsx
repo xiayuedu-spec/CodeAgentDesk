@@ -8,7 +8,7 @@ import {
   X,
 } from 'lucide-react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
-import type { SessionRecord } from '../../shared/types';
+import type { AgentStatusStyle, SessionRecord } from '../../shared/types';
 import {
   formatSessionTitle,
   recordTitle,
@@ -27,6 +27,7 @@ interface SidebarBodyData {
   sessions: SessionView[];
   records: SessionRecord[];
   sessionStatuses: Record<string, AgentStatus>;
+  agentStatusStyle: AgentStatusStyle;
   activeId: string | null;
   detailSessionId: string | null;
   renamingId: string | null;
@@ -77,6 +78,7 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
     sessions,
     records,
     sessionStatuses,
+    agentStatusStyle,
     activeId,
     detailSessionId,
     renamingId,
@@ -160,12 +162,19 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
             }
           }}
         >
-          <span
-            className="session-agent"
-            title={`${AGENT_STATUS_META[sessionStatuses[session.id] ?? 'idle'].label} · ${statusLabel(session.status)}`}
-          >
-            {AGENT_STATUS_META[sessionStatuses[session.id] ?? 'idle'].emoji}
-          </span>
+          {agentStatusStyle === 'emoji' ? (
+            <span
+              className="session-agent"
+              title={`${AGENT_STATUS_META[sessionStatuses[session.id] ?? 'idle'].label} · ${statusLabel(session.status)}`}
+            >
+              {AGENT_STATUS_META[sessionStatuses[session.id] ?? 'idle'].emoji}
+            </span>
+          ) : (
+            <span
+              className={`session-dot ${session.status}`}
+              title={statusLabel(session.status)}
+            />
+          )}
           {records.find((r) => r.sessionId === session.sessionId)?.pinned ? (
             <Pin size={10} className="session-pin" />
           ) : null}

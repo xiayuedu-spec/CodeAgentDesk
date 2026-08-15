@@ -15,6 +15,7 @@ export function readConfig(): AppConfig {
         typeof parsed.tokenLimitPerHour === 'number' && parsed.tokenLimitPerHour > 0
           ? parsed.tokenLimitPerHour
           : undefined,
+      agentStatusStyle: parsed.agentStatusStyle === 'dot' ? 'dot' : 'emoji',
     };
   } catch {
     return {};

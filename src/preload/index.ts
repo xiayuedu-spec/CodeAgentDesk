@@ -46,6 +46,7 @@ const CHANNELS = {
   configSetClaudeDir: 'config:set-claude-dir',
   configSetTheme: 'config:set-theme',
   configSetTokenLimit: 'config:set-token-limit',
+  configSetAgentStatusStyle: 'config:set-agent-status-style',
   configPickClaudeDir: 'config:pick-claude-dir',
   sessionsList: 'sessions:list',
   sessionsChanged: 'sessions:changed',
@@ -121,6 +122,8 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.configSetTheme, theme) as Promise<ClaudeConfigInfo>,
   setTokenLimit: (limit) =>
     ipcRenderer.invoke(CHANNELS.configSetTokenLimit, limit) as Promise<ClaudeConfigInfo>,
+  setAgentStatusStyle: (style) =>
+    ipcRenderer.invoke(CHANNELS.configSetAgentStatusStyle, style) as Promise<ClaudeConfigInfo>,
   pickClaudeDir: () =>
     ipcRenderer.invoke(CHANNELS.configPickClaudeDir) as Promise<PickClaudeDirResult>,
   listSessions: () => ipcRenderer.invoke(CHANNELS.sessionsList) as Promise<SessionRecord[]>,

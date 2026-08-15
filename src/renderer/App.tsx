@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { FolderOpen } from 'lucide-react';
 import type {
+  AgentStatusStyle,
   GroupRecord,
   SearchResult,
   SessionDetailResult,
@@ -669,6 +670,11 @@ export default function App() {
     toast.success('🎉 已解锁隐藏主题：霓虹（赛博朋克），去设置里试试！');
   }
 
+  async function handleSetAgentStatusStyle(style: AgentStatusStyle): Promise<void> {
+    await window.codeagentdesk.setAgentStatusStyle(style);
+    await refreshClaudeInfo();
+  }
+
   function openGroupMenu(id: string, name: string, x: number, y: number): void {
     setGroupMenu({ id, name, x, y });
   }
@@ -1278,6 +1284,7 @@ export default function App() {
     sessions,
     records,
     sessionStatuses,
+    agentStatusStyle: claudeInfo?.config.agentStatusStyle ?? 'emoji',
     activeId,
     detailSessionId,
     renamingId,
@@ -1343,6 +1350,7 @@ export default function App() {
     handleSetTokenLimit: (limit: number) => {
       void window.codeagentdesk.setTokenLimit(limit).then(refreshClaudeInfo);
     },
+    handleSetAgentStatusStyle: (style: AgentStatusStyle) => void handleSetAgentStatusStyle(style),
   };
 
   const contextMenusData = {

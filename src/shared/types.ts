@@ -33,10 +33,14 @@ export interface GroupOpResult {
 
 export type ThemeName = 'default' | 'mac' | 'green' | 'sepia' | 'amber' | 'mist' | 'neon';
 
+/** 会话状态显示方式：表情图标 / 颜色圆点。 */
+export type AgentStatusStyle = 'emoji' | 'dot';
+
 export interface AppConfig {
   claudeDir?: string;
   theme?: ThemeName;
   tokenLimitPerHour?: number;
+  agentStatusStyle?: AgentStatusStyle;
   /** 彩蛋：是否已解锁隐藏主题（霓虹）。 */
   funUnlockedNeon?: boolean;
 }
@@ -325,6 +329,7 @@ export interface CodeAgentDeskApi {
   setClaudeDir(dir: string | null): Promise<ClaudeConfigInfo>;
   setTheme(theme: ThemeName): Promise<ClaudeConfigInfo>;
   setTokenLimit(limit: number): Promise<ClaudeConfigInfo>;
+  setAgentStatusStyle(style: AgentStatusStyle): Promise<ClaudeConfigInfo>;
   pickClaudeDir(): Promise<PickClaudeDirResult>;
   listSessions(): Promise<SessionRecord[]>;
   listGroups(): Promise<GroupRecord[]>;
