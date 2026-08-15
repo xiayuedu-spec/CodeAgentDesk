@@ -29,6 +29,7 @@ import type {
   DashboardStats,
   EfficiencyInsights,
   FunStats,
+  DayTimelineResult,
   KnowledgeItem,
   UsageTrendDay,
   SummarizeSessionResult,
@@ -81,6 +82,7 @@ const CHANNELS = {
   knowledgeExport: 'knowledge:export',
   dashboardStats: 'dashboard:stats',
   efficiencyInsights: 'efficiency:insights',
+  timelineDay: 'timeline:day',
   funStats: 'fun:stats',
   funUnlockNeon: 'fun:unlock-neon',
   sessionExport: 'session:export',
@@ -179,6 +181,8 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.dashboardStats) as Promise<DashboardStats>,
   getEfficiencyInsights: (weekStart) =>
     ipcRenderer.invoke(CHANNELS.efficiencyInsights, weekStart) as Promise<EfficiencyInsights>,
+  getDayTimeline: (date) =>
+    ipcRenderer.invoke(CHANNELS.timelineDay, date) as Promise<DayTimelineResult>,
   getFunStats: () => ipcRenderer.invoke(CHANNELS.funStats) as Promise<FunStats>,
   unlockNeon: () => ipcRenderer.invoke(CHANNELS.funUnlockNeon) as Promise<ClaudeConfigInfo>,
   listKnowledge: () => ipcRenderer.invoke(CHANNELS.knowledgeList) as Promise<KnowledgeItem[]>,

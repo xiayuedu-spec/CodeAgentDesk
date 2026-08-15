@@ -1,7 +1,10 @@
 import { ipcMain } from 'electron';
+import path from 'node:path';
 import { IpcChannel } from '../shared/ipc-contract';
 import type {
   DashboardStats,
+  DayTimelineEvent,
+  DayTimelineResult,
   EfficiencyDayStat,
   EfficiencyInsights,
   EfficiencySessionStat,
@@ -145,6 +148,14 @@ export function registerUsageIpc({ sessions, metaStore }: UsageIpcDeps): void {
       return computeEfficiencyInsights(resolveClaudeHome(readConfig()), metaStore, weekStart);
     },
   );
+
+  ipcMain.handle(
+    IpcChannel.timelineDay,
+    async (_event, date?: string): Promise<DayTimelineResult> => {
+      const key = date ?? new Date().toISOString().slice(0, 10);
+      return computeDayTimeline(resolveClaudeHome(readConfig()), metaStore, key);
+    },
+  );
 }
 
 /** 效率洞察最多返回的会话明细条数。 */
@@ -267,4 +278,43 @@ function fmtDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
     date.getDate(),
   ).padStart(2, '0')}`;
+}
+
+/** 指定日（YYYY-MM-DD）的工作时间线：该日开始的所有会话（按 startedAt 归日）。 */
+async function computeDayTimeline(
+  claudeHome: string,
+  metaStore: SessionMetaStore,
+  date: string,
+): Promise<DayTimelineResult> {
+  const dayStart = new Date(`${date}T00:00:00`).getTime();
+  const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+  const records = await listSessions(claudeHome, metaStore);
+
+  const events: DayTimelineEvent[] = [];
+  for (const record of records) {
+    if ((record.startedAt || '').slice(0, 10) !== date) continue;
+    const startMs = new Date(record.startedAt).getTime();
+    let endMs = new Date(record.updatedAt).getTime();
+    if (Number.isNaN(startMs) || Number.isNaN(endMs)) continue;
+    // 跨午夜的会话收窄到当天范围内。
+    if (endMs > dayEnd) endMs = dayEnd;
+    if (endMs <= startMs) endMs = Math.min(dayEnd, startMs + 60_000);
+    let activeMs = 0;
+    try {
+      activeMs = await readSessionActiveMs(record.filePath);
+    } catch {
+      // 活跃时长不可用时置 0。
+    }
+    events.push({
+      sessionId: record.sessionId,
+      name: record.customName ?? (path.basename(record.cwd || '') || record.sessionId),
+      cwd: record.cwd,
+      startMs,
+      endMs,
+      activeMs,
+    });
+  }
+
+  events.sort((a, b) => a.startMs - b.startMs);
+  return { date, events };
 }

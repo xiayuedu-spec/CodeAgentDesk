@@ -271,6 +271,21 @@ export interface EfficiencyInsights {
   topSessions: EfficiencySessionStat[];
 }
 
+/** 工作时间线：某天的一个会话区块。 */
+export interface DayTimelineEvent {
+  sessionId: string;
+  name: string;
+  cwd: string;
+  startMs: number;
+  endMs: number;
+  activeMs: number;
+}
+
+export interface DayTimelineResult {
+  date: string;
+  events: DayTimelineEvent[];
+}
+
 /** 成就徽章：由真实使用数据解锁。 */
 export interface AchievementBadge {
   id: string;
@@ -369,6 +384,7 @@ export interface CodeAgentDeskApi {
   exportKnowledge(cwd: string): Promise<KnowledgeExportResult>;
   getDashboardStats(): Promise<DashboardStats>;
   getEfficiencyInsights(weekStart?: string): Promise<EfficiencyInsights>;
+  getDayTimeline(date: string): Promise<DayTimelineResult>;
   getFunStats(): Promise<FunStats>;
   unlockNeon(): Promise<ClaudeConfigInfo>;
   exportSessionMarkdown(sessionId: string, cwd?: string): Promise<ExportResult>;

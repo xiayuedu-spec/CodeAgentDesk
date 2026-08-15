@@ -4627,6 +4627,68 @@ body,
   }
 }
 
+/* ---- 工作时间线 ---- */
+.timeline-panel {
+  width: 720px;
+}
+.timeline-summary {
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.timeline-body {
+  position: relative;
+  height: 440px;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  overflow: hidden;
+}
+.timeline-ruler {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.timeline-tick {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--border-strong) 35%, transparent);
+  color: var(--text-faint);
+  font-size: 9px;
+  line-height: 1;
+  padding-top: 2px;
+  padding-left: 6px;
+}
+.timeline-lanes {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  gap: 2px;
+  padding: 2px;
+}
+.timeline-bar {
+  position: relative;
+  min-height: 6px;
+  border: 0;
+  border-radius: 4px;
+  opacity: 0.8;
+  cursor: pointer;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+.timeline-bar:hover {
+  opacity: 1;
+  transform: scaleY(1.03);
+  z-index: 2;
+}
+.timeline-hint {
+  margin-top: 8px;
+  color: var(--text-faint);
+  font-size: 10px;
+}
+
 /* 首页：全宽展示（隐藏右侧信息列） */
 .content.home {
   grid-template-columns: minmax(0, 1fr);

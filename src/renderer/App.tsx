@@ -84,6 +84,9 @@ const LazyEfficiencyInsights = lazy(() =>
     default: module.EfficiencyInsightsModal,
   })),
 );
+const LazyTimeline = lazy(() =>
+  import('./components/TimelineModal').then((module) => ({ default: module.TimelineModal })),
+);
 
 export default function App() {
   const ui = useUiState();
@@ -182,6 +185,7 @@ export default function App() {
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [efficiencyOpen, setEfficiencyOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
   const [homeOpen, setHomeOpen] = useState(false);
   const dashboard = useDashboardStats();
   const toast = useToast();
@@ -1066,6 +1070,11 @@ export default function App() {
       run: () => setEfficiencyOpen(true),
     });
     items.push({
+      key: 'timeline',
+      label: '工作时间线（某天会话回放）',
+      run: () => setTimelineOpen(true),
+    });
+    items.push({
       key: 'home',
       label: '首页（今日概览）',
       run: () => setHomeOpen(true),
@@ -1613,6 +1622,7 @@ export default function App() {
             onOpenKnowledge={() => setKnowledgeOpen(true)}
             onOpenUsageTrend={() => setUsageTrendOpen(true)}
             onOpenEfficiency={() => setEfficiencyOpen(true)}
+            onOpenTimeline={() => setTimelineOpen(true)}
           />
         </Suspense>
       ) : null}
@@ -1620,6 +1630,15 @@ export default function App() {
       {efficiencyOpen ? (
         <Suspense fallback={null}>
           <LazyEfficiencyInsights onClose={() => setEfficiencyOpen(false)} />
+        </Suspense>
+      ) : null}
+
+      {timelineOpen ? (
+        <Suspense fallback={null}>
+          <LazyTimeline
+            onClose={() => setTimelineOpen(false)}
+            onOpenDetail={(sessionId) => void openDetailById(sessionId)}
+          />
         </Suspense>
       ) : null}
 

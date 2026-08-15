@@ -39,6 +39,7 @@ export const IpcChannel = {
   knowledgeExport: 'knowledge:export',
   dashboardStats: 'dashboard:stats',
   efficiencyInsights: 'efficiency:insights',
+  timelineDay: 'timeline:day',
   funStats: 'fun:stats',
   funUnlockNeon: 'fun:unlock-neon',
   sessionExport: 'session:export',

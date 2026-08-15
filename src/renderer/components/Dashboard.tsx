@@ -1,4 +1,4 @@
-import { BookOpen, Plus, Sparkles, TrendingUp, X } from 'lucide-react';
+import { BookOpen, History, Plus, Sparkles, TrendingUp, X } from 'lucide-react';
 import { useDashboardStats } from '../hooks/useDashboardStats';
 import { folderName } from '../session-utils';
 
@@ -10,6 +10,7 @@ interface DashboardProps {
   onOpenKnowledge: () => void;
   onOpenUsageTrend: () => void;
   onOpenEfficiency: () => void;
+  onOpenTimeline: () => void;
 }
 
 function formatTokens(value: number): string {
@@ -40,6 +41,7 @@ export function Dashboard({
   onOpenKnowledge,
   onOpenUsageTrend,
   onOpenEfficiency,
+  onOpenTimeline,
 }: DashboardProps) {
   const { stats } = useDashboardStats();
   const {
@@ -150,6 +152,10 @@ export function Dashboard({
             <button type="button" className="welcome-btn" onClick={onOpenEfficiency}>
               <TrendingUp size={14} />
               效率洞察
+            </button>
+            <button type="button" className="welcome-btn" onClick={onOpenTimeline}>
+              <History size={14} />
+              时间线
             </button>
           </div>
         </div>
