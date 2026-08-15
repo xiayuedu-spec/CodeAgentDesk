@@ -36,6 +36,7 @@ import { usePalette } from './hooks/usePalette';
 import { useSummary } from './hooks/useSummary';
 import { useDashboardStats } from './hooks/useDashboardStats';
 import { useDismiss } from './hooks/useDismiss';
+import { useEscape } from './hooks/useEscape';
 import { AGENT_STATUS_META, useSessionAgentStatuses } from './hooks/useAgentStatus';
 import { usePomodoro } from './hooks/usePomodoro';
 import { useToast } from './toast';
@@ -1059,6 +1060,7 @@ export default function App() {
   const sessionStatuses = useSessionAgentStatuses();
   const activeAgentMeta = AGENT_STATUS_META[activeId ? (sessionStatuses[activeId] ?? 'idle') : 'idle'];
   const pomodoro = usePomodoro((claudeInfo?.config.pomodoroMinutes ?? 25) * 60_000);
+  useEscape(Boolean(confirmDeleteOne), () => setConfirmDeleteOne(null));
   useEffect(() => {
     if (pomodoro.finished) toast.success('🍅 番茄钟完成，休息一下！');
   }, [pomodoro.finished]);

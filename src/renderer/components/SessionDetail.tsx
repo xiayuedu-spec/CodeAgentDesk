@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Download, Sparkles, X } from 'lucide-react';
 import type { SessionDetailResult } from '../../shared/types';
+import { useEscape } from '../hooks/useEscape';
 
 interface SessionDetailProps {
   detail: SessionDetailResult;
@@ -22,6 +23,7 @@ export function SessionDetail({
   onClose,
 }: SessionDetailProps) {
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  useEscape(true, onClose);
 
   // 从搜索结果跳转：定位并高亮包含命中文本的首个会话条目。
   useEffect(() => {

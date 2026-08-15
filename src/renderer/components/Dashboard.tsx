@@ -1,5 +1,6 @@
 import { BookOpen, History, Plus, Sparkles, TrendingUp, X } from 'lucide-react';
 import { useDashboardStats } from '../hooks/useDashboardStats';
+import { useEscape } from '../hooks/useEscape';
 import { folderName } from '../session-utils';
 
 interface DashboardProps {
@@ -44,6 +45,7 @@ export function Dashboard({
   onOpenTimeline,
 }: DashboardProps) {
   const { stats } = useDashboardStats();
+  useEscape(true, onClose);
   const {
     todaySessionCount,
     todayTokens,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import type { UsageTrendDay } from '../../shared/types';
+import { useEscape } from '../hooks/useEscape';
 
 interface UsageTrendModalProps {
   onClose: () => void;
@@ -27,6 +28,7 @@ function formatTokens(value: number): string {
 /** Token 用量趋势弹窗：近 N 天按日堆叠柱状图（自绘 SVG，无图表库依赖）。 */
 export function UsageTrendModal({ onClose }: UsageTrendModalProps) {
   const [days, setDays] = useState<UsageTrendDay[] | null>(null);
+  useEscape(true, onClose);
 
   useEffect(() => {
     let cancelled = false;

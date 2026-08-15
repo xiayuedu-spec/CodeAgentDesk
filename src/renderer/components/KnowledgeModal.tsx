@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Copy, Download, FolderOpen, RotateCcw, Sparkles, X } from 'lucide-react';
 import type { KnowledgeItem, SessionRecord } from '../../shared/types';
 import { folderName, formatRelativeTime } from '../session-utils';
+import { useEscape } from '../hooks/useEscape';
 import { MarkdownText } from './MarkdownText';
 
 interface KnowledgeModalProps {
@@ -22,6 +23,7 @@ function keyOf(cwd: string): string {
 /** 项目知识库：增量更新（只处理新会话）+ 导出 PROJECT_KNOWLEDGE.md 供新会话复用。 */
 export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
   const [projects, setProjects] = useState<ProjectEntry[]>([]);
+  useEscape(true, onClose);
   const [knowledge, setKnowledge] = useState<KnowledgeItem[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [text, setText] = useState<string | null>(null);

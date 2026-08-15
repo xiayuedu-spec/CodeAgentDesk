@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { TrendingUp, X } from 'lucide-react';
 import type { EfficiencyInsights, FunStats } from '../../shared/types';
 import { folderName } from '../session-utils';
+import { useEscape } from '../hooks/useEscape';
 
 interface EfficiencyInsightsModalProps {
   onClose: () => void;
@@ -70,6 +71,7 @@ function weekRangeLabel(weekStart: string): string {
 /** 效率洞察弹窗：每周 agent 投入时长、会话数、产出/成本比与省时估算。 */
 export function EfficiencyInsightsModal({ onClose }: EfficiencyInsightsModalProps) {
   const [weekStart, setWeekStart] = useState(() => mondayKey());
+  useEscape(true, onClose);
   const [data, setData] = useState<EfficiencyInsights | null>(null);
   const [fun, setFun] = useState<FunStats | null>(null);
 

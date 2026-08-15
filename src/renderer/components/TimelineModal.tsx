@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { History, X } from 'lucide-react';
 import type { DayTimelineResult } from '../../shared/types';
+import { useEscape } from '../hooks/useEscape';
 
 interface TimelineModalProps {
   onClose: () => void;
@@ -44,6 +45,7 @@ const HOUR_TICKS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
 /** 工作时间线回放：以天为单位，按会话起止时间渲染横向时间条。 */
 export function TimelineModal({ onClose, onOpenDetail }: TimelineModalProps) {
   const [day, setDay] = useState(() => fmtDateKey(new Date()));
+  useEscape(true, onClose);
   const [data, setData] = useState<DayTimelineResult | null>(null);
 
   useEffect(() => {

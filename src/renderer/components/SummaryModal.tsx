@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from 'react';
 import { Copy, FolderOpen, RotateCcw, Sparkles, X } from 'lucide-react';
 import type { SummaryHistoryResult } from '../../shared/types';
 import type { SummaryTab } from '../hooks/useSummary';
+import { useEscape } from '../hooks/useEscape';
 import { MarkdownText } from './MarkdownText';
 
 export type { SummaryTab }; // 供调用方引用统一类型
@@ -104,6 +105,12 @@ export function SummaryModal({ state, actions }: SummaryModalProps) {
     buildCells,
     todayKey,
   } = actions;
+
+  // 编辑中按 Esc 先取消编辑，再按才关闭窗口。
+  useEscape(true, () => {
+    if (state.editing) actions.cancelEdit();
+    else actions.close();
+  });
 
   const summaryDayKeys = useMemo(
     () => new Set(summaryHistory.days.map((item) => item.key)),
