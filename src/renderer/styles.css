@@ -4422,3 +4422,14 @@ body,
 .content.home {
   grid-template-columns: minmax(0, 1fr);
 }
+
+/* 状态栏最左侧：agent 状态表情 */
+.agent-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  line-height: 1;
+  margin-right: 2px;
+  cursor: default;
+  user-select: none;
+}

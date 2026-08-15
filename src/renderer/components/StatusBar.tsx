@@ -12,6 +12,8 @@ interface StatusBarProps {
   onUnlockNeon: () => void;
   onOpenDashboard: () => void;
   onOpenHome: () => void;
+  agentEmoji: string;
+  agentStatusLabel: string;
 }
 
 /** 彩蛋：连点版本号次数达到该值解锁隐藏主题。 */
@@ -29,6 +31,8 @@ export function StatusBar({
   onUnlockNeon,
   onOpenDashboard,
   onOpenHome,
+  agentEmoji,
+  agentStatusLabel,
 }: StatusBarProps) {
   const [versionClicks, setVersionClicks] = useState(0);
 
@@ -44,8 +48,14 @@ export function StatusBar({
 
   return (
     <footer className="status-bar">
+      <span className="agent-status" title={agentStatusLabel}>
+        {agentEmoji}
+      </span>
       <span>{sessionCount} 会话</span>
       <span>{archivedCount} 归档</span>
+      <button type="button" className="status-day" title="返回首页" onClick={onOpenHome}>
+        首页
+      </button>
       <button type="button" className="status-day" title="生成今日总结" onClick={onOpenSummary}>
         今日总结
       </button>
@@ -60,9 +70,6 @@ export function StatusBar({
       </button>
       <button type="button" className="status-day" title="今日数据概览" onClick={onOpenDashboard}>
         今日概览
-      </button>
-      <button type="button" className="status-day" title="返回首页" onClick={onOpenHome}>
-        首页
       </button>
       <span className="status-bar-spacer" />
       <span>{claudeDirName}</span>
