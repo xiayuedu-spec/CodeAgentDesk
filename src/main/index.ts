@@ -14,6 +14,7 @@ import { GroupStore } from './group-store';
 import { SessionManager } from './session-manager';
 import { SessionMetaStore } from './session-meta-store';
 import { SessionWatcher } from './session-watcher';
+import { startUsageWarning } from './usage-warning';
 import { broadcast, createMainWindow } from './window-manager';
 
 // Windows 通知/任务栏分组需要显式设置 AppUserModelID（与 electron-builder appId 一致）。
@@ -86,6 +87,7 @@ if (!hasSingleInstanceLock) {
     });
     createMainWindow();
     watcher.start(initialClaudeHome);
+    startUsageWarning(metaStore);
 
     app.on('before-quit', () => {
       // 退出前终止所有 pty 会话，避免 claude 进程残留。

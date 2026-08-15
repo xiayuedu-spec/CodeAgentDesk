@@ -41,6 +41,7 @@ import { getMainWindow } from './window-manager';
 import {
   findSessionFile,
   getUsageTrend,
+  getUsageWindow,
   listSessions,
   readChatEntries,
   readSessionDetail,
@@ -61,6 +62,7 @@ import {
 import { summarizeDayText, summarizeMonthText, summarizeSession, summarizeWeekText } from './summarize';
 import { getSummaryText, listSummaries, saveSummary, type SummaryKind } from './summary-store';
 import { listKnowledge as listKnowledgeItems } from './knowledge-store';
+import { DEFAULT_HOURLY_LIMIT } from './usage-warning';
 import { readUiState, writeUiState } from './ui-state';
 import type { GroupStore } from './group-store';
 import type { SessionMetaStore } from './session-meta-store';
@@ -572,6 +574,8 @@ export function registerIpcHandlers(
       cacheReadTokens: 0,
       cacheCreationTokens: 0,
     };
+    const limitPerHour = readConfig().tokenLimitPerHour ?? DEFAULT_HOURLY_LIMIT;
+    const window = await getUsageWindow(claudeHome, metaStore, 1);
     return {
       runningCount: sessions.list().length,
       todaySessionCount: todayRecords.length,
@@ -586,6 +590,9 @@ export function registerIpcHandlers(
         .slice(0, 5),
       knowledgeCount: listKnowledgeItems().length,
       hasTodaySummary: Boolean(getSummaryText('day', today)),
+      hourlyTokens: window.tokens,
+      hourlyLimit: limitPerHour,
+      hourlyPercent: Math.min(100, Math.round((window.tokens / limitPerHour) * 100)),
     };
   });
 

@@ -153,6 +153,7 @@ src/
 - 未激活标签活动提醒：非激活标签有新输出时 dot 变黄快闪，切到后清除
 - **系统通知**：会话**意外异常退出**时发 Windows 通知（主动关闭/归档/正常结束不打扰；`Notification` 点击聚焦窗口，`app.setAppUserModelId` 已配置）
 - **用量趋势**：状态栏 / `Ctrl+P` 入口，近 14 天按日堆叠柱状图（`UsageTrendModal` 自绘 SVG，复用 usage 增量缓存聚合）
+- **Token 限额预警**：主进程每 5 分钟检查近 1 小时窗口消耗（`getUsageWindow`，复用增量缓存），达限额 80%/100% 时系统通知（每档一次）；默认限额 1000 万/小时，可用 `config.json#tokenLimitPerHour` 覆盖；Dashboard/欢迎页显示消耗进度条（80% 黄 / 100% 红）
 - **今日概览 Dashboard**：欢迎页（无会话时）内联展示今日统计（运行中/今日会话/输入输出 token/知识库项目数/今日总结状态）+ 今日活跃项目 chips + 快捷入口；`Ctrl+P`"今日概览"弹窗随时可看（`dashboard:stats` 聚合 listSessions + usage 趋势 + 知识库 + 总结）
 - **项目知识库**：状态栏 / `Ctrl+P` 入口，按项目聚合会话 → `claude -p` 提炼知识文档（架构/命令/坑/决策/待办），存 `knowledge.json`（含会话指纹 `sessionIds`）；**增量更新**只处理新增/变更会话并把旧知识库作为上下文合并（无新增返回"已是最新"），另有全量重建；**使用方式**：查看/编辑/复制，或**导出 `PROJECT_KNOWLEDGE.md`** 到项目目录，新会话中让 claude 读取即可复用项目经验；**token 预算**：每会话 8k 字符、总输入 120k 字符（约 4 万 token，占小时限额 0.4%），估算按 3 字符/token 保守高估
 - 标签拖拽排序（顺序随 ui-state 持久化）

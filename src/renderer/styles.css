@@ -3737,3 +3737,55 @@ body,
     transform: none;
   }
 }
+/* ---- Token 限额进度条 ---- */
+.dashboard-limit {
+  width: 100%;
+  max-width: 460px;
+  margin-top: 16px;
+}
+.dashboard-panel .dashboard-limit {
+  max-width: none;
+}
+.dashboard-limit-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.dashboard-limit-label {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.dashboard-limit-value {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.dashboard-limit-value.warn {
+  color: var(--warn);
+}
+.dashboard-limit-value.danger {
+  color: var(--danger);
+  font-weight: 700;
+}
+.dashboard-limit-bar {
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+}
+.dashboard-limit-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  transition: width 400ms ease;
+}
+.dashboard-limit-bar.warn span {
+  background: linear-gradient(90deg, var(--warn), var(--warn));
+}
+.dashboard-limit-bar.danger span {
+  background: linear-gradient(90deg, var(--danger), var(--danger));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--danger) 60%, transparent);
+}

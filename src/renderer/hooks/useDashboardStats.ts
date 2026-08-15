@@ -8,6 +8,9 @@ const EMPTY_STATS: DashboardStats = {
   todayProjects: [],
   knowledgeCount: 0,
   hasTodaySummary: false,
+  hourlyTokens: 0,
+  hourlyLimit: 0,
+  hourlyPercent: 0,
 };
 
 /** 今日概览数据（首页/仪表盘共用）。 */

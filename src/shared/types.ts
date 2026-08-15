@@ -36,6 +36,7 @@ export type ThemeName = 'default' | 'mac' | 'green' | 'sepia' | 'amber' | 'mist'
 export interface AppConfig {
   claudeDir?: string;
   theme?: ThemeName;
+  tokenLimitPerHour?: number;
 }
 
 export interface ClaudeConfigInfo {
@@ -205,6 +206,9 @@ export interface DashboardStats {
   todayProjects: { cwd: string; count: number }[];
   knowledgeCount: number;
   hasTodaySummary: boolean;
+  hourlyTokens: number;
+  hourlyLimit: number;
+  hourlyPercent: number;
 }
 
 export interface ArchiveSessionResult {

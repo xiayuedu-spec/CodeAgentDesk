@@ -30,7 +30,20 @@ export function Welcome({
   onOpenKnowledge,
   onOpenUsageTrend,
 }: WelcomeProps) {
-  const { todaySessionCount, todayTokens, runningCount, todayProjects, knowledgeCount, hasTodaySummary } = stats;
+  const {
+    todaySessionCount,
+    todayTokens,
+    runningCount,
+    todayProjects,
+    knowledgeCount,
+    hasTodaySummary,
+    hourlyTokens,
+    hourlyPercent,
+    hourlyLimit,
+  } = stats;
+
+  const limitTier =
+    hourlyPercent >= 100 ? 'danger' : hourlyPercent >= 80 ? 'warn' : '';
 
   return (
     <div className="welcome">
@@ -66,6 +79,18 @@ export function Welcome({
             {hasTodaySummary ? '✓' : '—'}
           </span>
           <span className="dashboard-card-label">今日总结</span>
+        </div>
+      </div>
+
+      <div className="dashboard-limit">
+        <div className="dashboard-limit-head">
+          <span className="dashboard-limit-label">近 1 小时消耗</span>
+          <span className={`dashboard-limit-value ${limitTier}`}>
+            {formatTokens(hourlyTokens)} / {formatTokens(hourlyLimit)}（{hourlyPercent}%）
+          </span>
+        </div>
+        <div className={`dashboard-limit-bar ${limitTier}`}>
+          <span style={{ width: `${Math.min(100, hourlyPercent)}%` }} />
         </div>
       </div>
 

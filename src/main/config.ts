@@ -11,6 +11,10 @@ export function readConfig(): AppConfig {
     return {
       claudeDir: typeof parsed.claudeDir === 'string' ? parsed.claudeDir : undefined,
       theme: normalizeTheme(parsed.theme),
+      tokenLimitPerHour:
+        typeof parsed.tokenLimitPerHour === 'number' && parsed.tokenLimitPerHour > 0
+          ? parsed.tokenLimitPerHour
+          : undefined,
     };
   } catch {
     return {};

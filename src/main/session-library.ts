@@ -362,6 +362,31 @@ export interface UsageTrendDay {
   cacheCreationTokens: number;
 }
 
+/** 近 N 小时窗口内的 token 总消耗（复用增量缓存，用于限额预警）。 */
+export async function getUsageWindow(
+  claudeHome: string,
+  metaStore: SessionMetaStore,
+  hours: number,
+): Promise<{ tokens: number }> {
+  const records = await listSessions(claudeHome, metaStore);
+  const sinceMs = Date.now() - hours * 3_600_000;
+  let tokens = 0;
+  for (const record of records) {
+    if (new Date(record.updatedAt).getTime() < sinceMs) continue;
+    try {
+      const usage = await readSessionUsage(record.filePath);
+      tokens +=
+        usage.inputTokens +
+        usage.outputTokens +
+        usage.cacheReadTokens +
+        usage.cacheCreationTokens;
+    } catch {
+      // 跳过无法读取的会话。
+    }
+  }
+  return { tokens };
+}
+
 /** 按天聚合最近 N 天的 token 用量（复用 readSessionUsage 的增量缓存，只对变化文件重读）。 */
 export async function getUsageTrend(
   claudeHome: string,
