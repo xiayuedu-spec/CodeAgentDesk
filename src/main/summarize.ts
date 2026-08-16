@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 
 const MAX_SESSION_INPUT = 20000;
 const MAX_DAY_INPUT = 40000;
+const MAX_REFLECTION_INPUT = 12000;
 const TIMEOUT_MS = 60000;
 
 export interface SummaryResult {
@@ -88,6 +89,31 @@ export async function summarizeWeekText(text: string): Promise<string> {
     '请根据与 Claude Code 的交互会话记录，生成一份本周总结（Markdown）：\n' +
     '## 本周完成\n按项目归纳本周完成的主要工作\n## 难点与解决\n## 遗留 / 下周计划\n简洁、要点式。\n\n--- 会话记录（截断）---\n';
   const output = await runClaude(instruction + text.slice(-MAX_DAY_INPUT));
+  return output.trim();
+}
+
+/** 周复盘统计输入（来自效率洞察，供反思参考）。 */
+export interface WeekReflectionStats {
+  sessions: number;
+  hours: number;
+  savedHours: number;
+  outputPercent: number;
+}
+
+/** 周反思：基于本周会话内容与效率统计，生成「本周复盘」三节（挂在周报末尾）。 */
+export async function summarizeWeekReflection(
+  text: string,
+  stats: WeekReflectionStats,
+): Promise<string> {
+  const instruction =
+    '请基于下面的本周工作内容与统计数字，写一段「本周复盘」（Markdown，仅输出正文，不要标题行）：\n' +
+    '1. 做得好的：2-3 条，具体一点\n' +
+    '2. 时间与效率：结合统计数字（会话数、投入时长、省时估算、输出占比），指出一个观察到的模式或隐患（如深夜工作过多、某类任务耗时偏多）\n' +
+    '3. 下周改进：2-3 条可执行的建议\n' +
+    '简洁、要点式、不编造统计之外的事实。\n\n' +
+    `--- 本周统计：${stats.sessions} 个会话 · 投入约 ${stats.hours} 小时 · 省时约 ${stats.savedHours} 小时 · 输出占比 ${stats.outputPercent}% ---\n` +
+    '--- 本周工作内容（截断）---\n';
+  const output = await runClaude(instruction + text.slice(-MAX_REFLECTION_INPUT));
   return output.trim();
 }
 

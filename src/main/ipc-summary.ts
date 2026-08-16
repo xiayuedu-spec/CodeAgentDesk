@@ -15,7 +15,8 @@ import {
   saveKnowledge,
   type KnowledgeItem,
 } from './knowledge-store';
-import { summarizeDayText, summarizeMonthText, summarizeWeekText } from './summarize';
+import { summarizeDayText, summarizeMonthText, summarizeWeekReflection, summarizeWeekText } from './summarize';
+import { computeEfficiencyInsights } from './ipc-usage';
 import { getSummaryText, listSummaries, saveSummary, type SummaryKind } from './summary-store';
 import type { SessionMetaStore } from './session-meta-store';
 import { collectRangeText, weekRangeFor } from './ipc-utils';
@@ -69,8 +70,30 @@ export function registerSummaryIpc({ metaStore }: SummaryIpcDeps): void {
       if (!combined.trim()) return { ok: false, message: `${monday} 周没有可总结的会话` };
       try {
         const text = await summarizeWeekText(combined);
-        saveSummary('week', monday, text);
-        return { ok: true, text };
+        // 周反思：基于本周内容 + 效率统计生成复盘，追加到周报末尾；失败不阻塞周报。
+        let finalText = text;
+        try {
+          const insights = await computeEfficiencyInsights(claudeHome, metaStore, monday);
+          const hours = Math.round((insights.totalDurationMs / 3_600_000) * 10) / 10;
+          const savedHours = Math.round((insights.totalDurationMs / 3_600_000) * 1.5 * 10) / 10;
+          const outputPercent =
+            insights.totalTokens > 0
+              ? Math.round((insights.outputTokens / insights.totalTokens) * 100)
+              : 0;
+          const reflection = await summarizeWeekReflection(combined, {
+            sessions: insights.sessionCount,
+            hours,
+            savedHours,
+            outputPercent,
+          });
+          if (reflection) {
+            finalText = `${text.trim()}\n\n## 本周复盘\n\n${reflection}`;
+          }
+        } catch {
+          // 反思失败静默降级，周报本身不受影响。
+        }
+        saveSummary('week', monday, finalText);
+        return { ok: true, text: finalText };
       } catch (error) {
         return { ok: false, message: error instanceof Error ? error.message : String(error) };
       }
