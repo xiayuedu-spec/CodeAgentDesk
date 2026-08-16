@@ -27,6 +27,9 @@ import type {
   SessionOpResult,
   KnowledgeExportResult,
   KnowledgeGlobalResult,
+  BackupResult,
+  UpdateStatus,
+  UsageStats,
   DashboardStats,
   EfficiencyInsights,
   FunStats,
@@ -98,6 +101,13 @@ const CHANNELS = {
   windowClose: 'window:close',
   windowSetBackgroundColor: 'window:set-background-color',
   windowMaximizedChanged: 'window:maximized-changed',
+  updateCheck: 'update:check',
+  updateInstall: 'update:install',
+  updateStatus: 'update:status',
+  backupExport: 'backup:export',
+  backupImport: 'backup:import',
+  usageStatIncrement: 'usage:stat-increment',
+  usageStatList: 'usage:stat-list',
   sessionUsage: 'session:usage',
   usageTrend: 'usage:trend',
   usageHourly: 'usage:hourly',
@@ -230,6 +240,15 @@ const api: CodeAgentDeskApi = {
   onSessionBound: (callback) => subscribe<SessionBoundEvent>(CHANNELS.sessionBound, callback),
   onSessionError: (callback) => subscribe<SessionErrorEvent>(CHANNELS.sessionError, callback),
   onSessionsChanged: (callback) => subscribe<void>(CHANNELS.sessionsChanged, callback),
+  checkForUpdates: () =>
+    ipcRenderer.invoke(CHANNELS.updateCheck) as Promise<UpdateStatus>,
+  installUpdate: () => ipcRenderer.invoke(CHANNELS.updateInstall) as Promise<void>,
+  onUpdateStatus: (callback) => subscribe<UpdateStatus>(CHANNELS.updateStatus, callback),
+  exportBackup: () => ipcRenderer.invoke(CHANNELS.backupExport) as Promise<BackupResult>,
+  importBackup: () => ipcRenderer.invoke(CHANNELS.backupImport) as Promise<BackupResult>,
+  incrementUsageStat: (key) =>
+    ipcRenderer.invoke(CHANNELS.usageStatIncrement, key) as Promise<void>,
+  getUsageStats: () => ipcRenderer.invoke(CHANNELS.usageStatList) as Promise<UsageStats>,
 };
 
 contextBridge.exposeInMainWorld('codeagentdesk', api);

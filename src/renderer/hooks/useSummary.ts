@@ -109,6 +109,7 @@ export function useSummary(reportError: (message: string) => void) {
     const result = await window.codeagentdesk.summarizeDay();
     setSummarizing(false);
     if (result.ok) {
+      void window.codeagentdesk.incrementUsageStat('summary.day');
       setDayText(result.text ?? '');
       void loadSummaryHistory();
     } else {
@@ -123,6 +124,7 @@ export function useSummary(reportError: (message: string) => void) {
     const result = await window.codeagentdesk.summarizeWeek(weekStart);
     setSummarizing(false);
     if (result.ok) {
+      void window.codeagentdesk.incrementUsageStat('summary.week');
       setWeekText(result.text ?? '');
       void loadSummaryHistory();
     } else {
@@ -247,6 +249,7 @@ export function useSummary(reportError: (message: string) => void) {
     const result = await window.codeagentdesk.summarizeMonth();
     setSummarizing(false);
     if (result.ok) {
+      void window.codeagentdesk.incrementUsageStat('summary.month');
       setMonthText(result.text ?? '');
       void loadSummaryHistory();
     } else {

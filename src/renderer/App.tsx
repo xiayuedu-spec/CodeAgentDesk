@@ -87,6 +87,12 @@ const LazyEfficiencyInsights = lazy(() =>
 const LazyTimeline = lazy(() =>
   import('./components/TimelineModal').then((module) => ({ default: module.TimelineModal })),
 );
+const LazyBackup = lazy(() =>
+  import('./components/BackupModal').then((module) => ({ default: module.BackupModal })),
+);
+const LazyUsageStats = lazy(() =>
+  import('./components/UsageStatsModal').then((module) => ({ default: module.UsageStatsModal })),
+);
 
 export default function App() {
   const ui = useUiState();
@@ -186,9 +192,54 @@ export default function App() {
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [efficiencyOpen, setEfficiencyOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [backupOpen, setBackupOpen] = useState(false);
+  const [usageStatsOpen, setUsageStatsOpen] = useState(false);
+  const [updateReady, setUpdateReady] = useState(false);
   const [homeOpen, setHomeOpen] = useState(false);
   const dashboard = useDashboardStats();
   const toast = useToast();
+
+  // 本地使用统计（仅计数，不采集内容）。
+  const bumpUsage = (key: string): void => {
+    void window.codeagentdesk.incrementUsageStat(key);
+  };
+  const openDashboard = (): void => {
+    bumpUsage('dashboard.opened');
+    setDashboardOpen(true);
+  };
+  const openEfficiency = (): void => {
+    bumpUsage('efficiency.opened');
+    setEfficiencyOpen(true);
+  };
+  const openTimeline = (): void => {
+    bumpUsage('timeline.opened');
+    setTimelineOpen(true);
+  };
+  const openKnowledge = (): void => {
+    bumpUsage('knowledge.opened');
+    setKnowledgeOpen(true);
+  };
+
+  // 自动更新：订阅状态 + 启动静默检查（打包环境生效，开发模式返回 dev 不提示）。
+  useEffect(() => {
+    const unsubscribe = window.codeagentdesk.onUpdateStatus((status) => {
+      if (status.kind === 'available') {
+        toast.info(status.message);
+      } else if (status.kind === 'downloaded') {
+        setUpdateReady(true);
+        toast.info(`${status.message}（☰ 更多 → 重启并安装更新）`);
+      } else if (status.kind === 'error') {
+        toast.error(`检查更新失败：${status.message}`);
+      }
+    });
+    void window.codeagentdesk.checkForUpdates();
+    return unsubscribe;
+  }, [toast]);
+
+  // 统计：命令面板/搜索埋点（搜索在此处安全；命令面板在 palette 定义后埋点）。
+  useEffect(() => {
+    if (mode === 'search') bumpUsage('search.used');
+  }, [mode]);
   const sidebarBodyRef = useRef<HTMLDivElement | null>(null);
   const sidebarWidthRef = useRef(232);
   const infoWidthRef = useRef(260);
@@ -778,6 +829,7 @@ export default function App() {
   }
 
   async function openDetailById(sessionId: string, snippet?: string): Promise<void> {
+    bumpUsage('detail.opened');
     setDetailSessionId(sessionId);
     setDetailQuery(snippet ?? '');
     setSummary(null);
@@ -814,6 +866,7 @@ export default function App() {
       toast.error(result.message ?? '导出失败');
       return;
     }
+    bumpUsage('export.md');
     toast.success('已导出 Markdown');
   }
 
@@ -1064,6 +1117,10 @@ export default function App() {
   useEffect(() => {
     if (pomodoro.finished) toast.success('🍅 番茄钟完成，休息一下！');
   }, [pomodoro.finished]);
+  const onPomodoroToggle = (): void => {
+    bumpUsage('pomodoro.start');
+    pomodoro.toggle();
+  };
 
   // 打开首页后，激活任何会话/标签自动退出首页。
   useEffect(() => {
@@ -1093,6 +1150,9 @@ export default function App() {
     onPaletteKeyDown,
     runPaletteItem,
   } = palette;
+  useEffect(() => {
+    if (paletteOpen) bumpUsage('palette.opened');
+  }, [paletteOpen]);
 
   // 会话 → 分组/置顶映射预建一次，分组与未分组计算共用（避免 filter 内逐会话 find）。
   const recordGroupBySession = useMemo(
@@ -1507,18 +1567,31 @@ export default function App() {
           version={appInfo?.appVersion ?? '…'}
           onOpenSummary={openSummary}
           onOpenUsageTrend={() => setUsageTrendOpen(true)}
-          onOpenKnowledge={() => setKnowledgeOpen(true)}
-          onOpenEfficiency={() => setEfficiencyOpen(true)}
+          onOpenKnowledge={openKnowledge}
+          onOpenEfficiency={openEfficiency}
           onUnlockNeon={() => void handleUnlockNeon()}
-          onOpenDashboard={() => setDashboardOpen(true)}
-          onOpenTimeline={() => setTimelineOpen(true)}
+          onOpenDashboard={openDashboard}
+          onOpenTimeline={openTimeline}
           onOpenHome={() => setHomeOpen(true)}
+          onOpenBackup={() => setBackupOpen(true)}
+          onOpenUsageStats={() => setUsageStatsOpen(true)}
+          onCheckUpdate={() => {
+            void window.codeagentdesk.checkForUpdates().then((status) => {
+              if (status.kind === 'up-to-date') toast.info('已是最新版本');
+              else if (status.kind === 'dev') toast.info('开发模式不支持自动更新');
+              else if (status.kind === 'error') toast.error(`检查更新失败：${status.message}`);
+            });
+          }}
+          onInstallUpdate={() => {
+            void window.codeagentdesk.installUpdate();
+          }}
+          updateReady={updateReady}
           agentEmoji={activeAgentMeta.emoji}
           agentStatusLabel={activeAgentMeta.label}
           pomodoroRunning={pomodoro.running}
           pomodoroText={pomodoro.remainingText}
           pomodoroProgress={pomodoro.progress}
-          onPomodoroToggle={pomodoro.toggle}
+          onPomodoroToggle={onPomodoroToggle}
           onPomodoroReset={pomodoro.reset}
         />
         </main>
@@ -1593,8 +1666,8 @@ export default function App() {
             onOpenSummary={openSummary}
             onOpenKnowledge={() => setKnowledgeOpen(true)}
             onOpenUsageTrend={() => setUsageTrendOpen(true)}
-            onOpenEfficiency={() => setEfficiencyOpen(true)}
-            onOpenTimeline={() => setTimelineOpen(true)}
+            onOpenEfficiency={openEfficiency}
+            onOpenTimeline={openTimeline}
           />
         </Suspense>
       ) : null}
@@ -1611,6 +1684,18 @@ export default function App() {
             onClose={() => setTimelineOpen(false)}
             onOpenDetail={(sessionId) => void openDetailById(sessionId)}
           />
+        </Suspense>
+      ) : null}
+
+      {backupOpen ? (
+        <Suspense fallback={null}>
+          <LazyBackup onClose={() => setBackupOpen(false)} />
+        </Suspense>
+      ) : null}
+
+      {usageStatsOpen ? (
+        <Suspense fallback={null}>
+          <LazyUsageStats onClose={() => setUsageStatsOpen(false)} />
         </Suspense>
       ) : null}
 

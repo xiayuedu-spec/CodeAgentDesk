@@ -65,6 +65,13 @@ export const IpcChannel = {
   sessionExited: 'session:exited',
   sessionBound: 'session:bound',
   sessionError: 'session:error',
+  updateCheck: 'update:check',
+  updateInstall: 'update:install',
+  updateStatus: 'update:status',
+  backupExport: 'backup:export',
+  backupImport: 'backup:import',
+  usageStatIncrement: 'usage:stat-increment',
+  usageStatList: 'usage:stat-list',
 } as const;
 
 export type IpcChannelName = (typeof IpcChannel)[keyof typeof IpcChannel];

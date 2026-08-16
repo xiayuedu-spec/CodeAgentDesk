@@ -72,6 +72,7 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
     setSelectedKey(keyOf(cwd));
     setText(result.text ?? '');
     setEditing(false);
+    void window.codeagentdesk.incrementUsageStat('knowledge.generate');
     setInfo('知识库已更新 · 已写入 PROJECT_KNOWLEDGE.md 并同步项目 CLAUDE.md（新会话自动带背景）');
   }
 
@@ -94,6 +95,7 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
     setError(null);
     const result = await window.codeagentdesk.exportKnowledge(cwd);
     if (result.ok) {
+      void window.codeagentdesk.incrementUsageStat('knowledge.export');
       setInfo(`已导出到 ${result.path}，并同步项目 CLAUDE.md（新会话自动带上项目背景）`);
     } else {
       setError(result.message ?? '导出失败');
@@ -105,6 +107,7 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
     const result = await window.codeagentdesk.ensureGlobalKnowledge();
     if (result.ok && result.path) {
       setGlobalPath(result.path);
+      void window.codeagentdesk.incrementUsageStat('knowledge.global');
       setInfo(`已创建全局知识库 ${result.path}，并在全局记忆 CLAUDE.md 中加入导入行`);
     } else {
       setError(result.message ?? '创建全局知识库失败');

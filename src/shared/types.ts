@@ -249,6 +249,29 @@ export interface DashboardStats {
   hourlyPercent: number;
 }
 
+/** 备份/迁移结果。 */
+export interface BackupResult {
+  ok: boolean;
+  path?: string;
+  message?: string;
+}
+
+/** 自动更新状态（主进程 → 渲染层）。 */
+export type UpdateStatus =
+  | { kind: 'dev'; message: string }
+  | { kind: 'checking'; message: string }
+  | { kind: 'up-to-date'; message: string }
+  | { kind: 'available'; version: string; message: string }
+  | { kind: 'downloaded'; version: string; message: string }
+  | { kind: 'error'; message: string };
+
+/** 功能使用统计（本地计数）。 */
+export interface UsageStat {
+  count: number;
+  lastAt: string;
+}
+export type UsageStats = Record<string, UsageStat>;
+
 /** 效率洞察：单个会话的时长与产出/成本。 */
 export interface EfficiencySessionStat {
   sessionId: string;
@@ -420,4 +443,11 @@ export interface CodeAgentDeskApi {
   onSessionBound(callback: (event: SessionBoundEvent) => void): () => void;
   onSessionError(callback: (event: SessionErrorEvent) => void): () => void;
   onSessionsChanged(callback: () => void): () => void;
+  checkForUpdates(): Promise<UpdateStatus>;
+  installUpdate(): Promise<void>;
+  onUpdateStatus(callback: (status: UpdateStatus) => void): () => void;
+  exportBackup(): Promise<BackupResult>;
+  importBackup(): Promise<BackupResult>;
+  incrementUsageStat(key: string): Promise<void>;
+  getUsageStats(): Promise<UsageStats>;
 }

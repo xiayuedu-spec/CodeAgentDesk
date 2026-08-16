@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import {
+  BarChart3,
   BookOpen,
+  Download,
   Gauge,
   History,
   Home,
   LayoutDashboard,
   MoreHorizontal,
+  RefreshCw,
+  Rocket,
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
@@ -24,6 +28,11 @@ interface StatusBarProps {
   onOpenTimeline: () => void;
   onOpenHome: () => void;
   onUnlockNeon: () => void;
+  onOpenBackup: () => void;
+  onOpenUsageStats: () => void;
+  onCheckUpdate: () => void;
+  onInstallUpdate: () => void;
+  updateReady: boolean;
   agentEmoji: string;
   agentStatusLabel: string;
   pomodoroRunning: boolean;
@@ -49,6 +58,11 @@ export function StatusBar({
   onOpenTimeline,
   onOpenHome,
   onUnlockNeon,
+  onOpenBackup,
+  onOpenUsageStats,
+  onCheckUpdate,
+  onInstallUpdate,
+  updateReady,
   agentEmoji,
   agentStatusLabel,
   pomodoroRunning,
@@ -71,12 +85,25 @@ export function StatusBar({
     }
   };
 
-  const moreItems: { key: string; label: string; icon: React.ReactNode; run: () => void }[] = [
+  const moreItems: {
+    key: string;
+    label: string;
+    icon: React.ReactNode | null;
+    run: () => void;
+    separator?: boolean;
+  }[] = [
     { key: 'usage', label: '用量趋势', icon: <TrendingUp size={13} />, run: onOpenUsageTrend },
     { key: 'knowledge', label: '项目知识库', icon: <BookOpen size={13} />, run: onOpenKnowledge },
     { key: 'efficiency', label: '效率洞察', icon: <Gauge size={13} />, run: onOpenEfficiency },
     { key: 'dashboard', label: '今日概览', icon: <LayoutDashboard size={13} />, run: onOpenDashboard },
     { key: 'timeline', label: '工作时间线', icon: <History size={13} />, run: onOpenTimeline },
+    { key: 'sep1', label: '', icon: null, run: () => undefined, separator: true },
+    { key: 'update', label: '检查更新…', icon: <RefreshCw size={13} />, run: onCheckUpdate },
+    ...(updateReady
+      ? [{ key: 'install', label: '重启并安装更新', icon: <Rocket size={13} />, run: onInstallUpdate }]
+      : []),
+    { key: 'backup', label: '备份 / 迁移', icon: <Download size={13} />, run: onOpenBackup },
+    { key: 'stats', label: '功能使用统计', icon: <BarChart3 size={13} />, run: onOpenUsageStats },
   ];
 
   return (
@@ -109,20 +136,24 @@ export function StatusBar({
         </button>
         {moreOpen ? (
           <div className="status-more-menu" role="menu" onClick={(event) => event.stopPropagation()}>
-            {moreItems.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setMoreOpen(false);
-                  item.run();
-                }}
-              >
-                <span className="status-more-icon">{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
+            {moreItems.map((item) =>
+              item.separator ? (
+                <div key={item.key} className="status-more-sep" />
+              ) : (
+                <button
+                  key={item.key}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    item.run();
+                  }}
+                >
+                  <span className="status-more-icon">{item.icon}</span>
+                  {item.label}
+                </button>
+              ),
+            )}
           </div>
         ) : null}
       </div>

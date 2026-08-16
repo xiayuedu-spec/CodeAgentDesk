@@ -13,3 +13,8 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+# 自动更新发布源（electron-updater）。打包发布时需配置 GH_TOKEN 或改内网源。
+publish:
+  provider: github
+  owner: xiayuedu-spec
+  repo: CodeAgentDesk

@@ -2,11 +2,14 @@ import { app, dialog, ipcMain, shell } from 'electron';
 import { IpcChannel } from '../shared/ipc-contract';
 import type {
   AppInfo,
+  BackupResult,
   ClaudeConfigInfo,
   PickClaudeDirResult,
   SessionOpResult,
   ThemeName,
   UiState,
+  UpdateStatus,
+  UsageStats,
 } from '../shared/types';
 import {
   readClaudeConfigInfo,
@@ -17,6 +20,9 @@ import { getMainWindow } from './window-manager';
 import { getRecentDirs } from './recent-dirs';
 import { readUiState, writeUiState } from './ui-state';
 import { invalidateDashboardCache } from './ipc-usage';
+import { exportBackup, importBackup } from './backup';
+import { incrementUsage, listUsage } from './usage-store';
+import { checkForUpdates, installUpdate } from './updater';
 
 const startedAt = new Date().toISOString();
 
@@ -154,4 +160,18 @@ export function registerAppIpc({ onClaudeDirChanged }: AppIpcDeps): void {
   ipcMain.handle(IpcChannel.windowSetBackgroundColor, (_event, color: string): void => {
     getMainWindow()?.setBackgroundColor(color);
   });
+
+  // 自动更新
+  ipcMain.handle(IpcChannel.updateCheck, (): Promise<UpdateStatus> => checkForUpdates());
+  ipcMain.handle(IpcChannel.updateInstall, (): void => installUpdate());
+
+  // 备份 / 迁移
+  ipcMain.handle(IpcChannel.backupExport, (): Promise<BackupResult> => exportBackup());
+  ipcMain.handle(IpcChannel.backupImport, (): Promise<BackupResult> => importBackup());
+
+  // 使用统计（本地计数）
+  ipcMain.handle(IpcChannel.usageStatIncrement, (_event, key: string): void => {
+    if (typeof key === 'string') incrementUsage(key);
+  });
+  ipcMain.handle(IpcChannel.usageStatList, (): UsageStats => listUsage());
 }

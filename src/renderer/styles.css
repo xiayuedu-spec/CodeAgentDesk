@@ -4946,3 +4946,86 @@ body,
   font-size: 10px;
   color: var(--text-faint);
 }
+
+/* ---- 备份/迁移 + 功能使用统计 ---- */
+.backup-panel,
+.usage-stats-panel {
+  width: 480px;
+}
+.backup-desc {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+.backup-desc b {
+  color: var(--text);
+}
+.backup-actions {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+.backup-tip {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-faint);
+  font-size: 10px;
+  line-height: 1.6;
+}
+.status-more-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+.usage-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.usage-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+}
+.usage-stats-label {
+  flex: none;
+  width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.usage-stats-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.usage-stats-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  transition: width 300ms ease;
+}
+.usage-stats-count {
+  flex: none;
+  min-width: 32px;
+  text-align: right;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.usage-stats-date {
+  flex: none;
+  width: 60px;
+  text-align: right;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
