@@ -32,6 +32,7 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [globalPath, setGlobalPath] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,7 +72,7 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
     setSelectedKey(keyOf(cwd));
     setText(result.text ?? '');
     setEditing(false);
-    setInfo(force ? '已全量重建' : '知识库已更新（增量）');
+    setInfo('知识库已更新 · 已写入 PROJECT_KNOWLEDGE.md 并同步项目 CLAUDE.md（新会话自动带背景）');
   }
 
   async function handleView(key: string): Promise<void> {
@@ -93,10 +94,27 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
     setError(null);
     const result = await window.codeagentdesk.exportKnowledge(cwd);
     if (result.ok) {
-      setInfo(`已导出到 ${result.path}，新会话中让 claude 读取该文件即可复用项目经验`);
+      setInfo(`已导出到 ${result.path}，并同步项目 CLAUDE.md（新会话自动带上项目背景）`);
     } else {
       setError(result.message ?? '导出失败');
     }
+  }
+
+  async function handleEnsureGlobal(): Promise<void> {
+    setError(null);
+    const result = await window.codeagentdesk.ensureGlobalKnowledge();
+    if (result.ok && result.path) {
+      setGlobalPath(result.path);
+      setInfo(`已创建全局知识库 ${result.path}，并在全局记忆 CLAUDE.md 中加入导入行`);
+    } else {
+      setError(result.message ?? '创建全局知识库失败');
+    }
+  }
+
+  async function handleOpenGlobal(): Promise<void> {
+    if (!globalPath) return;
+    const result = await window.codeagentdesk.openWorkingDirectory(globalPath);
+    if (!result.ok) setError(result.message ?? '打开失败');
   }
 
   async function handleSave(): Promise<void> {
@@ -126,6 +144,30 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
           </div>
         </div>
         <div className="day-body">
+          <div className="knowledge-global">
+            <div className="knowledge-global-head">
+              <span className="knowledge-global-title">🌐 全局知识库（所有项目生效）</span>
+              <span className="knowledge-global-actions">
+                <button
+                  type="button"
+                  className="welcome-btn"
+                  onClick={() => void handleEnsureGlobal()}
+                >
+                  {globalPath ? '重新链接' : '创建 / 链接'}
+                </button>
+                {globalPath ? (
+                  <button type="button" className="welcome-btn" onClick={() => void handleOpenGlobal()}>
+                    打开编辑
+                  </button>
+                ) : null}
+              </span>
+            </div>
+            <div className="knowledge-global-desc">
+              在全局记忆 <b>~/.claude/CLAUDE.md</b> 中加入 <b>@GLOBAL_KNOWLEDGE.md</b>，团队约定与通用经验对
+              <b>所有项目</b>的 Claude Code 会话生效。
+              {globalPath ? <span className="knowledge-global-path">{globalPath}</span> : null}
+            </div>
+          </div>
           <div className="knowledge-budget">
             生成约消耗 <b>{ESTIMATED_INPUT_TOKENS.toLocaleString()}</b> token（每小时限额 1000 万，约占
             0.4%）；<b>增量更新</b>只处理新增会话，消耗更少

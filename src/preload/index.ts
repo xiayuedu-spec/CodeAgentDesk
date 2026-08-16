@@ -26,6 +26,7 @@ import type {
   SessionUsage,
   SessionOpResult,
   KnowledgeExportResult,
+  KnowledgeGlobalResult,
   DashboardStats,
   EfficiencyInsights,
   FunStats,
@@ -81,6 +82,7 @@ const CHANNELS = {
   knowledgeGet: 'knowledge:get',
   knowledgeSave: 'knowledge:save',
   knowledgeExport: 'knowledge:export',
+  knowledgeEnsureGlobal: 'knowledge:ensure-global',
   dashboardStats: 'dashboard:stats',
   efficiencyInsights: 'efficiency:insights',
   timelineDay: 'timeline:day',
@@ -180,6 +182,8 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.knowledgeGenerate, cwd, force) as Promise<SummaryGetResult>,
   exportKnowledge: (cwd) =>
     ipcRenderer.invoke(CHANNELS.knowledgeExport, cwd) as Promise<KnowledgeExportResult>,
+  ensureGlobalKnowledge: () =>
+    ipcRenderer.invoke(CHANNELS.knowledgeEnsureGlobal) as Promise<KnowledgeGlobalResult>,
   getDashboardStats: () =>
     ipcRenderer.invoke(CHANNELS.dashboardStats) as Promise<DashboardStats>,
   getEfficiencyInsights: (weekStart) =>

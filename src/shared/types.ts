@@ -228,6 +228,13 @@ export interface KnowledgeExportResult {
   message?: string;
 }
 
+/** 全局知识库链路结果。 */
+export interface KnowledgeGlobalResult {
+  ok: boolean;
+  path?: string;
+  message?: string;
+}
+
 export interface DashboardStats {
   runningCount: number;
   todaySessionCount: number;
@@ -385,6 +392,7 @@ export interface CodeAgentDeskApi {
   getKnowledge(key: string): Promise<SummaryGetResult>;
   saveKnowledge(key: string, text: string): Promise<SummaryGetResult>;
   exportKnowledge(cwd: string): Promise<KnowledgeExportResult>;
+  ensureGlobalKnowledge(): Promise<KnowledgeGlobalResult>;
   getDashboardStats(): Promise<DashboardStats>;
   getEfficiencyInsights(weekStart?: string): Promise<EfficiencyInsights>;
   getDayTimeline(date: string): Promise<DayTimelineResult>;

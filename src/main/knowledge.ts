@@ -109,12 +109,71 @@ export async function generateProjectKnowledge(
   return output.trim();
 }
 
-/** 导出知识库到项目目录（PROJECT_KNOWLEDGE.md），返回文件路径。 */
+/** 导出知识库到项目目录（PROJECT_KNOWLEDGE.md），并同步项目 CLAUDE.md 的导入行。 */
 export function exportKnowledgeToFile(cwd: string, text: string): string {
   const filePath = path.join(cwd, 'PROJECT_KNOWLEDGE.md');
   fs.mkdirSync(cwd, { recursive: true });
   fs.writeFileSync(filePath, text, 'utf8');
+  syncClaudeMd(cwd);
   return filePath;
+}
+
+/** 项目 CLAUDE.md 中的知识库导入行（Claude Code 支持 @path 导入）。 */
+const PROJECT_IMPORT_LINE = '@PROJECT_KNOWLEDGE.md';
+
+/**
+ * 确保项目 CLAUDE.md 包含 `@PROJECT_KNOWLEDGE.md` 导入行（幂等，不破坏用户已有内容）。
+ * 新会话在该项目下启动时自动带上项目知识库背景。
+ */
+export function syncClaudeMd(cwd: string): string {
+  const filePath = path.join(cwd, 'CLAUDE.md');
+  const existing = readText(filePath);
+  if (existing.split('\n').some((line) => line.trim() === PROJECT_IMPORT_LINE)) {
+    return filePath;
+  }
+  fs.mkdirSync(cwd, { recursive: true });
+  const block = `${existing.trimEnd() ? `${existing.replace(/\s+$/, '')}\n\n` : ''}${PROJECT_IMPORT_LINE}\n`;
+  fs.writeFileSync(filePath, block, 'utf8');
+  return filePath;
+}
+
+/** 全局知识库文件（claudeHome 下），通过全局记忆 CLAUDE.md 导入，对所有项目生效。 */
+const GLOBAL_KNOWLEDGE_FILE = 'GLOBAL_KNOWLEDGE.md';
+const GLOBAL_IMPORT_LINE = '@GLOBAL_KNOWLEDGE.md';
+const GLOBAL_TEMPLATE = `# 全局知识库（CodeAgentDesk 自动维护）
+
+这里的内容会通过全局记忆（~/.claude/CLAUDE.md）被**所有项目**的 Claude Code 会话加载。
+可以记录：团队约定、通用工具用法、跨项目的经验教训、常用命令模板。
+
+（如需停用，删除 ~/.claude/CLAUDE.md 中的 @GLOBAL_KNOWLEDGE.md 行即可。）
+`;
+
+/**
+ * 确保全局知识库链路存在：创建 GLOBAL_KNOWLEDGE.md（缺失时带模板），
+ * 并在 claudeHome/CLAUDE.md（Claude Code 全局记忆）中加入导入行。
+ * @returns 全局知识库文件路径
+ */
+export function ensureGlobalKnowledge(claudeHome: string): { globalPath: string; claudeMdPath: string } {
+  const globalPath = path.join(claudeHome, GLOBAL_KNOWLEDGE_FILE);
+  if (!fs.existsSync(globalPath)) {
+    fs.mkdirSync(claudeHome, { recursive: true });
+    fs.writeFileSync(globalPath, GLOBAL_TEMPLATE, 'utf8');
+  }
+  const claudeMdPath = path.join(claudeHome, 'CLAUDE.md');
+  const existing = readText(claudeMdPath);
+  if (!existing.split('\n').some((line) => line.trim() === GLOBAL_IMPORT_LINE)) {
+    const block = `${existing.trimEnd() ? `${existing.replace(/\s+$/, '')}\n\n` : ''}${GLOBAL_IMPORT_LINE}\n`;
+    fs.writeFileSync(claudeMdPath, block, 'utf8');
+  }
+  return { globalPath, claudeMdPath };
+}
+
+function readText(filePath: string): string {
+  try {
+    return fs.readFileSync(filePath, 'utf8');
+  } catch {
+    return '';
+  }
 }
 
 function normalizeCwd(cwd: string): string {

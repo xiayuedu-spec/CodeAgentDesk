@@ -38,6 +38,7 @@ export const IpcChannel = {
   knowledgeGet: 'knowledge:get',
   knowledgeSave: 'knowledge:save',
   knowledgeExport: 'knowledge:export',
+  knowledgeEnsureGlobal: 'knowledge:ensure-global',
   dashboardStats: 'dashboard:stats',
   efficiencyInsights: 'efficiency:insights',
   timelineDay: 'timeline:day',

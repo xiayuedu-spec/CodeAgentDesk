@@ -3,11 +3,12 @@ import { IpcChannel } from '../shared/ipc-contract';
 import type {
   DaySummarizeResult,
   KnowledgeExportResult,
+  KnowledgeGlobalResult,
   SummaryGetResult,
   SummaryHistoryResult,
 } from '../shared/types';
 import { readConfig, resolveClaudeHome } from './config';
-import { generateProjectKnowledge, exportKnowledgeToFile } from './knowledge';
+import { ensureGlobalKnowledge, exportKnowledgeToFile, generateProjectKnowledge } from './knowledge';
 import {
   getKnowledgeText,
   listKnowledge,
@@ -126,6 +127,8 @@ export function registerSummaryIpc({ metaStore }: SummaryIpcDeps): void {
         if (text === null) {
           return { ok: false, message: '知识库已是最新，暂无新增会话' };
         }
+        // 生成即落盘：写入 PROJECT_KNOWLEDGE.md 并同步项目 CLAUDE.md（新会话自动带背景）。
+        exportKnowledgeToFile(cwd, text);
         return { ok: true, text };
       } catch (error) {
         return { ok: false, message: error instanceof Error ? error.message : String(error) };
@@ -143,6 +146,18 @@ export function registerSummaryIpc({ metaStore }: SummaryIpcDeps): void {
       try {
         const filePath = exportKnowledgeToFile(cwd, text);
         return { ok: true, path: filePath };
+      } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : String(error) };
+      }
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.knowledgeEnsureGlobal,
+    (): KnowledgeGlobalResult => {
+      try {
+        const { globalPath } = ensureGlobalKnowledge(resolveClaudeHome(readConfig()));
+        return { ok: true, path: globalPath };
       } catch (error) {
         return { ok: false, message: error instanceof Error ? error.message : String(error) };
       }
