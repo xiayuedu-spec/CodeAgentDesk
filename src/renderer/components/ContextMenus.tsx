@@ -76,9 +76,12 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
             !sessions.some((session) => session.sessionId === record.sessionId),
         ).length
       : 0;
-  // 全部可归档的历史会话数（历史会话区块"全部归档"）。
+  // 全部可归档的未分组历史会话数（历史会话区块"全部归档"，已分组的归各分组管理）。
   const historyCountAll = records.filter(
-    (record) => !record.archived && !sessions.some((session) => session.sessionId === record.sessionId),
+    (record) =>
+      !record.archived &&
+      !record.group &&
+      !sessions.some((session) => session.sessionId === record.sessionId),
   ).length;
   const {
     closeMenu,

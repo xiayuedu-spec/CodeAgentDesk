@@ -747,11 +747,11 @@ export default function App() {
     }
   }
 
-  /** 历史会话区块右键「全部归档」：归档全部未归档、未运行中的历史会话。 */
+  /** 历史会话区块右键「全部归档」：归档全部未归档、未运行中、**未分组**的历史会话。 */
   async function handleArchiveAllHistory(): Promise<void> {
-    const targets = historyRecords.filter((record) => !record.archived);
+    const targets = historyRecords.filter((record) => !record.archived && !record.group);
     if (targets.length === 0) {
-      toast.info('没有可归档的历史会话');
+      toast.info('没有可归档的未分组历史会话');
       return;
     }
     let ok = 0;
