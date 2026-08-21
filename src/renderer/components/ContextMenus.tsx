@@ -55,6 +55,7 @@ interface ContextMenusActions {
   togglePin: (sessionId: string, pinned: boolean) => void;
   openCwd: (cwd: string) => void;
   setGroupColor: (id: string, color: string) => void;
+  archiveAllHistory: () => void;
   setMoveNewOpen: (open: boolean) => void;
   setMoveNewName: (name: string) => void;
   createGroupAndMove: () => void;
@@ -62,6 +63,10 @@ interface ContextMenusActions {
 
 export function ContextMenus({ data, actions }: { data: ContextMenusData; actions: ContextMenusActions }) {
   const { menu, menuSession, groupMenu, moveMenu, groups, moveNewOpen, moveNewName, sessions, records } = data;
+  // 历史会话数（未归档且未运行中）——"全部归档"使用。
+  const historyCount = records.filter(
+    (record) => !record.archived && !sessions.some((session) => session.sessionId === record.sessionId),
+  ).length;
   const {
     closeMenu,
     closeGroupMenu,
@@ -80,6 +85,7 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
     togglePin,
     openCwd,
     setGroupColor,
+    archiveAllHistory,
     setMoveNewOpen,
     setMoveNewName,
     createGroupAndMove,
@@ -120,6 +126,22 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
             </span>
             归档
           </button>
+          {!menu.archived &&
+          !sessions.some((session) => session.sessionId === menu.sessionId) ? (
+            <button
+              type="button"
+              disabled={historyCount === 0}
+              onClick={() => {
+                void archiveAllHistory();
+                closeMenu();
+              }}
+            >
+              <span className="context-menu-icon">
+                <Archive size={14} />
+              </span>
+              全部归档（{historyCount} 个历史会话）
+            </button>
+          ) : null}
           <button
             type="button"
             disabled={!menuSession || menu.archived}

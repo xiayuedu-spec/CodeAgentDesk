@@ -1423,6 +1423,18 @@ button:focus-visible, input:focus-visible {
   font-size: 11px;
 }
 
+/* 选中自动复制的反馈提示 */
+.terminal-copied {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 600;
+  animation: viewIn 160ms ease;
+}
+
 .terminal-chrome-actions, .session-tags {
   display: flex;
   gap: 4px;

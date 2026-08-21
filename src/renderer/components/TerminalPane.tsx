@@ -53,6 +53,21 @@ export function TerminalPane({
   const [hasSelection, setHasSelection] = useState(false);
   const [menu, setMenu] = useState<TerminalMenuState | null>(null);
   const [skin, setSkin] = useState(() => document.documentElement.dataset.theme ?? 'default');
+  const [copied, setCopied] = useState(false);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 选中文本自动复制并闪现"已复制"提示。
+  const flashCopied = (): void => {
+    setCopied(true);
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    copiedTimerRef.current = setTimeout(() => setCopied(false), 1500);
+  };
+  useEffect(
+    () => () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     const applySkin = () => setSkin(document.documentElement.dataset.theme ?? 'default');
@@ -112,7 +127,14 @@ export function TerminalPane({
       window.dispatchEvent(new CustomEvent<string>('agent-status-ignore', { detail: id }));
     });
     const selectionDisposable = terminal.onSelectionChange(() => {
-      setHasSelection(terminal.getSelection().length > 0);
+      const selection = terminal.getSelection();
+      setHasSelection(selection.length > 0);
+      // 选中即自动复制（xterm 常规习惯）。
+      if (selection.length > 0) {
+        void navigator.clipboard.writeText(selection).then(flashCopied).catch(() => {
+          // 剪贴板不可用时静默忽略。
+        });
+      }
     });
     const unsubscribeData = window.codeagentdesk.onSessionData((event) => {
       if (event.id === id) terminal.write(event.data);
@@ -233,6 +255,7 @@ export function TerminalPane({
             title={status === 'running' ? '运行中' : status === 'starting' ? '启动中' : '已结束'}
           />
           <span className="terminal-title">{title}</span>
+          {copied ? <span className="terminal-copied">已复制</span> : null}
           <div className="terminal-chrome-actions">
             <button
               type="button"

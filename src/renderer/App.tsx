@@ -720,6 +720,29 @@ export default function App() {
     }
   }
 
+  async function handleArchiveAllHistory(): Promise<void> {
+    const targets = historyRecords.filter((record) => !record.archived);
+    if (targets.length === 0) {
+      toast.info('没有可归档的历史会话');
+      return;
+    }
+    let ok = 0;
+    const errors: string[] = [];
+    await Promise.all(
+      targets.map(async (record) => {
+        const result = await window.codeagentdesk.archiveSession(record.sessionId, record.cwd);
+        if (result.ok) ok += 1;
+        else errors.push(result.message ?? record.sessionId);
+      }),
+    );
+    await refreshRecords();
+    if (ok > 0) {
+      toast.success(`已归档 ${ok} 个历史会话${errors.length > 0 ? `（${errors.length} 个失败）` : ''}`);
+    } else {
+      toast.error(errors[0] ?? '归档失败');
+    }
+  }
+
   async function handleUnlockNeon(): Promise<void> {
     await window.codeagentdesk.unlockNeon();
     await refreshClaudeInfo();
@@ -1430,6 +1453,7 @@ export default function App() {
     handleDeleteGroup: (id: string) => void handleDeleteGroup(id),
     moveToGroup: (sessionId: string, groupId: string | null) => void moveToGroup(sessionId, groupId),
     togglePin: (sessionId: string, pinned: boolean) => void handleTogglePin(sessionId, pinned),
+    archiveAllHistory: () => void handleArchiveAllHistory(),
     openCwd: (cwd: string) => void handleOpenCwd(cwd),
     setGroupColor: (id: string, color: string) => void handleSetGroupColor(id, color),
     setMoveNewOpen,
