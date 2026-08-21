@@ -63,6 +63,7 @@ interface SidebarBodyActions {
   toggleGroupCollapse: (key: string) => void;
   toggleSectionCollapse: (key: 'current' | 'history') => void;
   openGroupMenu: (id: string, name: string, x: number, y: number) => void;
+  openSectionMenu: (x: number, y: number) => void;
   toggleArchiveSelect: (sessionId: string) => void;
   toggleSelectAllArchived: () => void;
   handleDeleteArchived: () => void;
@@ -113,6 +114,7 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
     toggleGroupCollapse,
     toggleSectionCollapse,
     openGroupMenu,
+    openSectionMenu,
     toggleArchiveSelect,
     toggleSelectAllArchived,
     handleDeleteArchived,
@@ -422,6 +424,11 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
                     className={`group-label section-toggle${collapsedSections.has('history') ? '' : ' open'}`}
                     aria-expanded={!collapsedSections.has('history')}
                     onClick={() => toggleSectionCollapse('history')}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      openSectionMenu(event.clientX, event.clientY);
+                    }}
                   >
                     <ChevronRight size={11} className="section-chevron" />
                     历史会话

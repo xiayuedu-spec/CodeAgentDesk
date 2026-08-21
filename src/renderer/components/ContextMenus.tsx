@@ -29,6 +29,7 @@ interface ContextMenusData {
   menu: ContextMenuState | null;
   menuSession: MenuSession;
   groupMenu: GroupMenuState | null;
+  sectionMenu: { kind: 'history'; x: number; y: number } | null;
   moveMenu: MoveMenuState | null;
   groups: GroupRecord[];
   moveNewOpen: boolean;
@@ -40,6 +41,7 @@ interface ContextMenusData {
 interface ContextMenusActions {
   closeMenu: () => void;
   closeGroupMenu: () => void;
+  closeSectionMenu: () => void;
   setRenamingId: (id: string | null) => void;
   setGroupRenameId: (id: string | null) => void;
   archiveSession: (sessionId: string, cwd: string) => void;
@@ -56,13 +58,14 @@ interface ContextMenusActions {
   openCwd: (cwd: string) => void;
   setGroupColor: (id: string, color: string) => void;
   archiveGroupHistory: (groupId: string) => void;
+  archiveAllHistory: () => void;
   setMoveNewOpen: (open: boolean) => void;
   setMoveNewName: (name: string) => void;
   createGroupAndMove: () => void;
 }
 
 export function ContextMenus({ data, actions }: { data: ContextMenusData; actions: ContextMenusActions }) {
-  const { menu, menuSession, groupMenu, moveMenu, groups, moveNewOpen, moveNewName, sessions, records } = data;
+  const { menu, menuSession, groupMenu, sectionMenu, moveMenu, groups, moveNewOpen, moveNewName, sessions, records } = data;
   // 分组内可归档的历史会话数（未归档且未运行中）——"全部归档"使用。
   const groupHistoryCount =
     groupMenu && groupMenu.id
@@ -73,6 +76,10 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
             !sessions.some((session) => session.sessionId === record.sessionId),
         ).length
       : 0;
+  // 全部可归档的历史会话数（历史会话区块"全部归档"）。
+  const historyCountAll = records.filter(
+    (record) => !record.archived && !sessions.some((session) => session.sessionId === record.sessionId),
+  ).length;
   const {
     closeMenu,
     closeGroupMenu,
@@ -92,6 +99,8 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
     openCwd,
     setGroupColor,
     archiveGroupHistory,
+    archiveAllHistory,
+    closeSectionMenu,
     setMoveNewOpen,
     setMoveNewName,
     createGroupAndMove,
@@ -336,6 +345,30 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
               <Archive size={14} />
             </span>
             删除分组
+          </button>
+        </div>
+      ) : null}
+
+      {sectionMenu ? (
+        <div
+          className="context-menu"
+          role="menu"
+          style={{ left: sectionMenu.x, top: sectionMenu.y }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            disabled={historyCountAll === 0}
+            onClick={() => {
+              void archiveAllHistory();
+              closeSectionMenu();
+            }}
+          >
+            <span className="context-menu-icon">
+              <Archive size={14} />
+            </span>
+            全部归档（{historyCountAll} 个历史会话）
           </button>
         </div>
       ) : null}

@@ -180,6 +180,7 @@ export default function App() {
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [groupRenameId, setGroupRenameId] = useState<string | null>(null);
   const [groupMenu, setGroupMenu] = useState<GroupMenuState | null>(null);
+  const [sectionMenu, setSectionMenu] = useState<{ kind: 'history'; x: number; y: number } | null>(null);
   const [moveMenu, setMoveMenu] = useState<MoveMenuState | null>(null);
   const [moveNewOpen, setMoveNewOpen] = useState(false);
   const [moveNewName, setMoveNewName] = useState('');
@@ -477,6 +478,7 @@ export default function App() {
 
   useDismiss(Boolean(menu), () => setMenu(null));
   useDismiss(Boolean(groupMenu), () => setGroupMenu(null));
+  useDismiss(Boolean(sectionMenu), () => setSectionMenu(null));
   useDismiss(
     Boolean(moveMenu),
     () => {
@@ -740,6 +742,30 @@ export default function App() {
     await refreshRecords();
     if (ok > 0) {
       toast.success(`已归档 ${ok} 个会话${errors.length > 0 ? `（${errors.length} 个失败）` : ''}`);
+    } else {
+      toast.error(errors[0] ?? '归档失败');
+    }
+  }
+
+  /** 历史会话区块右键「全部归档」：归档全部未归档、未运行中的历史会话。 */
+  async function handleArchiveAllHistory(): Promise<void> {
+    const targets = historyRecords.filter((record) => !record.archived);
+    if (targets.length === 0) {
+      toast.info('没有可归档的历史会话');
+      return;
+    }
+    let ok = 0;
+    const errors: string[] = [];
+    await Promise.all(
+      targets.map(async (record) => {
+        const result = await window.codeagentdesk.archiveSession(record.sessionId, record.cwd);
+        if (result.ok) ok += 1;
+        else errors.push(result.message ?? record.sessionId);
+      }),
+    );
+    await refreshRecords();
+    if (ok > 0) {
+      toast.success(`已归档 ${ok} 个历史会话${errors.length > 0 ? `（${errors.length} 个失败）` : ''}`);
     } else {
       toast.error(errors[0] ?? '归档失败');
     }
@@ -1391,6 +1417,7 @@ export default function App() {
     toggleGroupCollapse,
     toggleSectionCollapse,
     openGroupMenu,
+    openSectionMenu: (x: number, y: number) => setSectionMenu({ kind: 'history', x, y }),
     toggleArchiveSelect,
     toggleSelectAllArchived,
     handleDeleteArchived,
@@ -1427,6 +1454,7 @@ export default function App() {
     menu,
     menuSession,
     groupMenu,
+    sectionMenu,
     moveMenu,
     groups,
     moveNewOpen,
@@ -1437,6 +1465,7 @@ export default function App() {
   const contextMenusActions = {
     closeMenu: () => setMenu(null),
     closeGroupMenu: () => setGroupMenu(null),
+    closeSectionMenu: () => setSectionMenu(null),
     setRenamingId,
     setGroupRenameId,
     archiveSession: (sessionId: string, cwd: string) => void archiveSession(sessionId, cwd),
@@ -1456,6 +1485,7 @@ export default function App() {
     moveToGroup: (sessionId: string, groupId: string | null) => void moveToGroup(sessionId, groupId),
     togglePin: (sessionId: string, pinned: boolean) => void handleTogglePin(sessionId, pinned),
     archiveGroupHistory: (groupId: string) => void handleArchiveGroupHistory(groupId),
+    archiveAllHistory: () => void handleArchiveAllHistory(),
     openCwd: (cwd: string) => void handleOpenCwd(cwd),
     setGroupColor: (id: string, color: string) => void handleSetGroupColor(id, color),
     setMoveNewOpen,
