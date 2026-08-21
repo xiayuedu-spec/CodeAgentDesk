@@ -720,10 +720,12 @@ export default function App() {
     }
   }
 
-  async function handleArchiveAllHistory(): Promise<void> {
-    const targets = historyRecords.filter((record) => !record.archived);
+  async function handleArchiveGroupHistory(groupId: string): Promise<void> {
+    const targets = historyRecords.filter(
+      (record) => !record.archived && record.group === groupId,
+    );
     if (targets.length === 0) {
-      toast.info('没有可归档的历史会话');
+      toast.info('该分组没有可归档的历史会话');
       return;
     }
     let ok = 0;
@@ -737,7 +739,7 @@ export default function App() {
     );
     await refreshRecords();
     if (ok > 0) {
-      toast.success(`已归档 ${ok} 个历史会话${errors.length > 0 ? `（${errors.length} 个失败）` : ''}`);
+      toast.success(`已归档 ${ok} 个会话${errors.length > 0 ? `（${errors.length} 个失败）` : ''}`);
     } else {
       toast.error(errors[0] ?? '归档失败');
     }
@@ -1453,7 +1455,7 @@ export default function App() {
     handleDeleteGroup: (id: string) => void handleDeleteGroup(id),
     moveToGroup: (sessionId: string, groupId: string | null) => void moveToGroup(sessionId, groupId),
     togglePin: (sessionId: string, pinned: boolean) => void handleTogglePin(sessionId, pinned),
-    archiveAllHistory: () => void handleArchiveAllHistory(),
+    archiveGroupHistory: (groupId: string) => void handleArchiveGroupHistory(groupId),
     openCwd: (cwd: string) => void handleOpenCwd(cwd),
     setGroupColor: (id: string, color: string) => void handleSetGroupColor(id, color),
     setMoveNewOpen,
