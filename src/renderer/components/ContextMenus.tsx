@@ -211,6 +211,22 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
             </span>
             查看详情
           </button>
+          {menu.archived ? (
+            <button
+              type="button"
+              disabled={!menuSession}
+              title="恢复后放回历史会话，不打开终端"
+              onClick={() => {
+                if (menuSession) void restoreArchived(menu.sessionId, menu.cwd);
+                closeMenu();
+              }}
+            >
+              <span className="context-menu-icon">
+                <ArchiveRestore size={14} />
+              </span>
+              恢复（放回历史会话）
+            </button>
+          ) : null}
           <button
             type="button"
             disabled={!menuSession || !menu.cwd}
@@ -224,21 +240,6 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
             </span>
             打开工作目录
           </button>
-          {menu.archived ? (
-            <button
-              type="button"
-              disabled={!menuSession}
-              onClick={() => {
-                if (menuSession) void restoreArchived(menu.sessionId, menu.cwd);
-                closeMenu();
-              }}
-            >
-              <span className="context-menu-icon">
-                <ArchiveRestore size={14} />
-              </span>
-              恢复
-            </button>
-          ) : null}
           {menu.archived ? (
             <button
               type="button"
