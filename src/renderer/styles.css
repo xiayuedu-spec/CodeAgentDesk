@@ -5081,3 +5081,64 @@ body,
   color: var(--text-faint);
   font-variant-numeric: tabular-nums;
 }
+
+/* ============================================================
+   设计语言收紧（借鉴 Linear / Raycast 的深色产品 UI 规范）
+   1) 深度靠"表面色阶 + hairline 边框 + 顶部 1px 高光"，弱化重投影
+   2) 强调色收敛：只用于主操作/选中/focus/关键数值，不做装饰
+   3) 分区标签（eyebrow）用正字距 + 弱色，与正文区分层级
+   4) 状态/标签统一 pill 规格
+   ============================================================ */
+:root {
+  /* 更克制的投影（深色下靠边框而非阴影建立层次） */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.18), 0 6px 16px rgba(0, 0, 0, 0.22);
+  --shadow-pop: 0 2px 6px rgba(0, 0, 0, 0.2), 0 10px 24px rgba(0, 0, 0, 0.28);
+  /* 抬升面板顶部高光，模拟"像素渲染"的边 */
+  --edge-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* 1) 浮层统一：hairline 边框 + 轻投影 + 顶部高光，收窄模糊半径 */
+.context-menu,
+.terminal-context-menu,
+.settings-popover,
+.group-manage-popover,
+.new-menu,
+.status-more-menu,
+.hourly-popover,
+.day-panel,
+.confirm-dialog,
+.toast {
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-pop), var(--edge-highlight);
+  backdrop-filter: blur(12px) saturate(1.15);
+  -webkit-backdrop-filter: blur(12px) saturate(1.15);
+}
+
+/* 2) 卡片 hover 用边框提亮而非强调色（强调色只留给选中态） */
+.dashboard-card:hover,
+.eff-card:hover,
+.summary-card:hover {
+  border-color: var(--border-strong);
+}
+
+/* 3) 分区标签（eyebrow）：正字距 + 弱色，作为分类标记 */
+.settings-label,
+.eff-section-title,
+.group-color-label,
+.new-menu-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+/* 4) pill 规格统一（状态/标签/徽章） */
+.terminal-copied,
+.fun-personality-label,
+.fun-mbti-dim {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
