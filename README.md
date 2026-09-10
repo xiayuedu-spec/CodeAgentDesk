@@ -132,6 +132,8 @@ src/
 └── shared/         # 主/渲染共享：types.ts、ipc-contract.ts
 docs/
 ├── ARCHITECTURE.md       # 架构 / 数据 / 关键机制深度文档
+├── THEME-IMPLEMENTATION.md # 主题系统实现说明（7 处同步清单 + 配方 + 校验，供接力开发）
+├── DESIGN-LANGUAGE.md    # 设计语言与令牌（含借鉴来源与 Do/Don't）
 ├── BACKLOG.md            # 按 ROI 排序的功能待办 + 季度审计流程
 └── FEATURES-HANDOFF.md   # 近期功能交接文档（供其他项目二次开发借鉴）
 agent.md                  # 开发交接：工程现状 + 踩坑清单
@@ -161,6 +163,8 @@ DESIGN.md                 # 早期产品设计稿（归档参考）
 ## 文档索引
 
 - [架构深度文档](docs/ARCHITECTURE.md)：进程模型、IPC 通道表、存储 schema、关键机制
+- [主题系统实现说明](docs/THEME-IMPLEMENTATION.md)：新增/移植主题的完整配方与校验清单
+- [设计语言规范](docs/DESIGN-LANGUAGE.md)：令牌、组件规范、Do's & Don'ts、迭代检查清单
 - [功能待办 Backlog](docs/BACKLOG.md)：按 ROI 排序 + 季度审计流程
 - [功能交接文档](docs/FEATURES-HANDOFF.md)：近期功能实现指南 + 踩坑清单（供二次开发）
 - [开发交接](agent.md)：工程现状 + 坑点（给后续接手 agent）

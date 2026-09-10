@@ -159,6 +159,17 @@
 
 ---
 
+## 模块 I：主题系统与设计语言
+
+| 能力 | 实现要点 | 详述 |
+|---|---|---|
+| 9 套主题（7 常规 + 2 隐藏彩蛋） | `data-theme` 属性 + CSS 变量块为唯一真源，组件不感知主题；`config.json#theme` 持久化并走白名单校验；终端配色由 `MutationObserver` 监听属性变化联动 | **[docs/THEME-IMPLEMENTATION.md](THEME-IMPLEMENTATION.md)**（7 处同步清单 + 逐步配方 + 校验清单 + 移裁说明） |
+| 隐藏主题彩蛋 | `HIDDEN_THEMES` + `isThemeUnlocked()`；状态栏版本号连点累计解锁（7 次→霓虹 / 14 次→终端）；`funUnlockedThemes: string[]` 持久化（旧 `funUnlockedNeon` 兼容） | 同上 §3 |
+| 主题级"性格"覆盖 | `:root[data-theme='term']` 聚合覆盖圆角/投影/毛玻璃/装饰光晕（终端风=近黑 + hairline + 小圆角 + 无投影） | 同上 §4 |
+| 设计语言（借 Linear/Raycast） | 深度靠表面色阶 + hairline + 顶部 1px 高光而非重投影；强调色只用于选中/focus/关键数值；eyebrow 正字距分区标签；pill 规格统一 | **[docs/DESIGN-LANGUAGE.md](DESIGN-LANGUAGE.md)** |
+
+---
+
 ## 坑位清单（二次开发务必避开）
 
 1. **`??` 与 `||` 混用**会触发 TS5076，需加括号：`a ?? (b || c)`。

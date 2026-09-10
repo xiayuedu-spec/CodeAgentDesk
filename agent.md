@@ -1,7 +1,7 @@
 # CodeAgentDesk Agent 交接文档
 
 > Claude Code 统一窗口管理器（Electron 桌面应用）。给后续接手的 agent 看：**工程现状 + 坑点 + 开发约定**。
-> 架构/数据/机制深度参考 `docs/ARCHITECTURE.md`；近期功能实现指南 `docs/FEATURES-HANDOFF.md`；功能总览 `README.md`；早期产品设计稿 `DESIGN.md`（归档参考）。
+> 架构/数据/机制深度参考 `docs/ARCHITECTURE.md`；**主题系统实现说明 `docs/THEME-IMPLEMENTATION.md`**；设计语言 `docs/DESIGN-LANGUAGE.md`；近期功能实现指南 `docs/FEATURES-HANDOFF.md`；功能总览 `README.md`；维护路线 `docs/BACKLOG.md`；早期产品设计稿 `DESIGN.md`（归档参考）。
 
 ## 1. 快速开始
 
@@ -125,6 +125,7 @@ src/
 ## 6. 开发约定
 
 - 新增 IPC 通道按顺序改四处：`shared/ipc-contract.ts`（channel）→ `shared/types.ts`（类型 + `CodeAgentDeskApi`）→ `main/ipc-*.ts`（对应域 handler）→ `preload/index.ts`（CHANNELS 副本 + api）。
+- **新增主题按 7 处同步**（详见 `docs/THEME-IMPLEMENTATION.md`）：类型 → config 白名单 → `theme.ts` 三表+HIDDEN → CSS 变量块 → `TerminalPane` 终端配色 → 设置过滤 → 浅色 hover。
 - 会话文件定位统一走 `ipc-utils.ts` 的 `locateSessionFile()`。
 - 弹窗组件一律 `React.lazy`；空状态用 `EmptyState`；数字展示用 `useAnimatedNumber`；弹窗支持 Esc（`useEscape`）。
 - 高频统计主进程加 TTL + 显式失效；任何调 claude 的功能声明输入上限并优先增量。
