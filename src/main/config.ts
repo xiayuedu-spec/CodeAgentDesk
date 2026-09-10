@@ -2,7 +2,7 @@ import { app } from 'electron';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import type { AppConfig, ClaudeConfigInfo, ThemeName } from '../shared/types';
+import type { AgentStatusStyle, AppConfig, ClaudeConfigInfo, ThemeName } from '../shared/types';
 
 export function readConfig(): AppConfig {
   const file = configPath();
@@ -15,7 +15,7 @@ export function readConfig(): AppConfig {
         typeof parsed.tokenLimitPerHour === 'number' && parsed.tokenLimitPerHour > 0
           ? parsed.tokenLimitPerHour
           : undefined,
-      agentStatusStyle: parsed.agentStatusStyle === 'dot' ? 'dot' : 'emoji',
+      agentStatusStyle: normalizeAgentStatusStyle(parsed.agentStatusStyle),
       funUnlockedThemes: Array.isArray(parsed.funUnlockedThemes)
         ? parsed.funUnlockedThemes.filter((item): item is string => typeof item === 'string')
         : undefined,
@@ -59,6 +59,10 @@ export function readClaudeConfigInfo(): ClaudeConfigInfo {
 
 function configPath(): string {
   return path.join(app.getPath('userData'), 'config.json');
+}
+
+function normalizeAgentStatusStyle(value: unknown): AgentStatusStyle {
+  return value === 'dot' || value === 'icon' ? value : 'emoji';
 }
 
 function normalizeTheme(value: unknown): ThemeName {

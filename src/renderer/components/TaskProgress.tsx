@@ -41,14 +41,17 @@ export function useTaskProgress(): TaskProgressState {
   return { progress, stages };
 }
 
-/** 阶段进度面板：任务名 + 阶段列表（已完成打勾）+ 进度条。 */
+/** 阶段进度面板：任务名 + 阶段列表（已完成打勾）+ 进度条 + 取消。 */
 export function TaskProgressPanel({
   progress,
   stages,
+  onCancel,
 }: {
   progress: TaskProgressEvent;
   stages: Record<number, string>;
+  onCancel?: () => void;
 }) {
+  const [cancelling, setCancelling] = useState(false);
   const steps = Array.from({ length: Math.max(1, progress.total) }, (_, index) => index + 1);
   const percent = progress.done
     ? 100
@@ -57,11 +60,26 @@ export function TaskProgressPanel({
     <div className="task-progress" role="status" aria-live="polite">
       <div className="task-progress-title">
         <span>{progress.title}</span>
-        {progress.done ? (
-          <Check size={13} className="task-progress-check" />
-        ) : (
-          <Loader2 size={13} className="spin" />
-        )}
+        <span className="task-progress-actions">
+          {progress.done ? (
+            <Check size={13} className="task-progress-check" />
+          ) : (
+            <Loader2 size={13} className="spin" />
+          )}
+          {onCancel && !progress.done ? (
+            <button
+              type="button"
+              className="task-progress-cancel"
+              onClick={() => {
+                setCancelling(true);
+                onCancel();
+              }}
+              disabled={cancelling}
+            >
+              {cancelling ? '取消中…' : '取消'}
+            </button>
+          ) : null}
+        </span>
       </div>
       <div className="task-progress-steps">
         {steps.map((step) => {

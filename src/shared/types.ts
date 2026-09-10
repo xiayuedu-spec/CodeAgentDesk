@@ -42,8 +42,8 @@ export type ThemeName =
   | 'neon'
   | 'term';
 
-/** 会话状态显示方式：表情图标 / 颜色圆点。 */
-export type AgentStatusStyle = 'emoji' | 'dot';
+/** 会话状态显示方式：表情图标 / 单色图标 / 颜色圆点。 */
+export type AgentStatusStyle = 'emoji' | 'icon' | 'dot';
 
 export interface AppConfig {
   claudeDir?: string;
@@ -479,6 +479,7 @@ export interface CodeAgentDeskApi {
   onSessionError(callback: (event: SessionErrorEvent) => void): () => void;
   onSessionsChanged(callback: () => void): () => void;
   onTaskProgress(callback: (event: TaskProgressEvent) => void): () => void;
+  cancelTask(): Promise<{ ok: boolean }>;
   checkForUpdates(): Promise<UpdateStatus>;
   installUpdate(): Promise<void>;
   onUpdateStatus(callback: (status: UpdateStatus) => void): () => void;

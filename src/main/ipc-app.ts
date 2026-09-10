@@ -77,7 +77,10 @@ export function registerAppIpc({ onClaudeDirChanged }: AppIpcDeps): void {
   ipcMain.handle(
     IpcChannel.configSetAgentStatusStyle,
     (_event, style: unknown): ClaudeConfigInfo => {
-      writeConfig({ ...readConfig(), agentStatusStyle: style === 'dot' ? 'dot' : 'emoji' });
+      writeConfig({
+        ...readConfig(),
+        agentStatusStyle: style === 'dot' || style === 'icon' ? style : 'emoji',
+      });
       return readClaudeConfigInfo();
     },
   );

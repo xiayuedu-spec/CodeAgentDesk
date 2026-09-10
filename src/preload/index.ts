@@ -123,6 +123,7 @@ const CHANNELS = {
   sessionBound: 'session:bound',
   sessionError: 'session:error',
   taskProgress: 'task:progress',
+  taskCancel: 'task:cancel',
 } as const;
 
 function subscribe<T>(channel: string, callback: (payload: T) => void): () => void {
@@ -250,6 +251,7 @@ const api: CodeAgentDeskApi = {
   onSessionError: (callback) => subscribe<SessionErrorEvent>(CHANNELS.sessionError, callback),
   onSessionsChanged: (callback) => subscribe<void>(CHANNELS.sessionsChanged, callback),
   onTaskProgress: (callback) => subscribe<TaskProgressEvent>(CHANNELS.taskProgress, callback),
+  cancelTask: () => ipcRenderer.invoke(CHANNELS.taskCancel) as Promise<{ ok: boolean }>,
   checkForUpdates: () =>
     ipcRenderer.invoke(CHANNELS.updateCheck) as Promise<UpdateStatus>,
   installUpdate: () => ipcRenderer.invoke(CHANNELS.updateInstall) as Promise<void>,

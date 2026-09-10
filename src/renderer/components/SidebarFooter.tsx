@@ -37,6 +37,7 @@ interface SidebarFooterActions {
   handleResetClaudeDir: () => void;
   handleSetTokenLimit: (limit: number) => void;
   handleSetAgentStatusStyle: (style: AgentStatusStyle) => void;
+  handleSetShowTokenStats: (enabled: boolean) => void;
   handleSetPomodoroMinutes: (minutes: number) => void;
   handleSetTerminalFont: (payload: { size?: number; family?: string }) => void;
 }
@@ -58,6 +59,7 @@ export function SidebarFooter({
     handleResetClaudeDir,
     handleSetTokenLimit,
     handleSetAgentStatusStyle,
+    handleSetShowTokenStats,
     handleSetPomodoroMinutes,
     handleSetTerminalFont,
   } = actions;
@@ -291,12 +293,38 @@ export function SidebarFooter({
               </button>
               <button
                 type="button"
+                className={`status-style-btn${claudeInfo.config.agentStatusStyle === 'icon' ? ' active' : ''}`}
+                onClick={() => handleSetAgentStatusStyle('icon')}
+              >
+                ◐ 单色图标
+              </button>
+              <button
+                type="button"
                 className={`status-style-btn${claudeInfo.config.agentStatusStyle === 'dot' ? ' active' : ''}`}
                 onClick={() => handleSetAgentStatusStyle('dot')}
               >
                 ● 颜色圆点
               </button>
             </div>
+            <div className="settings-sep" />
+            <div className="settings-label">Token 统计</div>
+            <div className="status-style-row">
+              <button
+                type="button"
+                className={`status-style-btn${claudeInfo.config.showTokenStats === true ? ' active' : ''}`}
+                onClick={() => handleSetShowTokenStats(true)}
+              >
+                开启
+              </button>
+              <button
+                type="button"
+                className={`status-style-btn${claudeInfo.config.showTokenStats !== true ? ' active' : ''}`}
+                onClick={() => handleSetShowTokenStats(false)}
+              >
+                关闭
+              </button>
+            </div>
+            <div className="settings-hint">关闭后不再扫描会话用量，也不显示每小时 Token 与限额提醒</div>
             <div className="settings-sep" />
             <div className="settings-label">番茄钟时长（分钟）</div>
             <div className="settings-row">

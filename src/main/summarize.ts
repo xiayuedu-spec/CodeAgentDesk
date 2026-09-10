@@ -10,6 +10,32 @@ export interface SummaryResult {
   tags: string[];
 }
 
+/** 当前在跑的 claude 无头进程（用于取消长任务）。同一时刻只跟踪最新一个。 */
+let activeChild: ReturnType<typeof spawn> | null = null;
+/** 用户取消标记：置位后下一次 close 以「已取消」收尾，而不是当成异常退出。 */
+let cancelled = false;
+
+/** 结束 claude 进程树。Windows 下 shell:true 起的是 cmd.exe，必须按 pid 树杀才有效。 */
+function killTree(child: ReturnType<typeof spawn>): void {
+  try {
+    if (process.platform === 'win32' && child.pid) {
+      spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+      return;
+    }
+    child.kill();
+  } catch {
+    // 进程可能已自行退出。
+  }
+}
+
+/** 取消正在运行的 claude 无头任务（周报/知识库/总结生成）。 */
+export function cancelRunningClaude(): boolean {
+  if (!activeChild) return false;
+  cancelled = true;
+  killTree(activeChild);
+  return true;
+}
+
 /** 调 claude 无头模式（`claude -p`），指令+内容走 stdin。Windows 需 shell 启动 .cmd。 */
 export function runClaude(input: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -21,13 +47,14 @@ export function runClaude(input: string): Promise<string> {
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
-      if (child && child.exitCode === null) child.kill();
+      if (child && child.exitCode === null) killTree(child);
+      if (child && activeChild === child) activeChild = null;
       if (error) reject(error);
       else resolve(output as string);
     };
 
     timer = setTimeout(() => {
-      child?.kill();
+      if (child) killTree(child);
       done(new Error('调用 claude 超时'));
     }, TIMEOUT_MS);
 
@@ -40,6 +67,7 @@ export function runClaude(input: string): Promise<string> {
       done(error instanceof Error ? error : new Error(String(error)));
       return;
     }
+    activeChild = child;
 
     let stdout = '';
     let stderr = '';
@@ -51,6 +79,11 @@ export function runClaude(input: string): Promise<string> {
     });
     child.on('error', (error) => done(error));
     child.on('close', (code) => {
+      if (cancelled) {
+        cancelled = false;
+        done(new Error('已取消'));
+        return;
+      }
       if (code !== 0) {
         done(new Error(stderr.trim() || `claude 退出码 ${code}`));
         return;

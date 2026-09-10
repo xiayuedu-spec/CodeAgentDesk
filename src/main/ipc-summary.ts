@@ -16,7 +16,7 @@ import {
   saveKnowledge,
   type KnowledgeItem,
 } from './knowledge-store';
-import { summarizeDayText, summarizeMonthText, summarizeWeekReflection, summarizeWeekText } from './summarize';
+import { summarizeDayText, summarizeMonthText, summarizeWeekReflection, summarizeWeekText, cancelRunningClaude } from './summarize';
 import { computeEfficiencyInsights } from './ipc-usage';
 import { getSummaryText, listSummaries, saveSummary, type SummaryKind } from './summary-store';
 import type { SessionMetaStore } from './session-meta-store';
@@ -58,6 +58,9 @@ function reportProgressDone(task: TaskProgressEvent['task']): void {
 
 /** 总结与知识库域 IPC：日报/周报/月报生成与存取、知识库生成/导出/存取。 */
 export function registerSummaryIpc({ metaStore }: SummaryIpcDeps): void {
+  // 取消正在跑的 claude 长任务（周报/知识库/日报等），渲染层进度面板的「取消」按钮调用。
+  ipcMain.handle(IpcChannel.taskCancel, (): { ok: boolean } => ({ ok: cancelRunningClaude() }));
+
   ipcMain.handle(
     IpcChannel.daySummarize,
     async (_event, date?: string): Promise<DaySummarizeResult> => {

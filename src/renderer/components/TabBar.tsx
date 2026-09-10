@@ -2,7 +2,8 @@ import { PanelLeft, PanelLeftClose, Plus, X } from 'lucide-react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { AgentStatusStyle } from '../../shared/types';
 import { formatSessionTitle, statusLabel, type SessionView } from '../session-utils';
-import { AGENT_STATUS_META, type AgentStatus } from '../hooks/useAgentStatus';
+import { type AgentStatus } from '../hooks/useAgentStatus';
+import { AgentStatusMark } from './AgentStatusMark';
 
 interface TabBarProps {
   sessions: SessionView[];
@@ -71,17 +72,16 @@ export function TabBar({
             }
           }}
         >
-          {agentStatusStyle === 'emoji' ? (
-            <span
-              className="tab-agent"
-              title={`${AGENT_STATUS_META[sessionStatuses[session.id] ?? 'idle'].label} · ${statusLabel(session.status)}`}
-            >
-              {AGENT_STATUS_META[sessionStatuses[session.id] ?? 'idle'].emoji}
-            </span>
-          ) : (
+          {agentStatusStyle === 'dot' ? (
             <span
               className={`tab-dot ${session.status}`}
               title={statusLabel(session.status)}
+            />
+          ) : (
+            <AgentStatusMark
+              status={sessionStatuses[session.id] ?? 'idle'}
+              style={agentStatusStyle}
+              className="tab-agent"
             />
           )}
           <span>{formatSessionTitle(session)}</span>

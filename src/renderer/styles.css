@@ -4929,6 +4929,37 @@ textarea:focus-visible {
   user-select: none;
 }
 
+/* agent 状态：单色图标模式（形状表状态，仅"思考中/待审批"用强调色） */
+.mark-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+}
+.mark-icon.thinking {
+  color: var(--accent);
+}
+.mark-icon.approval {
+  color: var(--danger);
+}
+.mark-icon.done {
+  color: var(--accent);
+}
+.agent-status.mark-icon {
+  margin-right: 4px;
+}
+.session-agent.mark-icon,
+.tab-agent.mark-icon {
+  flex: none;
+  width: 16px;
+}
+.settings-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
 /* ---- 设置弹窗数字输入（限额/番茄钟）：与主题一致，避免浏览器默认白底 ---- */
 .settings-limit-input {
   flex: 1;
@@ -5487,9 +5518,34 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   font-size: 12px;
   font-weight: 600;
   color: var(--text);
+}
+.task-progress-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.task-progress-cancel {
+  padding: 1px 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color var(--motion-micro) ease, border-color var(--motion-micro) ease;
+}
+.task-progress-cancel:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: currentColor;
+}
+.task-progress-cancel:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 .task-progress-steps {
   display: flex;

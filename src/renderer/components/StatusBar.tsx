@@ -15,7 +15,9 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useDismiss } from '../hooks/useDismiss';
-import type { ThemeName } from '../../shared/types';
+import type { AgentStatusStyle, ThemeName } from '../../shared/types';
+import type { AgentStatus } from '../hooks/useAgentStatus';
+import { AgentStatusMark } from './AgentStatusMark';
 
 interface StatusBarProps {
   sessionCount: number;
@@ -38,8 +40,8 @@ interface StatusBarProps {
   onCheckUpdate: () => void;
   onInstallUpdate: () => void;
   updateReady: boolean;
-  agentEmoji: string;
-  agentStatusLabel: string;
+  agentStatus: AgentStatus;
+  agentStatusStyle: AgentStatusStyle;
   agentAlert?: boolean;
   pomodoroRunning: boolean;
   pomodoroText: string;
@@ -75,8 +77,8 @@ export function StatusBar({
   onCheckUpdate,
   onInstallUpdate,
   updateReady,
-  agentEmoji,
-  agentStatusLabel,
+  agentStatus,
+  agentStatusStyle,
   agentAlert = false,
   pomodoroRunning,
   pomodoroText,
@@ -128,9 +130,11 @@ export function StatusBar({
 
   return (
     <footer className="status-bar">
-      <span className={`agent-status${agentAlert ? ' alert' : ''}`} data-tip={agentStatusLabel}>
-        {agentEmoji}
-      </span>
+      <AgentStatusMark
+        status={agentStatus}
+        style={agentStatusStyle}
+        className={`agent-status${agentAlert ? ' alert' : ''}`}
+      />
       <span>{sessionCount} 会话</span>
       <span>{archivedCount} 归档</span>
       <button type="button" className="status-day" data-tip="返回首页" onClick={onOpenHome}>

@@ -37,7 +37,7 @@ import { useSummary } from './hooks/useSummary';
 import { useDashboardStats } from './hooks/useDashboardStats';
 import { useDismiss } from './hooks/useDismiss';
 import { useEscape } from './hooks/useEscape';
-import { AGENT_STATUS_META, useSessionAgentStatuses } from './hooks/useAgentStatus';
+import { useSessionAgentStatuses } from './hooks/useAgentStatus';
 import { usePomodoro } from './hooks/usePomodoro';
 import { useToast } from './toast';
 import {
@@ -838,6 +838,12 @@ export default function App() {
     toast.success(enabled ? '已开启 Token 统计' : '已关闭 Token 统计');
   }
 
+  /** 取消正在跑的 claude 长任务（周报/知识库/日报等），由进度面板的「取消」触发。 */
+  async function handleCancelTask(): Promise<void> {
+    const result = await window.codeagentdesk.cancelTask();
+    toast.info(result.ok ? '已请求取消任务' : '当前没有可取消的任务');
+  }
+
   function openGroupMenu(id: string, name: string, x: number, y: number): void {
     setGroupMenu({ id, name, x, y });
   }
@@ -1227,7 +1233,6 @@ export default function App() {
   const activeSession = sessions.find((session) => session.id === activeId) ?? null;
   const sessionStatuses = useSessionAgentStatuses();
   const activeAgentStatus = activeId ? (sessionStatuses[activeId] ?? 'idle') : 'idle';
-  const activeAgentMeta = AGENT_STATUS_META[activeAgentStatus];
   const pomodoro = usePomodoro((claudeInfo?.config.pomodoroMinutes ?? 25) * 60_000);
   const taskProgress = useTaskProgress();
   useEscape(Boolean(confirmDeleteOne), () => setConfirmDeleteOne(null));
@@ -1515,6 +1520,7 @@ export default function App() {
       void window.codeagentdesk.setTokenLimit(limit).then(refreshClaudeInfo);
     },
     handleSetAgentStatusStyle: (style: AgentStatusStyle) => void handleSetAgentStatusStyle(style),
+    handleSetShowTokenStats: (enabled: boolean) => void handleSetShowTokenStats(enabled),
     handleSetPomodoroMinutes: (minutes: number) => void handleSetPomodoroMinutes(minutes),
     handleSetTerminalFont: (payload: { size?: number; family?: string }) => {
       void window.codeagentdesk.setTerminalFont(payload).then(refreshClaudeInfo);
@@ -1690,7 +1696,11 @@ export default function App() {
         {error ? <ErrorBar message={error} onDismiss={() => setError(null)} /> : null}
         <TooltipLayer />
         {taskProgress.progress ? (
-          <TaskProgressPanel progress={taskProgress.progress} stages={taskProgress.stages} />
+          <TaskProgressPanel
+            progress={taskProgress.progress}
+            stages={taskProgress.stages}
+            onCancel={handleCancelTask}
+          />
         ) : null}
         <StatusBar
           sessionCount={sessions.length}
@@ -1726,8 +1736,8 @@ export default function App() {
             void window.codeagentdesk.installUpdate();
           }}
           updateReady={updateReady}
-          agentEmoji={activeAgentMeta.emoji}
-          agentStatusLabel={activeAgentMeta.label}
+          agentStatus={activeAgentStatus}
+          agentStatusStyle={claudeInfo?.config.agentStatusStyle ?? 'emoji'}
           agentAlert={activeAgentStatus === 'approval'}
           pomodoroRunning={pomodoro.running}
           pomodoroText={pomodoro.remainingText}

@@ -61,7 +61,7 @@
 ## 模块 B：Agent 状态机（🧠/✨/😴/🚨）
 
 - **目标**：每个运行中会话显示 agent 状态：🧠 思考中 → ✨ 回合刚完成（4s）→ 😴 空闲；🚨 有待处理审批。
-- **交互**：状态栏最左侧显示**当前活动会话**状态表情；会话列表每行左侧显示各自状态（可设置切换为颜色圆点）。
+- **交互**：状态栏最左侧显示**当前活动会话**状态标记；会话列表每行左侧显示各自状态（可设置切换为单色图标 / 颜色圆点）。
 - **实现要点**（`renderer/hooks/useAgentStatus.ts`，`useSessionAgentStatuses` 按 pty id 维护 Map）：
   1. 订阅 `onSessionData`，按 id 过滤。
   2. **真实活动量判定**：3 秒窗口内累计输出字节 ≥ 24 才视为思考（过滤 TUI spinner/状态栏微重绘噪声）。
@@ -156,6 +156,17 @@
 | **功能使用统计** | `usage-store.ts`：`incrementUsage(key)`（**白名单校验**）+ `listUsage()`，存 `usage-stats.json` 的 `{count,lastAt}`；渲染层在关键动作埋点（命令面板/搜索/总结/知识库/详情/导出/番茄钟/视图打开）；`UsageStatsModal` 按占比条展示，指导功能删减 |
 | 终端选中自动复制 | xterm `onSelectionChange` → `navigator.clipboard.writeText(selection)` + 1.5s「已复制」徽章；保留 `Ctrl+C/V` 与右键菜单 |
 | 分组/历史区批量归档 | 分组标题右键「全部归档」= 该组历史会话；历史会话区块标题右键「全部归档」= **仅未分组**历史会话（已分组的归各组管理）；归档会话右键「恢复（放回历史会话）」只恢复不打开 |
+| 长任务可取消 | `summarize.ts` 模块级跟踪 `activeChild` + `cancelled` 标记：`cancelRunningClaude()` 置位并杀进程树，`close` 时优先看标记 → 以「已取消」结束（而不是报"退出码 1"）。IPC `task:cancel` → `cancelTask()`；进度面板 `TaskProgressPanel` 的「取消」按钮触发 |
+
+---
+
+## 模块 J：长任务取消 + Token 统计开关 + 状态标记三态
+
+| 能力 | 实现要点 |
+|---|---|
+| 长任务取消 | `runClaude` 把子进程挂到模块级 `activeChild`；取消时 `cancelled = true` + 杀进程树；`done()` 统一清理（清 timer / 清 `activeChild`）。**Windows 必须 `taskkill /pid <pid> /T /F`**：`shell:true` 起的是 `cmd.exe`，只 `child.kill()` 杀不掉真正的 claude（超时路径同样复用 `killTree`）。取消后 handler 的 catch 返回 `{ok:false, message:'已取消'}`，进度面板照常收尾 |
+| Token 统计开关（默认关） | `config.showTokenStats`（**默认 false**，`readConfig` 里 `=== true` 才为真）。主进程：`dashboardStats` 在关闭时 `continue` 跳过 `readSessionUsage`（不扫用量）；`startUsageWarning` 直接 return。渲染层：`DashboardStats.tokenStatsEnabled` 是唯一真源，Dashboard 首页卡片 / 状态栏限额卡 / InfoPanel 用量行全部按它 `? ... : null`；开关在两处（状态栏「更多」菜单 + 设置弹窗 Token 统计分区）。切换后 `invalidateDashboardCache()` + `dashboard.refresh()` |
+| agent 状态标记三态 | `AgentStatusStyle = 'emoji' \| 'icon' \| 'dot'`。统一渲染组件 `components/AgentStatusMark.tsx`（`AGENT_STATUS_ICON`：thinking=Loader2 转圈 / done=Check / idle=Moon / approval=AlertTriangle），侧栏行、标签页、状态栏三处复用；`dot` 仍是调用方自己渲染（圆点表达的是**会话进程状态**，不是 agent 状态）。**新增取值要同步 3 处校验**：`config.ts#normalizeAgentStatusStyle`、`ipc-app.ts` 的 handler 白名单、`types.ts` 联合类型 |
 
 ---
 
@@ -180,12 +191,14 @@
 6. **数字输入框默认白底**：必须显式主题化，否则深色主题下扎眼。
 7. **统计缓存与配置联动**：有 TTL 的统计要在配置变化（如限额）时显式失效。
 8. **周/日归口**：统一按 `startedAt` 归周/日，跨午夜/跨周会话收窄，文档注释标明口径（避免审计歧义）。
+9. **Windows 杀子进程**：`spawn(..., {shell:true})` 起的是 `cmd.exe`，`child.kill()` 只杀壳，必须 `taskkill /pid <pid> /T /F`。
+10. **测试里 mock `spawn` 要区分命令**：取消路径会额外 `spawn('taskkill')`，若测试用"最后一次 spawn"取子进程，会拿到 taskkill 的假进程，导致断言超时。
 
 ---
 
 ## 工程实践（接手 agent 的操作约定）
 
-- 命令：`npm.cmd run typecheck`（tsc 双工程）、`npm.cmd run test`（vitest，15 用例）、`npm.cmd run build`（tsc main + vite）。
+- 命令：`npm.cmd run typecheck`（tsc 双工程）、`npm.cmd run test`（vitest，22 用例）、`npm.cmd run build`（tsc main + vite）。
 - 提交：每轮功能通过 typecheck + 全量测试后 `git commit` + `git push`；提交信息中文、多个 `-m`（避免引号/反引号问题）。
 - 测试：主进程纯逻辑（导出/解析/汇总）用 vitest + `vi.mock('electron')`；测试文件放 `src/main/__tests__/`，tsconfig 已排除。
 - 弹窗组件一律 `lazy()` 懒加载，减小主 chunk。
