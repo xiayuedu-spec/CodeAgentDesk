@@ -625,16 +625,32 @@ function extractReadableLine(line: string): { role: 'user' | 'assistant'; text: 
   }
 }
 
-async function scanJsonlFiles(
-  root: string,
-  metaStore: SessionMetaStore,
-  archived: boolean,
-  metaVersion: number,
-): Promise<SessionRecord[]> {
-  if (!fs.existsSync(root)) return [];
+/** 目录遍历缓存：短时间内（含同一次刷新的多次调用）复用文件清单，避免反复 readdir/stat。 */
+const walkCache = new Map<string, { at: number; files: string[] }>();
+const WALK_TTL_MS = 1500;
+
+/** 主动失效遍历缓存（会话增删/归档后调用，避免 TTL 内的陈旧清单）。 */
+export function invalidateSessionWalkCache(): void {
+  walkCache.clear();
+}
+
+function listJsonlFiles(root: string): string[] {
+  const cached = walkCache.get(root);
+  const now = Date.now();
+  if (cached && now - cached.at < WALK_TTL_MS) return cached.files;
+  if (!fs.existsSync(root)) {
+    walkCache.set(root, { at: now, files: [] });
+    return [];
+  }
   const files: string[] = [];
   const walk = (dir: string): void => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return; // 权限/竞态：跳过该目录。
+    }
+    for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
@@ -644,6 +660,18 @@ async function scanJsonlFiles(
     }
   };
   walk(root);
+  walkCache.set(root, { at: now, files });
+  return files;
+}
+
+async function scanJsonlFiles(
+  root: string,
+  metaStore: SessionMetaStore,
+  archived: boolean,
+  metaVersion: number,
+): Promise<SessionRecord[]> {
+  const files = listJsonlFiles(root);
+  if (files.length === 0) return [];
   // 清理已不存在的文件缓存（会话删除/移动后）。
   for (const key of recordCache.keys()) {
     if (!files.includes(key)) recordCache.delete(key);

@@ -5,10 +5,12 @@ import { statusLabel, type SessionView } from '../session-utils';
 interface InfoPanelProps {
   session: SessionView;
   usage: SessionUsage;
+  /** Token 统计开关（关闭时不显示用量、也不轮询）。 */
+  tokenStatsEnabled?: boolean;
   onResizeStart: (event: ReactMouseEvent) => void;
 }
 
-export function InfoPanel({ session, usage, onResizeStart }: InfoPanelProps) {
+export function InfoPanel({ session, usage, tokenStatsEnabled = false, onResizeStart }: InfoPanelProps) {
   return (
     <section className="info-panel" aria-label="会话状态">
       <div className="info-resizer" onMouseDown={onResizeStart} title="拖动调整宽度" />
@@ -24,12 +26,14 @@ export function InfoPanel({ session, usage, onResizeStart }: InfoPanelProps) {
         <span>工作目录</span>
         <strong className="truncate">{session.cwd}</strong>
       </div>
-      <div className="info-item">
-        <span>请求数</span>
-        <strong className="usage-badge">{usage.requests}</strong>
-      </div>
-      <div className="info-item">
-        <span>Token 用量</span>
+      {tokenStatsEnabled ? (
+        <>
+          <div className="info-item">
+            <span>请求数</span>
+            <strong className="usage-badge">{usage.requests}</strong>
+          </div>
+          <div className="info-item">
+            <span>Token 用量</span>
         <div className="usage-bar" title="输入 / 输出 / 缓存读">
           <span className="usage-seg in" style={{ flexGrow: usage.inputTokens }} />
           <span className="usage-seg out" style={{ flexGrow: usage.outputTokens }} />
@@ -50,7 +54,14 @@ export function InfoPanel({ session, usage, onResizeStart }: InfoPanelProps) {
             {usage.cacheCreationTokens.toLocaleString()}
           </span>
         </div>
-      </div>
+          </div>
+        </>
+      ) : (
+        <div className="info-item">
+          <span>Token 统计</span>
+          <strong className="truncate">已关闭（☰ 更多可开启）</strong>
+        </div>
+      )}
     </section>
   );
 }

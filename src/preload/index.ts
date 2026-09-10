@@ -55,6 +55,7 @@ const CHANNELS = {
   configSetAgentStatusStyle: 'config:set-agent-status-style',
   configSetPomodoroMinutes: 'config:set-pomodoro-minutes',
   configSetTerminalFont: 'config:set-terminal-font',
+  configSetShowTokenStats: 'config:set-show-token-stats',
   configPickClaudeDir: 'config:pick-claude-dir',
   sessionsList: 'sessions:list',
   sessionsChanged: 'sessions:changed',
@@ -146,6 +147,8 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.configSetPomodoroMinutes, minutes) as Promise<ClaudeConfigInfo>,
   setTerminalFont: (payload) =>
     ipcRenderer.invoke(CHANNELS.configSetTerminalFont, payload) as Promise<ClaudeConfigInfo>,
+  setShowTokenStats: (enabled) =>
+    ipcRenderer.invoke(CHANNELS.configSetShowTokenStats, enabled) as Promise<ClaudeConfigInfo>,
   pickClaudeDir: () =>
     ipcRenderer.invoke(CHANNELS.configPickClaudeDir) as Promise<PickClaudeDirResult>,
   listSessions: () => ipcRenderer.invoke(CHANNELS.sessionsList) as Promise<SessionRecord[]>,

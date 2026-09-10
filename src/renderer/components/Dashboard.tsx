@@ -72,6 +72,7 @@ export function Dashboard({
   } = stats;
 
   const limitTier = hourlyPercent >= 100 ? 'danger' : hourlyPercent >= 80 ? 'warn' : '';
+  const tokenStatsEnabled = stats.tokenStatsEnabled;
 
   return (
     <div className="day-overlay" onClick={onClose}>
@@ -96,24 +97,32 @@ export function Dashboard({
               <span className="dashboard-card-value">{todaySessionCount}</span>
               <span className="dashboard-card-label">今日会话</span>
             </div>
-            <div className="dashboard-card">
-              <span className="dashboard-card-value">{formatTokens(animatedInput)}</span>
-              <span className="dashboard-card-label">今日输入 token</span>
-            </div>
-            <div className="dashboard-card">
-              <span className="dashboard-card-value">{formatTokens(animatedOutput)}</span>
-              <span className="dashboard-card-label">今日输出 token</span>
-            </div>
+            {tokenStatsEnabled ? (
+              <>
+                <div className="dashboard-card">
+                  <span className="dashboard-card-value">{formatTokens(animatedInput)}</span>
+                  <span className="dashboard-card-label">今日输入 token</span>
+                </div>
+                <div className="dashboard-card">
+                  <span className="dashboard-card-value">{formatTokens(animatedOutput)}</span>
+                  <span className="dashboard-card-label">今日输出 token</span>
+                </div>
+              </>
+            ) : null}
             <div className="dashboard-card">
               <span className="dashboard-card-value">{knowledgeCount}</span>
               <span className="dashboard-card-label">知识库项目</span>
             </div>
-            <div className="dashboard-card">
-              <span className="dashboard-card-value">{todayRank(todayTokens.outputTokens).icon}</span>
-              <span className="dashboard-card-label">
-                今日段位 {todayRank(todayTokens.outputTokens).label}
-              </span>
-            </div>
+            {tokenStatsEnabled ? (
+              <div className="dashboard-card">
+                <span className="dashboard-card-value">
+                  {todayRank(todayTokens.outputTokens).icon}
+                </span>
+                <span className="dashboard-card-label">
+                  今日段位 {todayRank(todayTokens.outputTokens).label}
+                </span>
+              </div>
+            ) : null}
             <div className="dashboard-card">
               <span className={`dashboard-card-value ${hasTodaySummary ? 'ok' : ''}`}>
                 {hasTodaySummary ? '✓' : '—'}
@@ -122,17 +131,19 @@ export function Dashboard({
             </div>
           </div>
 
-          <div className="dashboard-limit">
-            <div className="dashboard-limit-head">
-              <span className="dashboard-limit-label">本小时消耗（整点刷新）</span>
-              <span className={`dashboard-limit-value ${limitTier}`}>
-                {formatTokens(animatedHourly)} / {formatTokens(hourlyLimit)}（{hourlyPercent}%）
-              </span>
+          {tokenStatsEnabled ? (
+            <div className="dashboard-limit">
+              <div className="dashboard-limit-head">
+                <span className="dashboard-limit-label">本小时消耗（整点刷新）</span>
+                <span className={`dashboard-limit-value ${limitTier}`}>
+                  {formatTokens(animatedHourly)} / {formatTokens(hourlyLimit)}（{hourlyPercent}%）
+                </span>
+              </div>
+              <div className={`dashboard-limit-bar ${limitTier}`}>
+                <span style={{ width: `${Math.min(100, hourlyPercent)}%` }} />
+              </div>
             </div>
-            <div className={`dashboard-limit-bar ${limitTier}`}>
-              <span style={{ width: `${Math.min(100, hourlyPercent)}%` }} />
-            </div>
-          </div>
+          ) : null}
 
           {todayProjects.length > 0 ? (
             <div className="dashboard-projects">

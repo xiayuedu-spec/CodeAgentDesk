@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   BarChart3,
   BookOpen,
+  Check,
   Download,
   Gauge,
   History,
@@ -30,6 +31,8 @@ interface StatusBarProps {
   onOpenHome: () => void;
   onUnlockTheme: (theme: ThemeName) => void;
   unlockedThemes: string[];
+  showTokenStats: boolean;
+  onToggleTokenStats: () => void;
   onOpenBackup: () => void;
   onOpenUsageStats: () => void;
   onCheckUpdate: () => void;
@@ -65,6 +68,8 @@ export function StatusBar({
   onOpenHome,
   onUnlockTheme,
   unlockedThemes,
+  showTokenStats,
+  onToggleTokenStats,
   onOpenBackup,
   onOpenUsageStats,
   onCheckUpdate,
@@ -107,6 +112,12 @@ export function StatusBar({
     { key: 'dashboard', label: '今日概览', icon: <LayoutDashboard size={13} />, run: onOpenDashboard },
     { key: 'timeline', label: '工作时间线', icon: <History size={13} />, run: onOpenTimeline },
     { key: 'sep1', label: '', icon: null, run: () => undefined, separator: true },
+    {
+      key: 'token-stats',
+      label: showTokenStats ? '隐藏 Token 统计' : '显示 Token 统计',
+      icon: showTokenStats ? <Check size={13} /> : <Gauge size={13} />,
+      run: onToggleTokenStats,
+    },
     { key: 'update', label: '检查更新…', icon: <RefreshCw size={13} />, run: onCheckUpdate },
     ...(updateReady
       ? [{ key: 'install', label: '重启并安装更新', icon: <Rocket size={13} />, run: onInstallUpdate }]

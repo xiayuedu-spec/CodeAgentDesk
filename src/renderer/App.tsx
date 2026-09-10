@@ -298,8 +298,8 @@ export default function App() {
       setUsage(EMPTY_USAGE);
       return;
     }
-    // 信息面板折叠或窗口隐藏时暂停轮询。
-    if (!infoOpen || pageHidden) return;
+    // 信息面板折叠、窗口隐藏或 Token 统计关闭时暂停轮询。
+    if (!infoOpen || pageHidden || !dashboard.stats.tokenStatsEnabled) return;
     let cancelled = false;
     const refresh = () => {
       window.codeagentdesk
@@ -317,7 +317,7 @@ export default function App() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [activeId, activeSessionId, infoOpen, pageHidden]);
+  }, [activeId, activeSessionId, infoOpen, pageHidden, dashboard.stats.tokenStatsEnabled]);
 
   useEffect(() => {
     const ids = sessions
@@ -829,6 +829,13 @@ export default function App() {
   async function handleSetPomodoroMinutes(minutes: number): Promise<void> {
     await window.codeagentdesk.setPomodoroMinutes(minutes);
     await refreshClaudeInfo();
+  }
+
+  async function handleSetShowTokenStats(enabled: boolean): Promise<void> {
+    await window.codeagentdesk.setShowTokenStats(enabled);
+    await refreshClaudeInfo();
+    void dashboard.refresh();
+    toast.success(enabled ? '已开启 Token 统计' : '已关闭 Token 统计');
   }
 
   function openGroupMenu(id: string, name: string, x: number, y: number): void {
@@ -1661,6 +1668,7 @@ export default function App() {
                 <InfoPanel
                   session={activeSession}
                   usage={usage}
+                  tokenStatsEnabled={dashboard.stats.tokenStatsEnabled}
                   onResizeStart={startInfoResize}
                 />
               ) : (
@@ -1694,6 +1702,10 @@ export default function App() {
           onOpenKnowledge={openKnowledge}
           onOpenEfficiency={openEfficiency}
           onUnlockTheme={(theme) => void handleUnlockTheme(theme)}
+          showTokenStats={claudeInfo?.config.showTokenStats === true}
+          onToggleTokenStats={() =>
+            void handleSetShowTokenStats(claudeInfo?.config.showTokenStats !== true)
+          }
           unlockedThemes={[
             ...(claudeInfo?.config.funUnlockedNeon === true ? ['neon'] : []),
             ...(claudeInfo?.config.funUnlockedThemes ?? []),

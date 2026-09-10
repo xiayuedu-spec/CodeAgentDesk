@@ -55,6 +55,8 @@ export interface AppConfig {
   terminalFontSize?: number;
   /** 终端字体族（默认 Cascadia Mono 系列）。 */
   terminalFontFamily?: string;
+  /** 是否显示 Token 统计（每小时用量/实时用量/限额预警）。默认关闭。 */
+  showTokenStats?: boolean;
   agentStatusStyle?: AgentStatusStyle;
   /** 彩蛋：是否已解锁隐藏主题（霓虹）。 */
   funUnlockedNeon?: boolean;
@@ -266,6 +268,8 @@ export interface DashboardStats {
   hourlyTokens: number;
   hourlyLimit: number;
   hourlyPercent: number;
+  /** Token 统计是否开启（关闭时 UI 隐藏相关卡片，主进程也不做用量扫描）。 */
+  tokenStatsEnabled: boolean;
 }
 
 /** 备份/迁移结果。 */
@@ -410,6 +414,7 @@ export interface CodeAgentDeskApi {
   setAgentStatusStyle(style: AgentStatusStyle): Promise<ClaudeConfigInfo>;
   setPomodoroMinutes(minutes: number): Promise<ClaudeConfigInfo>;
   setTerminalFont(payload: { size?: number; family?: string }): Promise<ClaudeConfigInfo>;
+  setShowTokenStats(enabled: boolean): Promise<ClaudeConfigInfo>;
   pickClaudeDir(): Promise<PickClaudeDirResult>;
   listSessions(): Promise<SessionRecord[]>;
   listGroups(): Promise<GroupRecord[]>;

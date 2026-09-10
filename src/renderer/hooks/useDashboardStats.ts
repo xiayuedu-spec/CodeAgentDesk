@@ -12,6 +12,7 @@ const EMPTY_STATS: DashboardStats = {
   hourlyTokens: 0,
   hourlyLimit: 0,
   hourlyPercent: 0,
+  tokenStatsEnabled: false,
 };
 
 /** 今日概览数据（首页/仪表盘共用）。 */

@@ -166,7 +166,8 @@ export function SidebarFooter({
         ) : null}
       </div>
 
-      {/* 本小时 Token 限额统计（新建会话下方，点击查看每小时用量小窗） */}
+      {/* 本小时 Token 统计（默认关闭；☰ 更多 → 显示 Token 统计可开启） */}
+      {stats.tokenStatsEnabled ? (
       <div className="footer-limit-wrap">
         <button
           type="button"
@@ -192,6 +193,7 @@ export function SidebarFooter({
           <HourlyUsagePopover limit={claudeInfo?.config.tokenLimitPerHour ?? DEFAULT_HOURLY_LIMIT} />
         ) : null}
       </div>
+      ) : null}
 
       <div className="status-line">
         <span className={`status-dot ${appInfo ? 'ok' : 'pending'}`} />

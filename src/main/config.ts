@@ -31,6 +31,7 @@ export function readConfig(): AppConfig {
         typeof parsed.terminalFontFamily === 'string' && parsed.terminalFontFamily.trim()
           ? parsed.terminalFontFamily.trim()
           : undefined,
+      showTokenStats: parsed.showTokenStats === true,
     };
   } catch {
     return {};

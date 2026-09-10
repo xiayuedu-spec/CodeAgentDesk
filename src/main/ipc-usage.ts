@@ -48,6 +48,7 @@ export function registerUsageIpc({ sessions, metaStore }: UsageIpcDeps): void {
     }
 
     const claudeHome = resolveClaudeHome(readConfig());
+    const showTokenStats = readConfig().showTokenStats === true;
     const records = await listSessions(claudeHome, metaStore);
     const now = new Date();
     const todayKey = now.toISOString().slice(0, 10);
@@ -71,6 +72,7 @@ export function registerUsageIpc({ sessions, metaStore }: UsageIpcDeps): void {
     ).getTime();
 
     // 单次遍历同时累计：今日会话数/项目分布、今日 token 总量、当前小时 token 量、累计输出。
+    // Token 统计关闭时（默认）完全跳过逐会话文件读取——只做目录扫描 + 元数据统计。
     let todaySessionCount = 0;
     let todayInput = 0;
     let todayOutput = 0;
@@ -82,14 +84,17 @@ export function registerUsageIpc({ sessions, metaStore }: UsageIpcDeps): void {
       if (record.archived) continue;
       const updatedMs = new Date(record.updatedAt).getTime();
       if (Number.isNaN(updatedMs)) continue;
+      if (updatedMs >= todayStartMs) {
+        todaySessionCount += 1;
+        if (record.cwd) {
+          projectMap.set(record.cwd, (projectMap.get(record.cwd) ?? 0) + 1);
+        }
+      }
+      if (!showTokenStats) continue;
       try {
         const usage = await readSessionUsage(record.filePath);
         totalOutputTokens += usage.outputTokens; // 累计输出：全部会话。
         if (updatedMs >= todayStartMs) {
-          todaySessionCount += 1;
-          if (record.cwd) {
-            projectMap.set(record.cwd, (projectMap.get(record.cwd) ?? 0) + 1);
-          }
           todayInput += usage.inputTokens;
           todayOutput += usage.outputTokens;
           todayCacheRead += usage.cacheReadTokens;
@@ -123,8 +128,11 @@ export function registerUsageIpc({ sessions, metaStore }: UsageIpcDeps): void {
       knowledgeCount: listKnowledge().length,
       hasTodaySummary: Boolean(getSummaryText('day', todayKey)),
       hourlyTokens: hourTokens,
-      hourlyLimit: limitPerHour,
-      hourlyPercent: Math.min(100, Math.round((hourTokens / limitPerHour) * 100)),
+      hourlyLimit: showTokenStats ? limitPerHour : 0,
+      hourlyPercent: showTokenStats
+        ? Math.min(100, Math.round((hourTokens / limitPerHour) * 100))
+        : 0,
+      tokenStatsEnabled: showTokenStats,
     };
     dashboardCache = { at: Date.now(), value };
     return value;

@@ -21,14 +21,19 @@ function formatTokens(value: number): string {
 /**
  * Token 限额预警：统计当前自然小时（整点起，额度整点刷新）的消耗，
  * 达到限额 80% / 100% 时发系统通知（每档每小时仅一次）。
+ * Token 统计关闭时（默认）不启动——不做任何用量扫描。
  */
 export function startUsageWarning(metaStore: SessionMetaStore): void {
+  if (readConfig().showTokenStats !== true) return;
   let notifiedHour = -1;
   const notified = new Set<string>();
   const check = async (): Promise<void> => {
     try {
-      const claudeHome = resolveClaudeHome(readConfig());
-      const limit = readConfig().tokenLimitPerHour ?? DEFAULT_HOURLY_LIMIT;
+      const config = readConfig();
+      // 运行中关闭统计 → 停止轮询（下次仍会检查，便于动态开启）。
+      if (config.showTokenStats !== true) return;
+      const claudeHome = resolveClaudeHome(config);
+      const limit = config.tokenLimitPerHour ?? DEFAULT_HOURLY_LIMIT;
       const { tokens } = await getCurrentHourUsage(claudeHome, metaStore);
       const hour = new Date().getHours();
       // 跨小时（整点刷新额度）时重置通知档位。

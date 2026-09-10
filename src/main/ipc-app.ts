@@ -95,6 +95,15 @@ export function registerAppIpc({ onClaudeDirChanged }: AppIpcDeps): void {
   );
 
   ipcMain.handle(
+    IpcChannel.configSetShowTokenStats,
+    (_event, enabled: boolean): ClaudeConfigInfo => {
+      writeConfig({ ...readConfig(), showTokenStats: enabled === true });
+      invalidateDashboardCache(); // 统计口径变化立即生效。
+      return readClaudeConfigInfo();
+    },
+  );
+
+  ipcMain.handle(
     IpcChannel.configSetTerminalFont,
     (_event, payload: { size?: number; family?: string }): ClaudeConfigInfo => {
       const config = readConfig();

@@ -128,6 +128,7 @@ export function Welcome({
 
   const limitTier =
     hourlyPercent >= 100 ? 'danger' : hourlyPercent >= 80 ? 'warn' : '';
+  const tokenStatsEnabled = stats.tokenStatsEnabled;
   const tree = treeInfo(stats.totalOutputTokens);
   const slack = slackingInfo(todayTokens.outputTokens);
   const mbti = computeMbti(records, groups, todayTokens.inputTokens, todayTokens.outputTokens);
@@ -174,19 +175,22 @@ export function Welcome({
         </div>
       </div>
 
-      <div className="dashboard-limit">
-        <div className="dashboard-limit-head">
-          <span className="dashboard-limit-label">本小时消耗（整点刷新）</span>
-          <span className={`dashboard-limit-value ${limitTier}`}>
-            {formatTokens(hourlyTokens)} / {formatTokens(hourlyLimit)}（{hourlyPercent}%）
-          </span>
+      {tokenStatsEnabled ? (
+        <div className="dashboard-limit">
+          <div className="dashboard-limit-head">
+            <span className="dashboard-limit-label">本小时消耗（整点刷新）</span>
+            <span className={`dashboard-limit-value ${limitTier}`}>
+              {formatTokens(hourlyTokens)} / {formatTokens(hourlyLimit)}（{hourlyPercent}%）
+            </span>
+          </div>
+          <div className={`dashboard-limit-bar ${limitTier}`}>
+            <span style={{ width: `${Math.min(100, hourlyPercent)}%` }} />
+          </div>
         </div>
-        <div className={`dashboard-limit-bar ${limitTier}`}>
-          <span style={{ width: `${Math.min(100, hourlyPercent)}%` }} />
-        </div>
-      </div>
+      ) : null}
 
-      <div className="fun-row">
+      {tokenStatsEnabled ? (
+        <div className="fun-row">
         <div className="fun-tree" title={`累计输出 ${formatTokens(stats.totalOutputTokens)} token`}>
           <span className="fun-tree-emoji">{tree.emoji}</span>
           <span className="fun-tree-label">电子宠物树 · {tree.label}</span>
@@ -202,6 +206,7 @@ export function Welcome({
           <span className="fun-slack-text">{slack.text}</span>
         </div>
       </div>
+      ) : null}
 
       {mbti ? (
         <div className="fun-mbti" title="基于使用习惯的娱乐推断，非严谨测评">
