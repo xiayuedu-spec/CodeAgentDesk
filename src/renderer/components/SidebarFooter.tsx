@@ -220,6 +220,7 @@ export function SidebarFooter({
                 );
               })}
             </div>
+            <div className="settings-sep" />
             <div className="settings-label">Claude 目录</div>
             <div className="settings-row">
               <span className="settings-path" title={claudeInfo.resolvedClaudeDir}>
@@ -242,6 +243,7 @@ export function SidebarFooter({
                 <RotateCcw size={14} />
               </button>
             </div>
+            <div className="settings-sep" />
             <div className="settings-label">小时 Token 限额（整点刷新）</div>
             <div className="settings-row">
               <input
@@ -266,6 +268,7 @@ export function SidebarFooter({
                 保存
               </button>
             </div>
+            <div className="settings-sep" />
             <div className="settings-label">会话状态显示</div>
             <div className="status-style-row">
               <button
@@ -283,6 +286,7 @@ export function SidebarFooter({
                 ● 颜色圆点
               </button>
             </div>
+            <div className="settings-sep" />
             <div className="settings-label">番茄钟时长（分钟）</div>
             <div className="settings-row">
               <input

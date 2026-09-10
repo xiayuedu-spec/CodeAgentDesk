@@ -816,6 +816,46 @@ button, input {
   font-weight: 600;
 }
 
+/* 弹窗标题统一带图标（inline-flex 对齐） */
+.day-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+}
+.day-title svg {
+  color: var(--accent);
+  opacity: 0.9;
+}
+/* 设置弹窗分区标题分隔 */
+.settings-sep {
+  height: 1px;
+  margin: 10px 4px 8px;
+  background: var(--border);
+}
+/* 标签页 agent 状态表情 */
+.tab-agent {
+  flex: none;
+  font-size: 11px;
+  line-height: 1;
+  width: 14px;
+  text-align: center;
+  user-select: none;
+}
+/* 首页：数据区与操作区之间的分隔 */
+.welcome-divider {
+  width: 100%;
+  max-width: 460px;
+  height: 1px;
+  margin: 6px 0 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--border-strong),
+    transparent
+  );
+}
+
 .search-path, .history-preview {
   overflow: hidden;
   text-overflow: ellipsis;

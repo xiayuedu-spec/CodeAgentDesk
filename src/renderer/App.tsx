@@ -1516,6 +1516,8 @@ export default function App() {
         <main className="main">
         <TabBar
           sessions={sessions}
+          sessionStatuses={sessionStatuses}
+          agentStatusStyle={claudeInfo?.config.agentStatusStyle ?? 'emoji'}
           activeId={activeId}
           dragIndex={dragIndex}
           infoOpen={infoOpen}

@@ -35,7 +35,9 @@ export function BackupModal({ onClose }: BackupModalProps) {
     <div className="day-overlay" onClick={onClose}>
       <div className="day-panel backup-panel" onClick={(event) => event.stopPropagation()}>
         <div className="day-header">
-          <span className="day-title">备份 / 迁移</span>
+          <span className="day-title">
+            <Download size={14} /> 备份 / 迁移
+          </span>
           <div className="day-actions">
             <button type="button" className="icon-button" title="关闭" onClick={onClose}>
               <X size={14} />

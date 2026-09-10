@@ -241,6 +241,8 @@ export function Welcome({
         </div>
       ) : null}
 
+      <div className="welcome-divider" />
+
       <div className="welcome-actions">
         <button type="button" className="welcome-btn primary" onClick={onNew}>
           <Plus size={16} />

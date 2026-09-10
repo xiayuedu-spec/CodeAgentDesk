@@ -1,9 +1,13 @@
 import { PanelLeft, PanelLeftClose, Plus, X } from 'lucide-react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
+import type { AgentStatusStyle } from '../../shared/types';
 import { formatSessionTitle, statusLabel, type SessionView } from '../session-utils';
+import { AGENT_STATUS_META, type AgentStatus } from '../hooks/useAgentStatus';
 
 interface TabBarProps {
   sessions: SessionView[];
+  sessionStatuses: Record<string, AgentStatus>;
+  agentStatusStyle: AgentStatusStyle;
   activeId: string | null;
   dragIndex: number | null;
   infoOpen: boolean;
@@ -19,6 +23,8 @@ interface TabBarProps {
 
 export function TabBar({
   sessions,
+  sessionStatuses,
+  agentStatusStyle,
   activeId,
   dragIndex,
   infoOpen,
@@ -65,10 +71,19 @@ export function TabBar({
             }
           }}
         >
-          <span
-            className={`tab-dot ${session.status}`}
-            title={statusLabel(session.status)}
-          />
+          {agentStatusStyle === 'emoji' ? (
+            <span
+              className="tab-agent"
+              title={`${AGENT_STATUS_META[sessionStatuses[session.id] ?? 'idle'].label} · ${statusLabel(session.status)}`}
+            >
+              {AGENT_STATUS_META[sessionStatuses[session.id] ?? 'idle'].emoji}
+            </span>
+          ) : (
+            <span
+              className={`tab-dot ${session.status}`}
+              title={statusLabel(session.status)}
+            />
+          )}
           <span>{formatSessionTitle(session)}</span>
           <button
             type="button"

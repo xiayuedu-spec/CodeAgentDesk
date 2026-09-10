@@ -1,4 +1,14 @@
-import { Activity, BookOpen, Database, History, Plus, Sparkles, TrendingUp, X } from 'lucide-react';
+import {
+  Activity,
+  BookOpen,
+  Database,
+  History,
+  LayoutDashboard,
+  Plus,
+  Sparkles,
+  TrendingUp,
+  X,
+} from 'lucide-react';
 import { useDashboardStats } from '../hooks/useDashboardStats';
 import { useEscape } from '../hooks/useEscape';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
@@ -67,7 +77,9 @@ export function Dashboard({
     <div className="day-overlay" onClick={onClose}>
       <div className="day-panel dashboard-panel" onClick={(event) => event.stopPropagation()}>
         <div className="day-header">
-          <span className="day-title">今日概览</span>
+          <span className="day-title">
+            <LayoutDashboard size={14} /> 今日概览
+          </span>
           <div className="day-actions">
             <button type="button" className="icon-button" title="关闭" onClick={onClose}>
               <X size={14} />

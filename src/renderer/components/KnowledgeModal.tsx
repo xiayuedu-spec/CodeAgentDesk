@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Copy, Download, FolderOpen, RotateCcw, Sparkles, X } from 'lucide-react';
+import { Copy, Database, Download, FolderOpen, RotateCcw, Sparkles, X } from 'lucide-react';
 import type { KnowledgeItem, SessionRecord } from '../../shared/types';
 import { folderName, formatRelativeTime } from '../session-utils';
 import { useEscape } from '../hooks/useEscape';
@@ -139,7 +139,9 @@ export function KnowledgeModal({ onClose }: KnowledgeModalProps) {
     <div className="day-overlay" onClick={onClose}>
       <div className="day-panel knowledge-panel" onClick={(event) => event.stopPropagation()}>
         <div className="day-header">
-          <span className="day-title">项目知识库</span>
+          <span className="day-title">
+            <Database size={14} /> 项目知识库
+          </span>
           <div className="day-actions">
             <button type="button" className="icon-button" title="关闭" onClick={onClose}>
               <X size={14} />
