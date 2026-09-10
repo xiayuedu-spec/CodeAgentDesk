@@ -1163,7 +1163,8 @@ export default function App() {
 
   const activeSession = sessions.find((session) => session.id === activeId) ?? null;
   const sessionStatuses = useSessionAgentStatuses();
-  const activeAgentMeta = AGENT_STATUS_META[activeId ? (sessionStatuses[activeId] ?? 'idle') : 'idle'];
+  const activeAgentStatus = activeId ? (sessionStatuses[activeId] ?? 'idle') : 'idle';
+  const activeAgentMeta = AGENT_STATUS_META[activeAgentStatus];
   const pomodoro = usePomodoro((claudeInfo?.config.pomodoroMinutes ?? 25) * 60_000);
   useEscape(Boolean(confirmDeleteOne), () => setConfirmDeleteOne(null));
   useEffect(() => {
@@ -1651,6 +1652,7 @@ export default function App() {
           updateReady={updateReady}
           agentEmoji={activeAgentMeta.emoji}
           agentStatusLabel={activeAgentMeta.label}
+          agentAlert={activeAgentStatus === 'approval'}
           pomodoroRunning={pomodoro.running}
           pomodoroText={pomodoro.remainingText}
           pomodoroProgress={pomodoro.progress}

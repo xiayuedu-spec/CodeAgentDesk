@@ -37,6 +37,7 @@ interface StatusBarProps {
   updateReady: boolean;
   agentEmoji: string;
   agentStatusLabel: string;
+  agentAlert?: boolean;
   pomodoroRunning: boolean;
   pomodoroText: string;
   pomodoroProgress: number;
@@ -71,6 +72,7 @@ export function StatusBar({
   updateReady,
   agentEmoji,
   agentStatusLabel,
+  agentAlert = false,
   pomodoroRunning,
   pomodoroText,
   pomodoroProgress,
@@ -115,7 +117,7 @@ export function StatusBar({
 
   return (
     <footer className="status-bar">
-      <span className="agent-status" title={agentStatusLabel}>
+      <span className={`agent-status${agentAlert ? ' alert' : ''}`} title={agentStatusLabel}>
         {agentEmoji}
       </span>
       <span>{sessionCount} 会话</span>

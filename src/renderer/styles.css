@@ -46,15 +46,15 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0;
   overflow: hidden;
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
 }
 
 button, input {
@@ -81,9 +81,9 @@ button, input {
     color-mix(in srgb, var(--bg-raised) 88%, var(--bg))
   );
   border-right: 1px solid var(--border);
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
 }
 
 .brand {
@@ -95,9 +95,9 @@ button, input {
   font-size: 14px;
   font-weight: 600;
   border-bottom: 1px solid var(--border);
-  transition: background-color 200ms ease,
-    border-color 200ms ease,
-    color 200ms ease;
+  transition: background-color var(--motion-struct) ease,
+    border-color var(--motion-struct) ease,
+    color var(--motion-struct) ease;
 }
 
 .brand-icon {
@@ -122,9 +122,9 @@ button, input {
   background: var(--bg-inset);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  transition: border-color 140ms ease,
-    box-shadow 140ms ease,
-    background 140ms ease;
+  transition: border-color var(--motion-micro) ease,
+    box-shadow var(--motion-micro) ease,
+    background var(--motion-micro) ease;
 }
 
 .search-box:focus-within {
@@ -154,9 +154,9 @@ button, input {
   background: var(--bg-inset);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  transition: background-color 200ms ease,
-    border-color 200ms ease,
-    color 200ms ease;
+  transition: background-color var(--motion-struct) ease,
+    border-color var(--motion-struct) ease,
+    color var(--motion-struct) ease;
 }
 
 .mode-switch button {
@@ -166,9 +166,9 @@ button, input {
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 140ms ease,
-    color 140ms ease,
-    box-shadow 140ms ease;
+  transition: background var(--motion-micro) ease,
+    color var(--motion-micro) ease,
+    box-shadow var(--motion-micro) ease;
 }
 
 .mode-switch button.active {
@@ -214,9 +214,9 @@ button, input {
   color: #f5fffd;
   cursor: pointer;
   opacity: 1;
-  transition: background-color 200ms ease,
-    border-color 200ms ease,
-    color 200ms ease;
+  transition: background-color var(--motion-struct) ease,
+    border-color var(--motion-struct) ease,
+    color var(--motion-struct) ease;
   box-shadow: 0 2px 8px var(--accent-glow),
     inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
@@ -249,9 +249,9 @@ button, input {
   flex: 1;
   min-width: 0;
   background: var(--bg);
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
 }
 
 .tab-bar {
@@ -266,9 +266,9 @@ button, input {
     color-mix(in srgb, var(--bg-raised) 94%, var(--bg))
   );
   border-bottom: 1px solid var(--border);
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
 }
 
 .tab {
@@ -284,11 +284,11 @@ button, input {
   font-size: 12px;
   cursor: pointer;
   user-select: none;
-  transition: border-color 140ms ease,
-    background 140ms ease,
-    color 140ms ease,
-    transform 120ms ease,
-    box-shadow 140ms ease;
+  transition: border-color var(--motion-micro) ease,
+    background var(--motion-micro) ease,
+    color var(--motion-micro) ease,
+    transform var(--motion-micro) ease,
+    box-shadow var(--motion-micro) ease;
   position: relative;
 }
 
@@ -308,9 +308,9 @@ button, input {
   height: 8px;
   border-radius: 50%;
   background: var(--accent);
-  transition: background-color 200ms ease,
-    border-color 200ms ease,
-    color 200ms ease;
+  transition: background-color var(--motion-struct) ease,
+    border-color var(--motion-struct) ease,
+    color var(--motion-struct) ease;
 }
 
 .icon-button {
@@ -323,11 +323,11 @@ button, input {
   background: var(--bg-inset);
   color: var(--text-muted);
   cursor: pointer;
-  transition: border-color 140ms ease,
-    background 140ms ease,
-    color 140ms ease,
-    box-shadow 140ms ease,
-    transform 120ms ease;
+  transition: border-color var(--motion-micro) ease,
+    background var(--motion-micro) ease,
+    color var(--motion-micro) ease,
+    box-shadow var(--motion-micro) ease,
+    transform var(--motion-micro) ease;
 }
 
 .icon-button:disabled {
@@ -365,14 +365,14 @@ button, input {
   border: 1px solid var(--border);
   border-radius: 6px;
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.9;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045),
     0 1px 2px rgba(0, 0, 0, 0.34),
     0 12px 30px rgba(0, 0, 0, 0.2);
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
 }
 
 .terminal-line {
@@ -401,9 +401,9 @@ button, input {
   border: 1px solid var(--border);
   border-radius: 6px;
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.16);
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
   position: relative;
 }
 
@@ -423,7 +423,7 @@ button, input {
 
 .info-item strong {
   min-width: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -453,9 +453,9 @@ button, input {
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: background 140ms ease,
-    border-color 140ms ease,
-    transform 120ms ease;
+  transition: background var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    transform var(--motion-micro) ease;
   position: relative;
 }
 
@@ -474,9 +474,9 @@ button, input {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  transition: background-color 200ms ease,
-    border-color 200ms ease,
-    color 200ms ease;
+  transition: background-color var(--motion-struct) ease,
+    border-color var(--motion-struct) ease,
+    color var(--motion-struct) ease;
 }
 
 /* 会话行左侧：agent 状态表情（替换运行中会话的彩色圆点） */
@@ -516,9 +516,9 @@ button, input {
   white-space: nowrap;
   color: var(--text);
   font-size: 12px;
-  transition: background-color 200ms ease,
-    border-color 200ms ease,
-    color 200ms ease;
+  transition: background-color var(--motion-struct) ease,
+    border-color var(--motion-struct) ease,
+    color var(--motion-struct) ease;
 }
 
 .session-cwd {
@@ -537,9 +537,9 @@ button, input {
   background: var(--bg-inset);
   border: 1px solid var(--border);
   border-radius: 6px;
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
   display: flex;
   flex-direction: column;
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--border) 55%, transparent),
@@ -569,7 +569,7 @@ button, input {
 .terminal-stack {
   height: 100%;
   min-height: 0;
-  animation: viewIn 160ms ease;
+  animation: viewIn var(--motion-struct) ease;
 }
 
 .terminal-stack.hidden, .content.info-collapsed .info-panel {
@@ -584,7 +584,7 @@ button, input {
 
 .terminal-slot.active {
   display: block;
-  animation: viewIn 160ms ease;
+  animation: viewIn var(--motion-struct) ease;
 }
 
 .context-menu {
@@ -598,10 +598,10 @@ button, input {
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45),
     0 2px 8px rgba(0, 0, 0, 0.3),
     inset 0 0 0 1px color-mix(in srgb, var(--border-strong) 55%, transparent);
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
-  animation: viewIn 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
+  animation: viewIn var(--motion-struct) ease;
   backdrop-filter: blur(18px) saturate(1.25);
   -webkit-backdrop-filter: blur(18px) saturate(1.25);
 }
@@ -617,8 +617,8 @@ button, input {
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: background 120ms ease,
-    color 120ms ease;
+  transition: background var(--motion-micro) ease,
+    color var(--motion-micro) ease;
   align-items: center;
   gap: 8px;
 }
@@ -636,7 +636,7 @@ button, input {
 .group-color-label {
   padding: 4px 10px 2px;
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: 11px;
 }
 .group-color-picker {
   display: flex;
@@ -709,9 +709,9 @@ button, input {
 .group-label {
   padding: 6px 10px 4px;
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.8px;
-  font-weight: 700;
+  font-weight: 600;
   position: relative;
   display: flex;
   align-items: center;
@@ -728,9 +728,9 @@ button, input {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045),
     0 1px 2px rgba(0, 0, 0, 0.34),
     0 12px 30px rgba(0, 0, 0, 0.2);
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
 }
 
 .archive-empty {
@@ -778,10 +778,10 @@ button, input {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045),
     0 1px 2px rgba(0, 0, 0, 0.34),
     0 12px 30px rgba(0, 0, 0, 0.2);
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
-  animation: viewIn 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
+  animation: viewIn var(--motion-struct) ease;
   grid-column: 1 / -1;
 }
 
@@ -801,9 +801,9 @@ button, input {
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: transform 120ms ease,
-    border-color 120ms ease,
-    background 120ms ease;
+  transition: transform var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    background var(--motion-micro) ease;
 }
 
 .search-session-header:hover {
@@ -812,7 +812,7 @@ button, input {
 }
 
 .search-title, .day-title, .cal-month {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -879,7 +879,7 @@ button, input {
   color: var(--text-muted);
   font-family: var(--mono);
   font-size: 11px;
-  transition: background 120ms ease;
+  transition: background var(--motion-micro) ease;
 }
 
 .search-hit:hover {
@@ -897,7 +897,7 @@ button, input {
   margin-left: auto;
   flex: none;
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .search-context {
@@ -951,7 +951,7 @@ button, input {
   flex: none;
   width: 44px;
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -979,10 +979,10 @@ button, input {
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45),
     0 2px 8px rgba(0, 0, 0, 0.3),
     inset 0 0 0 1px color-mix(in srgb, var(--border-strong) 55%, transparent);
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
-  animation: viewIn 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
+  animation: viewIn var(--motion-struct) ease;
   backdrop-filter: blur(18px) saturate(1.25);
   -webkit-backdrop-filter: blur(18px) saturate(1.25);
 }
@@ -1018,10 +1018,10 @@ button, input {
   color: var(--text);
   text-align: center;
   cursor: pointer;
-  transition: border-color 120ms ease,
-    box-shadow 120ms ease,
-    color 120ms ease,
-    background 120ms ease;
+  transition: border-color var(--motion-micro) ease,
+    box-shadow var(--motion-micro) ease,
+    color var(--motion-micro) ease,
+    background var(--motion-micro) ease;
 }
 
 .settings-action:hover, .theme-chip:hover, .history-item:hover, .cal-nav button:hover, .cal-cell:hover:not(.empty) {
@@ -1039,10 +1039,10 @@ button, input {
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45),
     0 2px 8px rgba(0, 0, 0, 0.3),
     inset 0 0 0 1px color-mix(in srgb, var(--border-strong) 55%, transparent);
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
-  animation: viewIn 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
+  animation: viewIn var(--motion-struct) ease;
   backdrop-filter: blur(18px) saturate(1.25);
   -webkit-backdrop-filter: blur(18px) saturate(1.25);
 }
@@ -1058,10 +1058,10 @@ button, input {
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: border-color 120ms ease,
-    box-shadow 120ms ease,
-    color 120ms ease,
-    background 120ms ease;
+  transition: border-color var(--motion-micro) ease,
+    box-shadow var(--motion-micro) ease,
+    color var(--motion-micro) ease,
+    background var(--motion-micro) ease;
 }
 
 :root[data-theme='mac'] {
@@ -1133,17 +1133,17 @@ button, input {
 }
 
 .settings-option {
-  transition: border-color 120ms ease,
-    box-shadow 120ms ease,
-    color 120ms ease,
-    background 120ms ease;
+  transition: border-color var(--motion-micro) ease,
+    box-shadow var(--motion-micro) ease,
+    color var(--motion-micro) ease,
+    background var(--motion-micro) ease;
 }
 
 .tool-card summary {
-  transition: border-color 120ms ease,
-    box-shadow 120ms ease,
-    color 120ms ease,
-    background 120ms ease;
+  transition: border-color var(--motion-micro) ease,
+    box-shadow var(--motion-micro) ease,
+    color var(--motion-micro) ease,
+    background var(--motion-micro) ease;
   padding: 8px 12px;
   color: var(--warn);
   font-family: var(--mono);
@@ -1163,10 +1163,10 @@ button, input {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045),
     0 1px 2px rgba(0, 0, 0, 0.34),
     0 12px 30px rgba(0, 0, 0, 0.2);
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
-  animation: viewIn 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
+  animation: viewIn var(--motion-struct) ease;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1240,9 +1240,9 @@ button:focus-visible, input:focus-visible {
   );
   color: var(--text-muted);
   font-size: 11px;
-  transition: background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
+  transition: background-color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease;
   box-shadow: 0 -1px 0 var(--border);
 }
 
@@ -1367,9 +1367,9 @@ button:focus-visible, input:focus-visible {
   border-bottom: 1px solid var(--border);
   -webkit-app-region: drag;
   user-select: none;
-  transition: background-color 200ms ease,
-    border-color 200ms ease,
-    color 200ms ease;
+  transition: background-color var(--motion-struct) ease,
+    border-color var(--motion-struct) ease,
+    color var(--motion-struct) ease;
 }
 
 .titlebar-brand {
@@ -1377,8 +1377,8 @@ button:focus-visible, input:focus-visible {
   align-items: center;
   gap: 8px;
   color: var(--text);
-  font-size: 13px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .titlebar-dot {
@@ -1404,8 +1404,8 @@ button:focus-visible, input:focus-visible {
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 120ms ease,
-    color 120ms ease;
+  transition: background var(--motion-micro) ease,
+    color var(--motion-micro) ease;
 }
 
 .titlebar-button:hover {
@@ -1431,9 +1431,9 @@ button:focus-visible, input:focus-visible {
     var(--bg-raised),
     color-mix(in srgb, var(--bg-raised) 92%, var(--bg))
   );
-  transition: background-color 200ms ease,
-    border-color 200ms ease,
-    color 200ms ease;
+  transition: background-color var(--motion-struct) ease,
+    border-color var(--motion-struct) ease,
+    color var(--motion-struct) ease;
 }
 
 .terminal-status {
@@ -1442,9 +1442,9 @@ button:focus-visible, input:focus-visible {
   flex: none;
   border-radius: 50%;
   background: var(--text-faint);
-  transition: background-color 200ms ease,
-    border-color 200ms ease,
-    color 200ms ease;
+  transition: background-color var(--motion-struct) ease,
+    border-color var(--motion-struct) ease,
+    color var(--motion-struct) ease;
 }
 
 .terminal-status.running {
@@ -1470,9 +1470,9 @@ button:focus-visible, input:focus-visible {
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  animation: viewIn 160ms ease;
+  animation: viewIn var(--motion-struct) ease;
 }
 
 .terminal-chrome-actions, .session-tags {
@@ -1561,10 +1561,10 @@ button:focus-visible, input:focus-visible {
   background: var(--bg-inset);
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 10px;
-  transition: border-color 120ms ease,
-    color 120ms ease,
-    box-shadow 120ms ease;
+  font-size: 11px;
+  transition: border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease,
+    box-shadow var(--motion-micro) ease;
 }
 
 .theme-chip.active {
@@ -1659,9 +1659,9 @@ button:focus-visible, input:focus-visible {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-raised);
-  transition: border-color 140ms ease,
-    background 140ms ease,
-    transform 120ms ease;
+  transition: border-color var(--motion-micro) ease,
+    background var(--motion-micro) ease,
+    transform var(--motion-micro) ease;
 }
 
 .tool-name {
@@ -1961,7 +1961,7 @@ button:focus-visible, input:focus-visible {
 }
 
 body.theme-fade {
-  animation: themeFade 240ms ease;
+  animation: themeFade var(--motion-struct) ease;
 }
 
 .sidebar-resizer {
@@ -1969,7 +1969,7 @@ body.theme-fade {
   width: 5px;
   cursor: col-resize;
   z-index: 5;
-  transition: background 120ms ease;
+  transition: background var(--motion-micro) ease;
 }
 
 body.resizing-sidebar, body.resizing-info {
@@ -2010,8 +2010,8 @@ body.resizing-sidebar, body.resizing-info {
 
 .welcome-title {
   color: var(--text);
-  font-size: 18px;
-  font-weight: 650;
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .welcome-sub {
@@ -2034,13 +2034,13 @@ body.resizing-sidebar, body.resizing-info {
   border-radius: var(--radius-md);
   background: var(--bg-raised);
   color: var(--text);
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
-  transition: border-color 140ms ease,
-    background 140ms ease,
-    color 140ms ease,
-    transform 120ms ease,
-    box-shadow 140ms ease;
+  transition: border-color var(--motion-micro) ease,
+    background var(--motion-micro) ease,
+    color var(--motion-micro) ease,
+    transform var(--motion-micro) ease,
+    box-shadow var(--motion-micro) ease;
 }
 
 .welcome-btn:hover {
@@ -2111,7 +2111,7 @@ button:active, .tab:active, .session-row:active {
   grid-column: 3;
   justify-self: end;
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -2201,7 +2201,7 @@ button:active, .tab:active, .session-row:active {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .tab.has-activity .tab-dot {
@@ -2280,8 +2280,8 @@ button:active, .tab:active, .session-row:active {
   padding: 8px 10px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 120ms ease,
-    color 120ms ease;
+  transition: background var(--motion-micro) ease,
+    color var(--motion-micro) ease;
 }
 
 .palette-label {
@@ -2289,7 +2289,7 @@ button:active, .tab:active, .session-row:active {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--text);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .palette-hint {
@@ -2343,7 +2343,7 @@ button:active, .tab:active, .session-row:active {
 
 .session-tags i {
   font-style: normal;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 14px;
   padding: 0 6px;
   border-radius: 999px;
@@ -2426,9 +2426,9 @@ button:active, .tab:active, .session-row:active {
   color: var(--text-muted);
   font-size: 11px;
   cursor: pointer;
-  transition: border-color 120ms ease,
-    color 120ms ease,
-    background 120ms ease;
+  transition: border-color var(--motion-micro) ease,
+    color var(--motion-micro) ease,
+    background var(--motion-micro) ease;
 }
 
 .status-day:hover {
@@ -2502,7 +2502,7 @@ button:active, .tab:active, .session-row:active {
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: border-color 120ms ease;
+  transition: border-color var(--motion-micro) ease;
 }
 
 .history-key {
@@ -2520,7 +2520,7 @@ button:active, .tab:active, .session-row:active {
   width: 8px;
   z-index: 5;
   cursor: col-resize;
-  transition: background 120ms ease;
+  transition: background var(--motion-micro) ease;
 }
 
 .cal-content {
@@ -2556,7 +2556,7 @@ button:active, .tab:active, .session-row:active {
 .cal-weekday {
   padding: 2px 0;
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: 11px;
   text-align: center;
 }
 
@@ -2601,7 +2601,7 @@ button:active, .tab:active, .session-row:active {
   right: 4px;
   bottom: 2px;
   color: var(--text-faint);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .cal-day-view {
@@ -2666,8 +2666,8 @@ button:active, .tab:active, .session-row:active {
   letter-spacing: 0;
   cursor: pointer;
   user-select: none;
-  transition: background 140ms ease,
-    color 140ms ease;
+  transition: background var(--motion-micro) ease,
+    color var(--motion-micro) ease;
 }
 
 .group-header:hover {
@@ -2678,8 +2678,8 @@ button:active, .tab:active, .session-row:active {
 .group-chevron {
   flex: none;
   color: var(--text-faint);
-  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1),
-    color 140ms ease;
+  transition: transform var(--motion-micro) cubic-bezier(0.4, 0, 0.2, 1),
+    color var(--motion-micro) ease;
 }
 
 .group-chevron.open, .group-label.section-toggle.open .section-chevron {
@@ -2701,7 +2701,7 @@ button:active, .tab:active, .session-row:active {
 .group-count {
   margin-left: auto;
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
   padding: 1px 7px;
   border-radius: 999px;
@@ -2897,7 +2897,7 @@ button:active, .tab:active, .session-row:active {
 .group-label.section-toggle .section-chevron {
   flex: none;
   color: var(--text-faint);
-  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--motion-micro) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .group-label.section-toggle .group-count {
@@ -2927,8 +2927,8 @@ button:active, .tab:active, .session-row:active {
 }
 
 .error-boundary-title {
-  font-size: 15px;
-  font-weight: 650;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -3043,7 +3043,7 @@ button:active, .tab:active, .session-row:active {
   color: var(--text-muted);
   font-size: 11px;
   cursor: pointer;
-  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+  transition: border-color var(--motion-micro) ease, color var(--motion-micro) ease, background var(--motion-micro) ease;
 }
 .archive-toolbar-btn svg {
   flex: none;
@@ -3127,7 +3127,7 @@ button:active, .tab:active, .session-row:active {
 }
 .usage-trend-axis {
   fill: var(--text-faint);
-  font-size: 9px;
+  font-size: 11px;
   font-family: var(--mono);
 }
 .usage-trend-legend {
@@ -3199,7 +3199,7 @@ body {
 .palette,
 .day-panel,
 .usage-trend-panel {
-  animation: popIn 150ms cubic-bezier(0.2, 0, 0, 1);
+  animation: popIn var(--motion-micro) cubic-bezier(0.2, 0, 0, 1);
 }
 @keyframes popIn {
   from {
@@ -3326,7 +3326,7 @@ button:active:not(:disabled),
   background: var(--bg-inset);
   color: var(--text);
   cursor: pointer;
-  transition: border-color 120ms ease;
+  transition: border-color var(--motion-micro) ease;
 }
 .week-nav button:hover {
   border-color: var(--accent-dim);
@@ -3380,7 +3380,7 @@ button:active:not(:disabled),
 .markdown-text h3 {
   margin: 14px 0 8px;
   color: var(--text);
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.4;
 }
 .markdown-text h1:first-child,
@@ -3397,7 +3397,8 @@ button:active:not(:disabled),
   font-size: 14px;
 }
 .markdown-text h3 {
-  font-size: 13px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
 }
 .markdown-text p {
   margin: 6px 0;
@@ -3460,7 +3461,7 @@ button:active:not(:disabled),
   text-decoration: underline;
 }
 .markdown-text strong {
-  font-weight: 650;
+  font-weight: 600;
 }
 /* ================================================================
    v4 精修：结构性视觉（渐变描边 / 浮起体系 / 入场动效 / 区域精修）
@@ -3492,7 +3493,7 @@ button:active:not(:disabled),
 .session-list li,
 .search-group,
 .history-item {
-  animation: listIn 200ms ease both;
+  animation: listIn var(--motion-struct) ease both;
 }
 @keyframes listIn {
   from {
@@ -3573,7 +3574,7 @@ button:active:not(:disabled),
 
 /* ---- 8. 滚动条 hover 加宽 ---- */
 ::-webkit-scrollbar-thumb {
-  transition: background-color 120ms ease;
+  transition: background-color var(--motion-micro) ease;
 }
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--accent-dim);
@@ -3588,7 +3589,7 @@ button:active:not(:disabled),
 .icon-button svg,
 .tab-close svg,
 .titlebar-button svg {
-  transition: transform 120ms ease;
+  transition: transform var(--motion-micro) ease;
 }
 
 /* ---- 10. 搜索命中 / 日历选中细节 ---- */
@@ -3642,7 +3643,7 @@ body,
 .context-menu,
 .settings-popover,
 .terminal-context-menu {
-  transition-duration: 220ms;
+  transition-duration: var(--motion-struct);
 }
 .tab,
 .session-row,
@@ -3805,7 +3806,7 @@ body,
 }
 .knowledge-title {
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
 }
 .knowledge-list {
   display: flex;
@@ -3821,7 +3822,7 @@ body,
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-raised);
-  transition: border-color 140ms ease, box-shadow 140ms ease, transform 120ms ease;
+  transition: border-color var(--motion-micro) ease, box-shadow var(--motion-micro) ease, transform var(--motion-micro) ease;
 }
 .knowledge-project:hover {
   border-color: var(--accent-dim);
@@ -3835,7 +3836,7 @@ body,
   min-width: 0;
 }
 .knowledge-project-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 .knowledge-project-path {
@@ -3896,7 +3897,7 @@ body,
 }
 .dashboard-card-value {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
@@ -3973,7 +3974,7 @@ body,
   font-size: 12px;
   cursor: pointer;
   pointer-events: auto;
-  animation: toastIn 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: toastIn var(--motion-struct) cubic-bezier(0.22, 1, 0.36, 1);
 }
 .toast-dot {
   flex: none;
@@ -4036,7 +4037,7 @@ body,
 }
 .dashboard-limit-value.danger {
   color: var(--danger);
-  font-weight: 700;
+  font-weight: 600;
 }
 .dashboard-limit-bar {
   height: 8px;
@@ -4050,7 +4051,7 @@ body,
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-  transition: width 400ms ease;
+  transition: width var(--motion-data) ease;
 }
 .dashboard-limit-bar.warn span {
   background: linear-gradient(90deg, var(--warn), var(--warn));
@@ -4071,7 +4072,7 @@ body,
   border-radius: 0;
   background: transparent;
   cursor: pointer;
-  transition: opacity 140ms ease;
+  transition: opacity var(--motion-micro) ease;
 }
 .footer-limit:hover {
   opacity: 0.8;
@@ -4087,7 +4088,7 @@ body,
 }
 .footer-limit-percent {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
@@ -4108,7 +4109,7 @@ body,
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-  transition: width 400ms ease;
+  transition: width var(--motion-data) ease;
 }
 .footer-limit-bar.warn span {
   background: var(--warn);
@@ -4119,7 +4120,7 @@ body,
 }
 .footer-limit-sub {
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 /* ---- 今日每小时用量柱状图 ---- */
@@ -4148,7 +4149,7 @@ body,
   max-width: 18px;
   border-radius: 3px 3px 0 0;
   background: color-mix(in srgb, var(--border-strong) 70%, transparent);
-  transition: background 200ms ease;
+  transition: background var(--motion-struct) ease;
 }
 .hourly-bar.current {
   background: linear-gradient(180deg, var(--accent-strong), var(--accent-dim));
@@ -4162,7 +4163,7 @@ body,
   flex: none;
   height: 14px;
   color: var(--text-faint);
-  font-size: 9px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 .hourly-legend {
@@ -4213,7 +4214,7 @@ body,
   -webkit-backdrop-filter: blur(18px) saturate(1.25);
   color: var(--text);
   z-index: 60;
-  animation: popoverIn 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: popoverIn var(--motion-struct) cubic-bezier(0.22, 1, 0.36, 1);
 }
 .hourly-popover-title {
   margin-bottom: 8px;
@@ -4256,14 +4257,14 @@ body,
   border-radius: 3px;
   background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
   color: var(--text-faint);
-  font-size: 8px;
+  font-size: 11px;
   line-height: 12px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .hourly-legend-compact {
   margin-top: 8px;
-  font-size: 10px;
+  font-size: 11px;
   gap: 4px 12px;
 }
 .hourly-legend-compact .hourly-dot {
@@ -4291,7 +4292,7 @@ body,
   background: color-mix(in srgb, var(--bg) 55%, transparent);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  animation: fadeIn 160ms ease;
+  animation: fadeIn var(--motion-micro) ease;
 }
 .confirm-dialog {
   width: 320px;
@@ -4301,7 +4302,7 @@ body,
   background: var(--bg-raised);
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow-pop);
-  animation: popoverIn 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: popoverIn var(--motion-struct) cubic-bezier(0.22, 1, 0.36, 1);
 }
 .confirm-title {
   font-size: 14px;
@@ -4328,7 +4329,7 @@ body,
   color: var(--text);
   font-size: 12px;
   cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease;
+  transition: background var(--motion-micro) ease, border-color var(--motion-micro) ease;
 }
 .confirm-btn:hover {
   border-color: var(--accent-dim);
@@ -4370,8 +4371,8 @@ body,
   background: color-mix(in srgb, var(--bg) 55%, transparent);
 }
 .eff-card-value {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
@@ -4386,7 +4387,7 @@ body,
 }
 .eff-card-label {
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: 11px;
 }
 .eff-section-title {
   margin: 16px 0 8px;
@@ -4450,7 +4451,7 @@ body,
 .eff-note {
   margin-top: 14px;
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.6;
 }
 /* ---- 趣味数据：等价物 / 成就徽章 / 项目性格 ---- */
@@ -4496,7 +4497,7 @@ body,
   line-height: 1;
 }
 .fun-badge-label {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 .fun-badge.unlocked .fun-badge-label {
@@ -4527,7 +4528,7 @@ body,
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
 }
 .fun-personality-name {
@@ -4560,7 +4561,7 @@ body,
   color: var(--text-muted);
   font-size: 11px;
   cursor: pointer;
-  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+  transition: border-color var(--motion-micro) ease, color var(--motion-micro) ease, background var(--motion-micro) ease;
 }
 .status-style-btn:hover {
   border-color: var(--accent-dim);
@@ -4591,7 +4592,7 @@ body,
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
-  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+  transition: border-color var(--motion-micro) ease, color var(--motion-micro) ease, background var(--motion-micro) ease;
 }
 .pomodoro:hover {
   border-color: var(--accent-dim);
@@ -4643,10 +4644,10 @@ body,
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-  transition: width 500ms ease;
+  transition: width var(--motion-data) ease;
 }
 .fun-tree-sub {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-faint);
   font-variant-numeric: tabular-nums;
 }
@@ -4664,12 +4665,12 @@ body,
 }
 .fun-slack-index {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 .fun-slack-text {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-faint);
 }
 
@@ -4699,7 +4700,7 @@ body,
 }
 .fun-mbti-code {
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--accent);
 }
@@ -4718,12 +4719,12 @@ body,
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 .fun-mbti-summary {
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.6;
   color: var(--text-faint);
 }
@@ -4737,7 +4738,7 @@ body,
 .fun-fortune b {
   margin: 0 2px;
   color: var(--accent);
-  font-weight: 700;
+  font-weight: 600;
 }
 .type-cursor {
   display: inline-block;
@@ -4784,7 +4785,7 @@ body,
   right: 0;
   border-top: 1px dashed color-mix(in srgb, var(--border-strong) 35%, transparent);
   color: var(--text-faint);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1;
   padding-top: 2px;
   padding-left: 6px;
@@ -4803,7 +4804,7 @@ body,
   border-radius: 4px;
   opacity: 0.8;
   cursor: pointer;
-  transition: opacity 140ms ease, transform 140ms ease;
+  transition: opacity var(--motion-micro) ease, transform var(--motion-micro) ease;
 }
 .timeline-bar:hover {
   opacity: 1;
@@ -4813,7 +4814,7 @@ body,
 .timeline-hint {
   margin-top: 8px;
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 /* 首页：全宽展示（隐藏右侧信息列） */
@@ -4825,7 +4826,7 @@ body,
 .agent-status {
   display: inline-flex;
   align-items: center;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1;
   margin-right: 2px;
   cursor: default;
@@ -4947,7 +4948,7 @@ body,
   backdrop-filter: blur(18px) saturate(1.25);
   -webkit-backdrop-filter: blur(18px) saturate(1.25);
   z-index: 80;
-  animation: popoverIn 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: popoverIn var(--motion-struct) cubic-bezier(0.22, 1, 0.36, 1);
 }
 .status-more-menu button {
   display: flex;
@@ -4962,7 +4963,7 @@ body,
   font-size: 12px;
   text-align: left;
   cursor: pointer;
-  transition: background 120ms ease;
+  transition: background var(--motion-micro) ease;
 }
 .status-more-menu button:hover {
   background: var(--bg-inset);
@@ -5014,10 +5015,10 @@ body,
 .dashboard-card,
 .eff-card,
 .summary-card {
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 220ms ease,
-    background 220ms ease,
-    box-shadow 220ms ease;
+  transition: transform var(--motion-struct) cubic-bezier(0.22, 1, 0.36, 1),
+    border-color var(--motion-struct) ease,
+    background var(--motion-struct) ease,
+    box-shadow var(--motion-struct) ease;
 }
 .dashboard-card:hover,
 .eff-card:hover,
@@ -5045,7 +5046,7 @@ body,
 }
 .knowledge-global-title {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
 }
 .knowledge-global-actions {
@@ -5071,7 +5072,7 @@ body,
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-faint);
 }
 
@@ -5099,7 +5100,7 @@ body,
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius-sm);
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.6;
 }
 .status-more-sep {
@@ -5214,7 +5215,62 @@ body,
 .fun-mbti-dim {
   padding: 2px 9px;
   border-radius: 999px;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+
+/* ============================================================
+   动效分级令牌 + 信息优先级
+   动效三档：微交互 / 结构变化 / 视图转场（数值变化另有 data 档）
+   信息优先级：环境信息（计数/路径/版本）退到 faint；紧急待处理用语义色前置
+   ============================================================ */
+:root {
+  --motion-micro: 120ms;   /* hover / 按下 / 勾选 */
+  --motion-struct: 220ms;  /* 展开折叠 / 列表 / 菜单浮层入场 */
+  --motion-view: 320ms;    /* 弹窗 / 视图转场 */
+  --motion-data: 400ms;    /* 数值与进度条变化 */
+}
+
+/* 弹窗转场：遮罩淡化 + 面板浮入（视图转场档） */
+.day-overlay {
+  animation: fadeIn var(--motion-view) ease;
+}
+.day-panel {
+  animation: popoverIn var(--motion-view) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* —— 信息优先级 —— */
+/* 状态栏：会话数/归档/目录/版本属环境信息，退到 faint；按钮 hover 才提亮 */
+.status-bar > span {
+  color: var(--text-faint);
+}
+.status-day {
+  color: var(--text-faint);
+}
+.status-day:hover {
+  color: var(--text);
+}
+/* 🚨 待处理审批：语义色呼吸环（唯一需要抢注意力的状态） */
+.agent-status.alert {
+  border-radius: 999px;
+  animation: alertPulse 1.6s ease-in-out infinite;
+}
+@keyframes alertPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--warn) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--warn) 0%, transparent);
+  }
+}
+/* 会话行：标题为一级信息（加重），路径/时间退为 faint */
+.session-title {
+  font-weight: 600;
+}
+/* 统计卡片：数值为一级，标签退到 faint */
+.dashboard-card-label,
+.eff-card-label {
+  color: var(--text-faint);
 }
