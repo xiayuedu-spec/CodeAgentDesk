@@ -20,6 +20,7 @@ import {
 } from '../session-utils';
 import { type AgentStatus } from '../hooks/useAgentStatus';
 import { AgentStatusMark } from './AgentStatusMark';
+import { SessionList } from './SessionList';
 
 interface SidebarBodyData {
   mode: Mode;
@@ -41,6 +42,8 @@ interface SidebarBodyData {
   ungroupedHistory: SessionRecord[];
   rowIndexByKey: Map<string, number>;
   navClass: (index: number) => string;
+  /** 键盘导航焦点行的全局下标（-1 表示无焦点）。 */
+  activeNav: number;
   selectedArchiveIds: Set<string>;
   confirmingDelete: boolean;
   archiveSelectMode: boolean;
@@ -93,6 +96,7 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
     ungroupedHistory,
     rowIndexByKey,
     navClass,
+    activeNav,
     selectedArchiveIds,
     confirmingDelete,
     archiveSelectMode,
@@ -177,13 +181,17 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
               className="session-agent"
             />
           )}
-          {records.find((r) => r.sessionId === session.sessionId)?.pinned ? (
-            <Pin size={10} className="session-pin" />
-          ) : null}
-          <span className="session-title">{formatSessionTitle(session)}</span>
-          <span className="session-cwd" title={session.cwd}>
-            {session.cwd}
-          </span>
+          <div className="session-main">
+            <span className="session-title-line">
+              {records.find((r) => r.sessionId === session.sessionId)?.pinned ? (
+                <Pin size={10} className="session-pin" />
+              ) : null}
+              <span className="session-title">{formatSessionTitle(session)}</span>
+            </span>
+            <span className="session-sub" title={session.cwd}>
+              {session.cwd}
+            </span>
+          </div>
           {renderTime(records.find((r) => r.sessionId === session.sessionId)?.updatedAt)}
         </button>
       )}
@@ -233,7 +241,7 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
                 </span>
               ) : null}
             </span>
-            <span className="session-cwd" title={record.cwd || ''}>
+            <span className="session-sub" title={record.cwd || ''}>
               {record.summary || record.cwd || '未知目录'}
             </span>
           </div>
@@ -296,17 +304,24 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
         <span className="group-count">{section.items.length}</span>
       </div>
       {!section.collapsed ? (
-        <ul className="session-list">
-          {section.items.map((item) => {
-            const rowIndex = rowIndexByKey.get(item.key) ?? -1;
+        <SessionList
+          items={section.items}
+          firstIndex={
+            section.items.length
+              ? (rowIndexByKey.get(section.items[0].key) ?? 0)
+              : 0
+          }
+          focusIndex={activeNav}
+          scrollRef={bodyRef}
+          renderRow={(item, rowIndex) => {
             if (item.kind === 'running') {
               const session = sessions.find((s) => s.id === item.id);
               return session ? renderRunningRow(session, rowIndex) : null;
             }
             const record = records.find((r) => r.sessionId === item.sessionId);
             return record ? renderHistoryRow(record, rowIndex) : null;
-          })}
-        </ul>
+          }}
+        />
       ) : null}
     </section>
   );
@@ -408,11 +423,17 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
                     <span className="group-count">{ungroupedRunning.length}</span>
                   </button>
                   {!collapsedSections.has('current') ? (
-                    <ul className="session-list">
-                      {ungroupedRunning.map((session) =>
-                        renderRunningRow(session, rowIndexByKey.get(`s:${session.id}`) ?? -1),
-                      )}
-                    </ul>
+                    <SessionList
+                      items={ungroupedRunning}
+                      firstIndex={
+                        ungroupedRunning.length
+                          ? (rowIndexByKey.get(`s:${ungroupedRunning[0].id}`) ?? 0)
+                          : 0
+                      }
+                      focusIndex={activeNav}
+                      scrollRef={bodyRef}
+                      renderRow={(session, rowIndex) => renderRunningRow(session, rowIndex)}
+                    />
                   ) : null}
                 </section>
               ) : null}
@@ -435,11 +456,17 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
                     <span className="group-count">{ungroupedHistory.length}</span>
                   </button>
                   {!collapsedSections.has('history') ? (
-                    <ul className="session-list">
-                      {ungroupedHistory.map((record) =>
-                        renderHistoryRow(record, rowIndexByKey.get(`h:${record.sessionId}`) ?? -1),
-                      )}
-                    </ul>
+                    <SessionList
+                      items={ungroupedHistory}
+                      firstIndex={
+                        ungroupedHistory.length
+                          ? (rowIndexByKey.get(`h:${ungroupedHistory[0].sessionId}`) ?? 0)
+                          : 0
+                      }
+                      focusIndex={activeNav}
+                      scrollRef={bodyRef}
+                      renderRow={(record, rowIndex) => renderHistoryRow(record, rowIndex)}
+                    />
                   ) : null}
                 </section>
               ) : null}
@@ -493,8 +520,12 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
                   </>
                 )}
               </div>
-              <ul className="session-list">
-                {archivedRecords.map((record, k) => {
+              <SessionList
+                items={archivedRecords}
+                firstIndex={0}
+                focusIndex={activeNav}
+                scrollRef={bodyRef}
+                renderRow={(record, k) => {
                   const checked = selectedArchiveIds.has(record.sessionId);
                   return (
                     <li key={record.sessionId} className={`archive-row${checked ? ' checked' : ''}`}>
@@ -532,13 +563,20 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
                         }}
                       >
                         <span className="session-dot ended" title="已结束" />
-                        <span className="session-title">{recordTitle(record)}</span>
-                        <span className="session-cwd">{record.cwd || '未知目录'}</span>
+                        <div className="session-main">
+                          <span className="session-title-line">
+                            {record.pinned ? <Pin size={10} className="session-pin" /> : null}
+                            <span className="session-title">{recordTitle(record)}</span>
+                          </span>
+                          <span className="session-sub" title={record.cwd || ''}>
+                            {record.cwd || '未知目录'}
+                          </span>
+                        </div>
                       </button>
                     </li>
                   );
-                })}
-              </ul>
+                }}
+              />
             </>
           )
         ) : (

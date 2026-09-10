@@ -1,19 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
-import { BookOpen, Copy } from 'lucide-react';
 import '@xterm/xterm/css/xterm.css';
 
 interface TerminalPaneProps {
   id: string;
-  title: string;
-  status?: 'starting' | 'running' | 'ended';
   active: boolean;
   /** 终端字号（px）与字体族，来自设置（支持 Ctrl +/- 即时缩放）。 */
   fontSize?: number;
   fontFamily?: string;
-  onDetail?: () => void;
-  onCopy?: () => void;
 }
 
 interface TerminalMenuState {
@@ -56,13 +51,9 @@ export const TERMINAL_FONT_PRESETS = [
 
 export function TerminalPane({
   id,
-  title,
-  status = 'ended',
   active,
   fontSize = DEFAULT_TERMINAL_FONT_SIZE,
   fontFamily = DEFAULT_TERMINAL_FONT_FAMILY,
-  onDetail,
-  onCopy,
 }: TerminalPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const terminalRef = useRef<Terminal | null>(null);
@@ -288,33 +279,8 @@ export function TerminalPane({
   return (
     <>
       <div className="terminal-pane">
-        <div className="terminal-chrome">
-          <span
-            className={`terminal-status ${status}`}
-            title={status === 'running' ? '运行中' : status === 'starting' ? '启动中' : '已结束'}
-          />
-          <span className="terminal-title">{title}</span>
-          {copied ? <span className="terminal-copied">已复制</span> : null}
-          <div className="terminal-chrome-actions">
-            <button
-              type="button"
-              className="icon-button"
-              title="复制内容"
-              onClick={onCopy}
-            >
-              <Copy size={14} />
-            </button>
-            <button
-              type="button"
-              className="icon-button"
-              title="查看详情"
-              onClick={onDetail}
-            >
-              <BookOpen size={14} />
-            </button>
-          </div>
-        </div>
         <div className="terminal-host" ref={containerRef} />
+        {copied ? <span className="terminal-copied floating">已复制</span> : null}
       </div>
       {menu ? (
         <div

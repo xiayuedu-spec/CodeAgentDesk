@@ -99,11 +99,13 @@ main ──webContents.send(broadcast)──> renderer（sessionData/exited/chan
 
 - **容器-展示**：`App.tsx` 持有状态/effects/handlers，向下传 `data`/`actions` 分组 props（SidebarBody/StatusBar/TabBar/ContextMenus 等）。
 - **lazy 弹窗**：SessionDetail / SummaryModal / CommandPalette / UsageTrendModal / KnowledgeModal / Dashboard / EfficiencyInsights / Timeline / Backup / UsageStats / HourlyUsagePopover 均懒加载。
-- **hooks**：`useUiState`（配置/目录/设置）、`useSearch`、`usePalette`（命令面板）、`useSummary`、`useDashboardStats`（60s+事件刷新）、`useDismiss`（点外部/Esc 关弹层）、`useEscape`、`useAnimatedNumber`、`usePomodoro`、`useSessionAgentStatuses`。
-- **状态显示**：agent 状态表情同时用于状态栏、侧边栏会话行、标签页（`agentStatusStyle` 可切圆点）。
+- **hooks**：`useUiState`（配置/目录/设置）、`useSearch`、`usePalette`（命令面板）、`useSummary`、`useDashboardStats`（60s+事件刷新）、`useDismiss`（点外部/Esc 关弹层）、`useEscape`、`useAnimatedNumber`、`usePomodoro`、`useSessionAgentStatuses`、`useRowWindow`（固定行高列表窗口化，见下）。
+- **长列表窗口化**：`components/SessionList.tsx` + `hooks/useRowWindow.ts`。行数 > 60 时只渲染视口附近的行，上下用 padding 占位（行高由首行实测，不硬编码）；键盘导航焦点行不在窗口内时，由 hook 直接滚动容器把它带进窗口。行结构统一为两行制（标题行 + 次要信息行），所有行等高是窗口化的前提。
+- **状态标记**：agent 状态标记同时用于状态栏、侧边栏会话行、标签页（`agentStatusStyle` 三态：emoji / 单色图标 / 圆点，统一由 `AgentStatusMark` 渲染）。
+- **终端 chrome**：只有一层——`TabBar` 兼作终端操作条（复制内容 / 查看详情），`TerminalPane` 只渲染 xterm 宿主；选中自动复制提示为浮层徽章。
 - **主题**：`:root[data-theme=...]` 变量块 ×7；所有颜色走 `var(--*)` / `color-mix`；新增主题需同步 6 处（`ThemeName` / `normalizeTheme` / `theme.ts` 三表 / CSS 变量块 / 设置过滤逻辑）。
 
 ## 6. 测试
 
-- Vitest（`npm run test`），用例在 `src/main/__tests__/`：export（Markdown 导出）、session-library（解析/搜索/用量）、summarize（`parseSummary`）。
+- Vitest（`npm run test`），用例在 `src/main/__tests__/`：export（Markdown 导出）、session-library（解析/搜索/用量）、summarize（`parseSummary` + 长任务取消语义）。
 - 主进程模块用 `vi.mock('electron')` 隔离；测试文件已被 tsconfig 排除在构建外。

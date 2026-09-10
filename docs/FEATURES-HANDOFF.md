@@ -181,6 +181,23 @@
 
 ---
 
+## 模块 K：列表行两行制 + 长列表窗口化 + 终端单层 chrome
+
+| 能力 | 实现要点 |
+|---|---|
+| 会话行两行制 | 三类行（运行中 / 历史 / 归档）统一为 `<agent 标记或圆点> + .session-main(标题行 + 次要信息行) + 时间` 的三列网格：`grid-template-columns: 16px minmax(0,1fr) auto`、`align-content: center`、`min-height: var(--session-row-h)`。次要信息行 `.session-sub` 放 cwd / 摘要。**改前运行中行是"隐式换行"**（标题挤在 `auto` 列不省略号），统一后才对齐历史行 |
+| 长列表窗口化 | `hooks/useRowWindow.ts` + `components/SessionList.tsx`，**不引依赖**：滚动容器 scrollTop + 列表绝对偏移 → 计算可见区间；上下用 `<ul>` 的 padding 占位。行高**首行实测**（`offsetHeight + rowGap`）而非硬编码，主题换字号/内边距不错位。阈值 > 60 行才启用（短列表结构完全不变） |
+| 键盘导航兼容 | 焦点行不在窗口内时 `querySelector` 找不到元素 → hook 用 `firstIndex + 局部下标 × 行高` 直接滚动容器，把它带进窗口（`firstIndex` 由调用方给出：组内/区块内行下标连续，故局部下标可换算全局下标） |
+| 终端单层 chrome | `TabBar` 兼作终端操作条（右侧 `复制内容` / `查看详情`，`.tab-actions` 用 `margin-left:auto` 右对齐 + hairline 分隔，并用 `.tab-actions + .tab-panel-toggle { margin-left: 0 }` 抵消双 auto margin 平分空隙）；`TerminalPane` 只留 xterm 宿主，"已复制"提示改为 `.terminal-copied.floating` 绝对定位浮层。**省掉 34px 头部** |
+
+**坑位**：
+- 窗口化列表的行**必须关掉入场动画**（`.session-list.virtual > li { animation: none }`），否则每次滚动新挂载的行都播一遍 fade/slide，滚动时闪烁。
+- "是否窗口化"的类名要用**行数阈值**判断，不要用 `padTop > 0` 判断：窗口恰好覆盖整表时 padding 归零会让类名抖动、动画重播。
+- 首帧 `useState` 的 `end` 要给个小值（如 40），否则第一帧先全量渲染 3000 行才在 layout effect 里收窄。
+- 删除 CSS 块用行号批量删时**要从后往前删**：先删靠前的块会让后面的行号整体上移，按旧行号删会切错相邻规则（本项目曾误删 `.week-nav` 的三行属性）。
+
+---
+
 ## 坑位清单（二次开发务必避开）
 
 1. **`??` 与 `||` 混用**会触发 TS5076，需加括号：`a ?? (b || c)`。

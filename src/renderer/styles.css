@@ -28,6 +28,8 @@
   --radius-lg: 10px;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.12), 0 10px 28px rgba(0, 0, 0, 0.16);
   --shadow-pop: 0 4px 10px rgba(0, 0, 0, 0.18), 0 18px 40px rgba(0, 0, 0, 0.28);
+  /* 两行制会话行的统一行高（窗口化虚拟列表按实测行高推进，此值仅作下限与首帧估算） */
+  --session-row-h: 48px;
 }
 
 * {
@@ -444,9 +446,11 @@ button, input {
 
 .session-row {
   display: grid;
-  grid-template-columns: 10px minmax(0, 1fr) auto;
-  gap: 4px 8px;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-content: center;
+  gap: 2px 8px;
   width: 100%;
+  min-height: var(--session-row-h);
   padding: 8px 10px;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
@@ -474,15 +478,18 @@ button, input {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  justify-self: center;
+  align-self: center;
   transition: background-color var(--motion-struct) ease,
     border-color var(--motion-struct) ease,
     color var(--motion-struct) ease;
 }
 
-/* 会话行左侧：agent 状态表情（替换运行中会话的彩色圆点） */
+/* 会话行左侧：agent 状态标记（替换运行中会话的彩色圆点） */
 .session-agent {
   flex: none;
-  width: 16px;
+  justify-self: center;
+  align-self: center;
   font-size: 12px;
   line-height: 1;
   text-align: center;
@@ -528,6 +535,21 @@ button, input {
   white-space: nowrap;
   color: var(--text-faint);
   font-size: 11px;
+}
+
+/* 两行制会话行：第二行为次要信息（路径 / 摘要 / 标签） */
+.session-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-faint);
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+
+/* 窗口化列表：行会随滚动反复挂载，入场动画必须关掉（否则滚动闪烁） */
+.session-list.virtual > li {
+  animation: none;
 }
 
 .terminal-pane {
@@ -1197,7 +1219,7 @@ button:focus-visible, input:focus-visible {
   box-shadow: 1px 0 0 rgba(0, 0, 0, 0.04);
 }
 
-:root[data-theme='mac'] .tab-bar, :root[data-theme='mac'] .status-bar, :root[data-theme='mac'] .titlebar, :root[data-theme='mac'] .terminal-chrome {
+:root[data-theme='mac'] .tab-bar, :root[data-theme='mac'] .status-bar, :root[data-theme='mac'] .titlebar {
   background: #f2f2f4;
 }
 
@@ -1418,24 +1440,6 @@ button:focus-visible, input:focus-visible {
   color: #ffffff;
 }
 
-.terminal-chrome {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 34px;
-  flex: none;
-  padding: 0 8px 0 12px;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(
-    180deg,
-    var(--bg-raised),
-    color-mix(in srgb, var(--bg-raised) 92%, var(--bg))
-  );
-  transition: background-color var(--motion-struct) ease,
-    border-color var(--motion-struct) ease,
-    color var(--motion-struct) ease;
-}
-
 .terminal-status {
   width: 8px;
   height: 8px;
@@ -1475,22 +1479,25 @@ button:focus-visible, input:focus-visible {
   animation: viewIn var(--motion-struct) ease;
 }
 
-.terminal-chrome-actions, .session-tags {
+.session-tags {
   display: flex;
   gap: 4px;
   flex: none;
 }
-
-.terminal-chrome .icon-button {
-  width: 24px;
-  height: 24px;
-  border: 0;
-  background: transparent;
+/* 单层 chrome：终端面板不再有独立头部，选中自动复制的提示改为浮层 */
+.terminal-pane {
+  position: relative;
 }
-
-.terminal-chrome .icon-button:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text);
+.terminal-copied.floating {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  z-index: 5;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--bg-raised) 92%, transparent);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-card);
+  animation: popoverIn var(--motion-micro) ease;
 }
 
 .terminal-host {
@@ -1499,7 +1506,7 @@ button:focus-visible, input:focus-visible {
   padding: 6px;
 }
 
-:root[data-theme='mac'] .titlebar-button:hover, :root[data-theme='mac'] .terminal-chrome .icon-button:hover {
+:root[data-theme='mac'] .titlebar-button:hover {
   background: rgba(0, 0, 0, 0.05);
 }
 
@@ -1899,6 +1906,26 @@ button:focus-visible, input:focus-visible {
   margin-left: auto;
 }
 
+/* 终端操作并入标签栏：整块右对齐，与标签之间加一条 hairline 分隔 */
+.tab-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+  align-self: center;
+}
+.tab-actions + .tab-panel-toggle {
+  margin-left: 0;
+}
+/* 面板开关/新建按钮同在一行，统一点击热区 */
+.tab-actions .icon-button,
+.tab-actions + .tab-panel-toggle.icon-button {
+  width: 26px;
+  height: 26px;
+}
+
 .usage-badge {
   align-self: flex-start;
   padding: 2px 10px;
@@ -2110,6 +2137,7 @@ button:active, .tab:active, .session-row:active {
 .session-time {
   grid-column: 3;
   justify-self: end;
+  align-self: center;
   color: var(--text-faint);
   font-size: 11px;
   white-space: nowrap;
@@ -3299,10 +3327,6 @@ button:active:not(:disabled),
   text-shadow: 0 0 12px var(--accent-glow);
 }
 
-/* ---- 15. 终端 chrome 顶部高光 ---- */
-.terminal-chrome {
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--border) 50%, transparent);
-}
 /* default 主题保留原有深色渐变，同时获得统一光晕 */
 :root[data-theme='default'] .main {
   background:
@@ -3693,8 +3717,9 @@ body,
 .sidebar-body {
   padding: 6px 10px;
 }
+/* 两行制行更"高"，纵向内边距回调到 8px，保持列表密度（行高见 --session-row-h） */
 .session-row {
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 .group-header {
   padding: 8px 10px 6px;

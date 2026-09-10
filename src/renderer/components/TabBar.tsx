@@ -1,4 +1,4 @@
-import { PanelLeft, PanelLeftClose, Plus, X } from 'lucide-react';
+import { BookOpen, Copy, PanelLeft, PanelLeftClose, Plus, X } from 'lucide-react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { AgentStatusStyle } from '../../shared/types';
 import { formatSessionTitle, statusLabel, type SessionView } from '../session-utils';
@@ -20,6 +20,9 @@ interface TabBarProps {
   onContextMenu: (event: ReactMouseEvent, sessionId: string, cwd: string) => void;
   onToggleInfo: () => void;
   onNew: () => void;
+  /** 当前会话的终端操作（原本在终端面板头部，合并到这条唯一 chrome 行）。 */
+  onCopyActive?: () => void;
+  onDetailActive?: () => void;
 }
 
 export function TabBar({
@@ -37,6 +40,8 @@ export function TabBar({
   onContextMenu,
   onToggleInfo,
   onNew,
+  onCopyActive,
+  onDetailActive,
 }: TabBarProps) {
   return (
     <div className="tab-bar" role="tablist" aria-label="打开的会话">
@@ -98,6 +103,32 @@ export function TabBar({
           </button>
         </div>
       ))}
+      {activeId && (onCopyActive || onDetailActive) ? (
+        <div className="tab-actions">
+          {onCopyActive ? (
+            <button
+              type="button"
+              className="icon-button"
+              title="复制内容"
+              aria-label="复制会话内容"
+              onClick={onCopyActive}
+            >
+              <Copy size={14} />
+            </button>
+          ) : null}
+          {onDetailActive ? (
+            <button
+              type="button"
+              className="icon-button"
+              title="查看详情"
+              aria-label="查看会话详情"
+              onClick={onDetailActive}
+            >
+              <BookOpen size={14} />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <button
         type="button"
         className="icon-button tab-panel-toggle"

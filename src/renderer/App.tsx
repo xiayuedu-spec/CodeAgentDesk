@@ -21,7 +21,6 @@ import type {
 import {
   EMPTY_USAGE,
   folderName,
-  formatSessionTitle,
   type ContextMenuState,
   type GroupMenuState,
   type GroupSection,
@@ -1428,17 +1427,9 @@ export default function App() {
         >
           <TerminalPane
             id={session.id}
-            title={formatSessionTitle(session)}
-            status={session.status}
             active={!terminalStackHidden && session.id === activeId}
             fontSize={claudeInfo?.config.terminalFontSize ?? DEFAULT_TERMINAL_FONT_SIZE}
             fontFamily={claudeInfo?.config.terminalFontFamily ?? DEFAULT_TERMINAL_FONT_FAMILY}
-            onDetail={() => {
-              if (session.sessionId) void openDetailById(session.sessionId);
-            }}
-            onCopy={() => {
-              if (session.sessionId) void copySessionText(session.sessionId);
-            }}
           />
         </div>
       ))}
@@ -1465,6 +1456,7 @@ export default function App() {
     ungroupedHistory,
     rowIndexByKey,
     navClass,
+    activeNav,
     selectedArchiveIds,
     confirmingDelete,
     archiveSelectMode,
@@ -1628,6 +1620,16 @@ export default function App() {
           }}
           onToggleInfo={() => setInfoOpen((open) => !open)}
           onNew={() => void handleNewSession()}
+          onCopyActive={
+            activeSession?.sessionId
+              ? () => void copySessionText(activeSession.sessionId as string)
+              : undefined
+          }
+          onDetailActive={
+            activeSession?.sessionId
+              ? () => void openDetailById(activeSession.sessionId as string)
+              : undefined
+          }
         />
 
         <div
