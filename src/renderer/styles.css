@@ -1803,6 +1803,82 @@ button:focus-visible, input:focus-visible {
   --danger: #ff4d6d;
 }
 
+/* 主题：暖白珊瑚（Anthropic 暖色——米白画布 + 珊瑚强调） */
+:root[data-theme='warm'] {
+  color-scheme: light;
+  --bg: #faf9f5;
+  --bg-raised: #f2ece1;
+  --bg-inset: #fffefb;
+  --border: #e6dfd8;
+  --border-strong: #d5cabb;
+  --text: #141413;
+  --text-muted: #6c6a64;
+  --text-faint: #8e8b82;
+  --accent: #cc785c;
+  --accent-dim: #a9583e;
+  --accent-glow: rgba(204, 120, 92, 0.3);
+  --accent-glow-strong: rgba(204, 120, 92, 0.5);
+  --accent-soft: rgba(204, 120, 92, 0.14);
+  --accent-strong: #d98f75;
+  --focus-ring: rgba(204, 120, 92, 0.5);
+  --selection: rgba(204, 120, 92, 0.24);
+  --warn: #d4a017;
+  --danger: #c64545;
+}
+
+/* 隐藏主题：终端（OpenCode 式极简——近黑画布、hairline 文字块、小圆角、无投影） */
+:root[data-theme='term'] {
+  color-scheme: dark;
+  --bg: #0b0b0b;
+  --bg-raised: #121212;
+  --bg-inset: #060606;
+  --border: #262626;
+  --border-strong: #3a3a3a;
+  --text: #e8e8e8;
+  --text-muted: #9a9a9a;
+  --text-faint: #6e6e6e;
+  --accent: #30d158;
+  --accent-dim: #26a344;
+  --accent-glow: rgba(48, 209, 88, 0.3);
+  --accent-glow-strong: rgba(48, 209, 88, 0.55);
+  --accent-soft: rgba(48, 209, 88, 0.12);
+  --accent-strong: #4ade80;
+  --focus-ring: rgba(48, 209, 88, 0.5);
+  --selection: rgba(48, 209, 88, 0.24);
+  --warn: #ff9f0a;
+  --danger: #ff3b30;
+  /* 终端风：收紧圆角阶梯 */
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+}
+/* 终端风：全 hairline 文字块，去掉投影与毛玻璃 */
+:root[data-theme='term'] .context-menu,
+:root[data-theme='term'] .terminal-context-menu,
+:root[data-theme='term'] .settings-popover,
+:root[data-theme='term'] .group-manage-popover,
+:root[data-theme='term'] .new-menu,
+:root[data-theme='term'] .status-more-menu,
+:root[data-theme='term'] .hourly-popover,
+:root[data-theme='term'] .day-panel,
+:root[data-theme='term'] .confirm-dialog,
+:root[data-theme='term'] .toast {
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--bg-raised);
+}
+:root[data-theme='term'] .dashboard-card,
+:root[data-theme='term'] .eff-card,
+:root[data-theme='term'] .session-row,
+:root[data-theme='term'] .tab {
+  box-shadow: none;
+}
+:root[data-theme='term'] .sidebar::before,
+:root[data-theme='term'] .welcome-icon::after {
+  display: none;
+}
+
 :root[data-theme='green'] .terminal-surface, :root[data-theme='green'] .info-panel, :root[data-theme='green'] .terminal-pane, :root[data-theme='green'] .session-detail, :root[data-theme='green'] .search-results, :root[data-theme='green'] .archive-detail {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6),
     0 1px 2px rgba(0, 0, 0, 0.1),

@@ -32,6 +32,9 @@ const TERMINAL_THEMES: Record<string, TerminalPalette> = {
   sepia: { background: '#f7f0e2', foreground: '#3d3528', cursor: '#a67c1f', selectionBackground: '#e0d3b3' },
   amber: { background: '#1a150d', foreground: '#d8c393', cursor: '#e0a64e', selectionBackground: '#3d3220' },
   mist: { background: '#15181c', foreground: '#b4bcc3', cursor: '#58a0a8', selectionBackground: '#2a3438' },
+  warm: { background: '#faf9f5', foreground: '#3d3d3a', cursor: '#cc785c', selectionBackground: '#f0d9cd' },
+  neon: { background: '#0a0614', foreground: '#e6e1ff', cursor: '#00e5ff', selectionBackground: '#123a4d' },
+  term: { background: '#0b0b0b', foreground: '#e8e8e8', cursor: '#30d158', selectionBackground: '#1f3a26' },
 };
 
 function terminalTheme(skin: string): TerminalPalette {

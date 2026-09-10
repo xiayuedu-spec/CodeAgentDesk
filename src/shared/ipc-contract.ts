@@ -43,7 +43,7 @@ export const IpcChannel = {
   efficiencyInsights: 'efficiency:insights',
   timelineDay: 'timeline:day',
   funStats: 'fun:stats',
-  funUnlockNeon: 'fun:unlock-neon',
+  funUnlockTheme: 'fun:unlock-theme',
   sessionExport: 'session:export',
   sessionReadText: 'session:read-text',
   uiGetState: 'ui:get-state',

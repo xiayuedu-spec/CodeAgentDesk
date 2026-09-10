@@ -16,6 +16,9 @@ export function readConfig(): AppConfig {
           ? parsed.tokenLimitPerHour
           : undefined,
       agentStatusStyle: parsed.agentStatusStyle === 'dot' ? 'dot' : 'emoji',
+      funUnlockedThemes: Array.isArray(parsed.funUnlockedThemes)
+        ? parsed.funUnlockedThemes.filter((item): item is string => typeof item === 'string')
+        : undefined,
       pomodoroMinutes:
         typeof parsed.pomodoroMinutes === 'number' && parsed.pomodoroMinutes >= 1
           ? Math.min(180, Math.round(parsed.pomodoroMinutes))
@@ -57,7 +60,9 @@ function normalizeTheme(value: unknown): ThemeName {
     'sepia',
     'amber',
     'mist',
+    'warm',
     'neon',
+    'term',
   ];
   return allowed.includes(value as ThemeName) ? (value as ThemeName) : 'default';
 }

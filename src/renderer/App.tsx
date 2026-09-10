@@ -771,10 +771,11 @@ export default function App() {
     }
   }
 
-  async function handleUnlockNeon(): Promise<void> {
-    await window.codeagentdesk.unlockNeon();
+  async function handleUnlockTheme(theme: ThemeName): Promise<void> {
+    await window.codeagentdesk.unlockTheme(theme);
     await refreshClaudeInfo();
-    toast.success('🎉 已解锁隐藏主题：霓虹（赛博朋克），去设置里试试！');
+    const label = theme === 'term' ? '终端（极简）' : '霓虹（赛博朋克）';
+    toast.success(`🎉 已解锁隐藏主题：${label}，去设置里试试！`);
   }
 
   async function handleSetAgentStatusStyle(style: AgentStatusStyle): Promise<void> {
@@ -1627,7 +1628,11 @@ export default function App() {
           onOpenUsageTrend={() => setUsageTrendOpen(true)}
           onOpenKnowledge={openKnowledge}
           onOpenEfficiency={openEfficiency}
-          onUnlockNeon={() => void handleUnlockNeon()}
+          onUnlockTheme={(theme) => void handleUnlockTheme(theme)}
+          unlockedThemes={[
+            ...(claudeInfo?.config.funUnlockedNeon === true ? ['neon'] : []),
+            ...(claudeInfo?.config.funUnlockedThemes ?? []),
+          ]}
           onOpenDashboard={openDashboard}
           onOpenTimeline={openTimeline}
           onOpenHome={() => setHomeOpen(true)}

@@ -90,7 +90,7 @@ const CHANNELS = {
   efficiencyInsights: 'efficiency:insights',
   timelineDay: 'timeline:day',
   funStats: 'fun:stats',
-  funUnlockNeon: 'fun:unlock-neon',
+  funUnlockTheme: 'fun:unlock-theme',
   sessionExport: 'session:export',
   sessionReadText: 'session:read-text',
   uiGetState: 'ui:get-state',
@@ -201,7 +201,8 @@ const api: CodeAgentDeskApi = {
   getDayTimeline: (date) =>
     ipcRenderer.invoke(CHANNELS.timelineDay, date) as Promise<DayTimelineResult>,
   getFunStats: () => ipcRenderer.invoke(CHANNELS.funStats) as Promise<FunStats>,
-  unlockNeon: () => ipcRenderer.invoke(CHANNELS.funUnlockNeon) as Promise<ClaudeConfigInfo>,
+  unlockTheme: (theme) =>
+    ipcRenderer.invoke(CHANNELS.funUnlockTheme, theme) as Promise<ClaudeConfigInfo>,
   listKnowledge: () => ipcRenderer.invoke(CHANNELS.knowledgeList) as Promise<KnowledgeItem[]>,
   getKnowledge: (key) =>
     ipcRenderer.invoke(CHANNELS.knowledgeGet, key) as Promise<SummaryGetResult>,

@@ -31,7 +31,16 @@ export interface GroupOpResult {
   message?: string;
 }
 
-export type ThemeName = 'default' | 'mac' | 'green' | 'sepia' | 'amber' | 'mist' | 'neon';
+export type ThemeName =
+  | 'default'
+  | 'mac'
+  | 'green'
+  | 'sepia'
+  | 'amber'
+  | 'mist'
+  | 'warm'
+  | 'neon'
+  | 'term';
 
 /** 会话状态显示方式：表情图标 / 颜色圆点。 */
 export type AgentStatusStyle = 'emoji' | 'dot';
@@ -45,6 +54,8 @@ export interface AppConfig {
   agentStatusStyle?: AgentStatusStyle;
   /** 彩蛋：是否已解锁隐藏主题（霓虹）。 */
   funUnlockedNeon?: boolean;
+  /** 彩蛋：已解锁的隐藏主题列表（霓虹 / 终端）。 */
+  funUnlockedThemes?: string[];
 }
 
 export interface ClaudeConfigInfo {
@@ -420,7 +431,7 @@ export interface CodeAgentDeskApi {
   getEfficiencyInsights(weekStart?: string): Promise<EfficiencyInsights>;
   getDayTimeline(date: string): Promise<DayTimelineResult>;
   getFunStats(): Promise<FunStats>;
-  unlockNeon(): Promise<ClaudeConfigInfo>;
+  unlockTheme(theme: ThemeName): Promise<ClaudeConfigInfo>;
   exportSessionMarkdown(sessionId: string, cwd?: string): Promise<ExportResult>;
   readSessionText(sessionId: string): Promise<ReadSessionTextResult>;
   getUiState(): Promise<UiState>;

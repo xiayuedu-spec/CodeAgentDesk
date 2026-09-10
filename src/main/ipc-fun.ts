@@ -63,10 +63,21 @@ export function registerFunIpc({ metaStore }: FunIpcDeps): void {
     return value;
   });
 
-  ipcMain.handle(IpcChannel.funUnlockNeon, (): ReturnType<typeof readClaudeConfigInfo> => {
-    writeConfig({ ...readConfig(), funUnlockedNeon: true });
-    return readClaudeConfigInfo();
-  });
+  ipcMain.handle(
+    IpcChannel.funUnlockTheme,
+    (_event, theme: string): ReturnType<typeof readClaudeConfigInfo> => {
+      const config = readConfig();
+      const unlocked = new Set(config.funUnlockedThemes ?? []);
+      if (typeof theme === 'string' && theme) unlocked.add(theme);
+      writeConfig({
+        ...config,
+        funUnlockedThemes: [...unlocked],
+        // 兼容旧字段（霓虹）。
+        funUnlockedNeon: config.funUnlockedNeon === true || unlocked.has('neon'),
+      });
+      return readClaudeConfigInfo();
+    },
+  );
 }
 
 async function computeFunStats(

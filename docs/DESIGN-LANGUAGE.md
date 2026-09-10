@@ -16,8 +16,10 @@
 
 ## 2. 令牌（styles.css）
 
-### 颜色（每个主题块都要定义，共 7 套）
+### 颜色（每个主题块都要定义，共 9 套）
 `--bg` `--bg-raised` `--bg-inset` / `--border` `--border-strong` / `--text` `--text-muted` `--text-faint` / `--accent` `--accent-dim` `--accent-soft` `--accent-strong` `--accent-glow` `--accent-glow-strong` / `--focus-ring` `--selection` `--warn` `--danger` + `color-scheme`
+
+主题清单：default（深色默认）· mac（浅色）· green（护眼豆沙绿）· sepia（暖纸米黄）· amber（琥珀夜间）· mist（柔雾深青）· **warm（暖白珊瑚：Anthropic 暖色——米白画布 #faf9f5 + 珊瑚 #cc785c）** · neon（隐藏彩蛋）· **term（隐藏彩蛋：OpenCode 式终端极简——近黑 #0b0b0b + 终端绿 #30d158 + 小圆角 + 无投影/无毛玻璃）**
 
 **文本三级**：`--text`（主/标题）→ `--text-muted`（正文/次要）→ `--text-faint`（元信息/分区标签）
 
@@ -72,3 +74,4 @@
 3. 新数值是否 `tabular-nums`？
 4. 新交互是否统一 220ms 缓动 + Esc/点外部关闭？
 5. 新增主题是否同步 6 处（见 `agent.md` 主题系统）？
+6. 隐藏主题（neon/term）是否走 `HIDDEN_THEMES` + `isThemeUnlocked()` 过滤，并在终端配色表 `TERMINAL_THEMES` 中补一份？

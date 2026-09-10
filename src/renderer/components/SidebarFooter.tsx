@@ -2,7 +2,7 @@ import { Check, FolderOpen, Plus, RotateCcw, Settings2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { AppInfo, AgentStatusStyle, ClaudeConfigInfo, DashboardStats, ThemeName } from '../../shared/types';
 import { folderName } from '../session-utils';
-import { THEMES, THEME_SWATCHES } from '../theme';
+import { THEMES, THEME_SWATCHES, isThemeUnlocked } from '../theme';
 import { HourlyUsagePopover } from './HourlyUsagePopover';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 
@@ -201,9 +201,8 @@ export function SidebarFooter({
           <div className="settings-popover settings-popover-compact">
             <div className="settings-label">皮肤</div>
             <div className="theme-grid">
-              {THEMES.filter(
-                (item) => item.name !== 'neon' || claudeInfo.config.funUnlockedNeon === true,
-              ).map((item) => {
+              {THEMES.filter((item) => isThemeUnlocked(item.name, claudeInfo.config)).map(
+                (item) => {
                 const swatch = THEME_SWATCHES[item.name];
                 const active = (claudeInfo.config.theme ?? 'default') === item.name;
                 return (
@@ -218,7 +217,8 @@ export function SidebarFooter({
                     {active ? <Check size={12} className="theme-chip-check" /> : null}
                   </button>
                 );
-              })}
+              },
+              )}
             </div>
             <div className="settings-sep" />
             <div className="settings-label">Claude 目录</div>

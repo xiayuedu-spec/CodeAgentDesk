@@ -14,6 +14,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useDismiss } from '../hooks/useDismiss';
+import type { ThemeName } from '../../shared/types';
 
 interface StatusBarProps {
   sessionCount: number;
@@ -27,7 +28,8 @@ interface StatusBarProps {
   onOpenDashboard: () => void;
   onOpenTimeline: () => void;
   onOpenHome: () => void;
-  onUnlockNeon: () => void;
+  onUnlockTheme: (theme: ThemeName) => void;
+  unlockedThemes: string[];
   onOpenBackup: () => void;
   onOpenUsageStats: () => void;
   onCheckUpdate: () => void;
@@ -42,8 +44,11 @@ interface StatusBarProps {
   onPomodoroReset: () => void;
 }
 
-/** 彩蛋：连点版本号次数达到该值解锁隐藏主题。 */
-const NEON_CLICK_TARGET = 7;
+/** 彩蛋：连点版本号累计到阈值解锁隐藏主题。 */
+const UNLOCK_CHAIN: { count: number; theme: ThemeName }[] = [
+  { count: 7, theme: 'neon' },
+  { count: 14, theme: 'term' },
+];
 
 export function StatusBar({
   sessionCount,
@@ -57,7 +62,8 @@ export function StatusBar({
   onOpenDashboard,
   onOpenTimeline,
   onOpenHome,
-  onUnlockNeon,
+  onUnlockTheme,
+  unlockedThemes,
   onOpenBackup,
   onOpenUsageStats,
   onCheckUpdate,
@@ -76,12 +82,13 @@ export function StatusBar({
   useDismiss(moreOpen, () => setMoreOpen(false));
 
   const handleVersionClick = (): void => {
+    // 累计点击（不因解锁而清零），达到阈值即解锁对应隐藏主题。
     const next = versionClicks + 1;
-    if (next >= NEON_CLICK_TARGET) {
-      setVersionClicks(0);
-      onUnlockNeon();
-    } else {
-      setVersionClicks(next);
+    setVersionClicks(next);
+    for (const step of UNLOCK_CHAIN) {
+      if (next >= step.count && !unlockedThemes.includes(step.theme)) {
+        onUnlockTheme(step.theme);
+      }
     }
   };
 

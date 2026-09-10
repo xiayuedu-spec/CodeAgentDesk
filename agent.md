@@ -111,13 +111,16 @@ src/
 21. **使用统计 key 白名单**：`usage-store.ts` 只接受白名单 key，新增埋点必须同时加 key，否则静默忽略（不报错，容易漏统计）。
 22. **终端选中自动复制**：在 xterm `onSelectionChange` 里写剪贴板；保留 `Ctrl+C` 分支（无选中时仍是中断信号）。
 
-### 主题系统（新增皮肤同步 6 处）
+### 主题系统（新增皮肤同步 7 处）
 1. `src/shared/types.ts`：`ThemeName` 联合类型
 2. `src/main/config.ts`：`normalizeTheme` 白名单
-3. `src/renderer/theme.ts`：`THEMES` / `THEME_SWATCHES` / `THEME_BACKGROUND`
-4. `src/renderer/styles.css`：`:root[data-theme='<name>']` 变量块（`--bg/--bg-raised/--bg-inset/--border/--border-strong/--text/--text-muted/--text-faint/--accent/--accent-dim/--accent-glow/--accent-glow-strong/--accent-soft/--accent-strong/--focus-ring/--selection/--warn/--danger`，另需 `color-scheme`）
-5. `src/renderer/components/SidebarFooter.tsx`：设置色板（隐藏主题需按 `funUnlockedNeon` 过滤）
-6. 浅色皮肤补 hover 深色底覆盖规则
+3. `src/renderer/theme.ts`：`THEMES` / `THEME_SWATCHES` / `THEME_BACKGROUND`；隐藏主题加入 `HIDDEN_THEMES` 并由 `isThemeUnlocked()` 判定
+4. `src/renderer/styles.css`：`:root[data-theme='<name>']` 变量块（`--bg/--bg-raised/--bg-inset/--border/--border-strong/--text/--text-muted/--text-faint/--accent/--accent-dim/--accent-glow/--accent-glow-strong/--accent-soft/--accent-strong/--focus-ring/--selection/--warn/--danger` + `color-scheme`；终端风主题额外覆盖 `--radius-*` 并去掉投影/毛玻璃）
+5. `src/renderer/components/TerminalPane.tsx`：`TERMINAL_THEMES` 补一份终端配色（漏了会回落到深色默认）
+6. `src/renderer/components/SidebarFooter.tsx`：设置色板（`isThemeUnlocked` 过滤隐藏主题）
+7. 浅色皮肤补 hover 深色底覆盖规则
+
+**彩蛋链**：状态栏版本号连点累计 **7 次 → neon**、**14 次 → term**（`StatusBar` 的 `UNLOCK_CHAIN` + `fun:unlock-theme` 写入 `funUnlockedThemes`）。
 
 ## 6. 开发约定
 

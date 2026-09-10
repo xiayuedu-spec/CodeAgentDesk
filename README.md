@@ -41,8 +41,8 @@ Claude Code 统一窗口管理器（桌面端）。把散在终端里的 Claude 
 
 ### 趣味与激励（均不影响工作，可在设置切换显示）
 - 成就徽章 / AI 段位 / 项目性格 / MBTI 推断 / 摸鱼指数 / 电子宠物树 / 番茄钟（时长可配）/ 幸运签 / 打字机开场
-- Agent 状态表情（🧠 思考中 / ✨ 回合完成 / 😴 空闲 / 🚨 待审批）：状态栏 + 会话行（可切换为颜色圆点）
-- 彩蛋：连点状态栏版本号 7 次解锁「霓虹」隐藏主题
+- Agent 状态表情（🧠 思考中 / ✨ 回合完成 / 😴 空闲 / 🚨 待审批）：状态栏 + 会话行 + 标签页（可切换为颜色圆点）
+- 彩蛋：连点状态栏版本号 **7 次解锁「霓虹」**、**14 次解锁「终端」**（OpenCode 式极简：近黑画布 + hairline 文字块 + 小圆角 + 无投影）
 
 ---
 
@@ -78,7 +78,7 @@ npm run build       # tsc main + vite build
 | `Ctrl+W` | 关闭当前会话标签 |
 | `Ctrl+1..9` | 切换运行中会话 |
 | `Esc` | 关闭所有弹窗（总结/概览/知识库/详情等；编辑中先取消编辑） |
-| 连点版本号 ×7 | 解锁霓虹主题（彩蛋） |
+| 连点版本号 ×7 / ×14 | 解锁隐藏主题（霓虹 / 终端） |
 
 ### 核心流程
 - **新建会话**：状态栏「首页」→ 新建，或 `Ctrl+T` 选择目录；历史会话右键「恢复会话」
@@ -92,11 +92,11 @@ npm run build       # tsc main + vite build
 | 字段 | 说明 |
 |---|---|
 | `claudeDir` | Claude 数据目录（默认 `~/.claude`，解析优先级：config → `CLAUDE_CONFIG_DIR` → 默认） |
-| `theme` | 主题：default / mac / green / sepia / amber / mist / neon(隐藏彩蛋) |
+| `theme` | 主题：default / mac / green / sepia / amber / mist / **warm(暖白珊瑚)** / neon(隐藏) / **term(隐藏·终端)** |
 | `tokenLimitPerHour` | 每小时 token 限额（默认 10000000） |
 | `pomodoroMinutes` | 番茄钟时长（默认 25） |
 | `agentStatusStyle` | 会话状态显示：`emoji`（默认）/ `dot` |
-| `funUnlockedNeon` | 是否已解锁霓虹主题 |
+| `funUnlockedNeon` / `funUnlockedThemes` | 彩蛋解锁记录（旧字段 + 隐藏主题列表） |
 
 ---
 
