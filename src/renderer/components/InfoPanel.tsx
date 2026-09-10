@@ -1,4 +1,5 @@
 import type { MouseEvent as ReactMouseEvent } from 'react';
+import { ListChecks } from 'lucide-react';
 import type { SessionUsage } from '../../shared/types';
 import { statusLabel, type SessionView } from '../session-utils';
 
@@ -8,9 +9,17 @@ interface InfoPanelProps {
   /** Token 统计开关（关闭时不显示用量、也不轮询）。 */
   tokenStatsEnabled?: boolean;
   onResizeStart: (event: ReactMouseEvent) => void;
+  /** 打开「计划与改动」（TodoWrite 末次快照 + Edit/Write 改动清单）。 */
+  onOpenInsights?: () => void;
 }
 
-export function InfoPanel({ session, usage, tokenStatsEnabled = false, onResizeStart }: InfoPanelProps) {
+export function InfoPanel({
+  session,
+  usage,
+  tokenStatsEnabled = false,
+  onResizeStart,
+  onOpenInsights,
+}: InfoPanelProps) {
   return (
     <section className="info-panel" aria-label="会话状态">
       <div className="info-resizer" onMouseDown={onResizeStart} title="拖动调整宽度" />
@@ -62,6 +71,12 @@ export function InfoPanel({ session, usage, tokenStatsEnabled = false, onResizeS
           <strong className="truncate">已关闭（☰ 更多可开启）</strong>
         </div>
       )}
+      {onOpenInsights ? (
+        <button type="button" className="info-action" onClick={onOpenInsights}>
+          <ListChecks size={13} />
+          计划与改动
+        </button>
+      ) : null}
     </section>
   );
 }

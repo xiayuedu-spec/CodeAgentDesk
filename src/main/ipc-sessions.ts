@@ -14,6 +14,7 @@ import type {
   ResumeSessionResult,
   SearchResult,
   SessionDetailResult,
+  SessionInsights,
   SessionOpResult,
   SessionRecord,
   SessionUsage,
@@ -30,6 +31,7 @@ import {
   searchSessions,
 } from './session-library';
 import { buildMarkdown } from './export';
+import { emptyInsights, readSessionInsights } from './session-insights';
 import { recordRecentDir } from './recent-dirs';
 import { summarizeSession } from './summarize';
 import type { SessionMetaStore } from './session-meta-store';
@@ -335,6 +337,15 @@ export function registerSessionsIpc({ sessions, watcher, metaStore }: SessionsIp
         .map((entry) => `${entry.role === 'user' ? 'User' : 'Claude'}:\n${entry.text}`)
         .join('\n\n');
       return { ok: true, text };
+    },
+  );
+
+  ipcMain.handle(
+    IpcChannel.sessionInsights,
+    async (_event, sessionId: string): Promise<SessionInsights> => {
+      const filePath = await locateSessionFile(sessions, metaStore, sessionId);
+      if (!filePath) return emptyInsights(sessionId);
+      return readSessionInsights(filePath, sessionId);
     },
   );
 

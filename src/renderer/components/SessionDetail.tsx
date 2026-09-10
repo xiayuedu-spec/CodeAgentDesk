@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Download, MessageSquare, Sparkles, X } from 'lucide-react';
+import { Download, ListChecks, MessageSquare, Sparkles, X } from 'lucide-react';
 import type { SessionDetailResult } from '../../shared/types';
 import { useEscape } from '../hooks/useEscape';
 import { EmptyState } from './EmptyState';
@@ -10,6 +10,7 @@ interface SessionDetailProps {
   summarizing?: boolean;
   highlightQuery?: string;
   onSummarize?: () => void;
+  onOpenInsights?: () => void;
   onExport: () => void;
   onClose: () => void;
 }
@@ -20,6 +21,7 @@ export function SessionDetail({
   summarizing,
   highlightQuery,
   onSummarize,
+  onOpenInsights,
   onExport,
   onClose,
 }: SessionDetailProps) {
@@ -60,6 +62,14 @@ export function SessionDetail({
           </div>
         </div>
         <div className="detail-actions">
+          <button
+            type="button"
+            className="icon-button"
+            title="计划与改动"
+            onClick={onOpenInsights}
+          >
+            <ListChecks size={16} />
+          </button>
           <button
             type="button"
             className="icon-button"

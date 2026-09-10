@@ -125,6 +125,52 @@ export interface SessionDetailResult {
   entries: SessionDetailEntry[];
 }
 
+/** 会话计划（Claude Code 的 TodoWrite 末次快照）。 */
+export interface SessionTodo {
+  content: string;
+  status: 'pending' | 'in_progress' | 'completed';
+}
+
+export interface SessionPlan {
+  todos: SessionTodo[];
+  /** 最后一次计划的更新时间（记录里的 timestamp）。 */
+  updatedAt?: string;
+  /** 计划快照次数（TodoWrite 调用次数），用于判断"计划改过几轮"。 */
+  updates: number;
+}
+
+/** 一处改动片段（来自会话记录里的 Edit/Write 调用，不是工作区实际 diff）。 */
+export interface SessionChangeHunk {
+  kind: 'edit' | 'write';
+  oldText: string;
+  newText: string;
+  /** 片段被截断（原文更长）。 */
+  truncated?: boolean;
+}
+
+export interface SessionFileChange {
+  path: string;
+  /** 该文件在会话里被改动的次数。 */
+  edits: number;
+  added: number;
+  removed: number;
+  /** 整文件写入（Write）。 */
+  written?: boolean;
+  hunks: SessionChangeHunk[];
+  /** 超出展示上限、未收录的片段数。 */
+  hiddenHunks: number;
+}
+
+/** 会话洞察：计划进度 + 改动清单（口径见界面提示：来自会话记录，非工作区实际内容）。 */
+export interface SessionInsights {
+  sessionId: string;
+  plan: SessionPlan | null;
+  changes: SessionFileChange[];
+  totals: { files: number; added: number; removed: number; edits: number };
+  /** 解析时跳过的行数（损坏行 / 超出行数上限）。 */
+  skipped: number;
+}
+
 export interface ExportResult {
   ok: boolean;
   path?: string;
@@ -458,6 +504,7 @@ export interface CodeAgentDeskApi {
   unlockTheme(theme: ThemeName): Promise<ClaudeConfigInfo>;
   exportSessionMarkdown(sessionId: string, cwd?: string): Promise<ExportResult>;
   readSessionText(sessionId: string): Promise<ReadSessionTextResult>;
+  getSessionInsights(sessionId: string): Promise<SessionInsights>;
   getUiState(): Promise<UiState>;
   saveUiState(state: UiState): Promise<void>;
   minimizeWindow(): Promise<void>;

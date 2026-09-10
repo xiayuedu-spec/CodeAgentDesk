@@ -99,6 +99,11 @@ const LazyBackup = lazy(() =>
 const LazyUsageStats = lazy(() =>
   import('./components/UsageStatsModal').then((module) => ({ default: module.UsageStatsModal })),
 );
+const LazySessionInsights = lazy(() =>
+  import('./components/SessionInsightsModal').then((module) => ({
+    default: module.SessionInsightsModal,
+  })),
+);
 
 export default function App() {
   const ui = useUiState();
@@ -201,6 +206,10 @@ export default function App() {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [backupOpen, setBackupOpen] = useState(false);
   const [usageStatsOpen, setUsageStatsOpen] = useState(false);
+  /** 计划与改动弹窗（null 关闭；否则为会话 id + 标题）。 */
+  const [insightsTarget, setInsightsTarget] = useState<{ sessionId: string; title: string } | null>(
+    null,
+  );
   const [updateReady, setUpdateReady] = useState(false);
   const [homeOpen, setHomeOpen] = useState(false);
   const dashboard = useDashboardStats();
@@ -841,6 +850,19 @@ export default function App() {
   async function handleCancelTask(): Promise<void> {
     const result = await window.codeagentdesk.cancelTask();
     toast.info(result.ok ? '已请求取消任务' : '当前没有可取消的任务');
+  }
+
+  /** 打开「计划与改动」：需要会话已落盘（否则后端找不到 JSONL）。 */
+  function openInsights(target: { sessionId?: string; title?: string }): void {
+    if (!target.sessionId) {
+      toast.info('这个会话还没有记录文件，先发一条消息再看');
+      return;
+    }
+    bumpUsage('insights.opened');
+    setInsightsTarget({
+      sessionId: target.sessionId,
+      title: target.title?.trim() || target.sessionId.slice(0, 8),
+    });
   }
 
   function openGroupMenu(id: string, name: string, x: number, y: number): void {
@@ -1547,6 +1569,7 @@ export default function App() {
     setActiveId,
     openHistory: (record: SessionRecord) => void openHistory(record),
     openDetailById: (sessionId: string) => void openDetailById(sessionId),
+    openInsights: (sessionId: string) => openInsights({ sessionId }),
     restoreArchived: (sessionId: string, cwd: string) => void restoreArchived(sessionId, cwd),
     copySessionText: (sessionId: string) => void copySessionText(sessionId),
     onDeleteSession: (sessionId: string) => setConfirmDeleteOne(sessionId),
@@ -1668,6 +1691,7 @@ export default function App() {
                     summarizing={summarizing}
                     highlightQuery={detailQuery}
                     onSummarize={() => void handleSummarize()}
+                    onOpenInsights={() => openInsights(detail)}
                     onExport={() => void exportFromDetail()}
                     onClose={closeDetail}
                   />
@@ -1678,6 +1702,7 @@ export default function App() {
                   usage={usage}
                   tokenStatsEnabled={dashboard.stats.tokenStatsEnabled}
                   onResizeStart={startInfoResize}
+                  onOpenInsights={() => openInsights({ sessionId: activeSession.sessionId })}
                 />
               ) : (
                 <Welcome
@@ -1849,6 +1874,16 @@ export default function App() {
       {usageStatsOpen ? (
         <Suspense fallback={null}>
           <LazyUsageStats onClose={() => setUsageStatsOpen(false)} />
+        </Suspense>
+      ) : null}
+
+      {insightsTarget ? (
+        <Suspense fallback={null}>
+          <LazySessionInsights
+            sessionId={insightsTarget.sessionId}
+            title={insightsTarget.title}
+            onClose={() => setInsightsTarget(null)}
+          />
         </Suspense>
       ) : null}
 

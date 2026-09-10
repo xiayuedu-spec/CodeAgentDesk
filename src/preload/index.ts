@@ -20,6 +20,7 @@ import type {
   SessionDataEvent,
   SessionDetailResult,
   SessionErrorEvent,
+  SessionInsights,
   TaskProgressEvent,
   SessionExitedEvent,
   SessionRecord,
@@ -124,6 +125,7 @@ const CHANNELS = {
   sessionError: 'session:error',
   taskProgress: 'task:progress',
   taskCancel: 'task:cancel',
+  sessionInsights: 'session:insights',
 } as const;
 
 function subscribe<T>(channel: string, callback: (payload: T) => void): () => void {
@@ -221,6 +223,8 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.sessionExport, { sessionId, cwd }) as Promise<ExportResult>,
   readSessionText: (sessionId) =>
     ipcRenderer.invoke(CHANNELS.sessionReadText, sessionId) as Promise<ReadSessionTextResult>,
+  getSessionInsights: (sessionId) =>
+    ipcRenderer.invoke(CHANNELS.sessionInsights, sessionId) as Promise<SessionInsights>,
   getUiState: () => ipcRenderer.invoke(CHANNELS.uiGetState) as Promise<UiState>,
   saveUiState: (state) => ipcRenderer.invoke(CHANNELS.uiSaveState, state) as Promise<void>,
   minimizeWindow: () => ipcRenderer.invoke(CHANNELS.windowMinimize) as Promise<void>,

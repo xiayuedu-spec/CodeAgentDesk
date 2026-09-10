@@ -95,10 +95,18 @@ main ──webContents.send(broadcast)──> renderer（sessionData/exited/chan
 ### 4.11 功能使用统计（`usage-store.ts`）
 `incrementUsage(key)` 仅接受白名单 key（防污染），写 `{count,lastAt}`；渲染层在关键动作处调用（命令面板/搜索/总结/知识库/详情/导出/番茄钟/各视图打开）。纯本地、不采集内容，用于季度功能审计。
 
+### 4.12 会话洞察（`session-insights.ts`）
+从会话 JSONL 提取两类信息，按 mtime+size 缓存（容量 60）：
+
+- **计划**：`TodoWrite` 工具调用的**末次快照**（todos 数组 + status），记录快照次数与时间戳。
+- **改动**：`Edit` / `MultiEdit` / `Write` / `NotebookEdit` / `str_replace_editor` 的 `file_path` 与 old/new 片段。行级增删用近似 diff：先裁公共前后缀，再对中段做 LCS（中段 > 200 行退化为整段替换统计），避免原地改一行被算成整块 +N/-N。
+
+边界（写进界面提示）：每片段每侧保留 1200 字符、每文件 8 个片段、最多 60 个文件，超出只计数；**口径是"会话记录里的工具调用意图"，不等于工作区当前内容**。IPC：`session:insights`。
+
 ## 5. 渲染层模式
 
 - **容器-展示**：`App.tsx` 持有状态/effects/handlers，向下传 `data`/`actions` 分组 props（SidebarBody/StatusBar/TabBar/ContextMenus 等）。
-- **lazy 弹窗**：SessionDetail / SummaryModal / CommandPalette / UsageTrendModal / KnowledgeModal / Dashboard / EfficiencyInsights / Timeline / Backup / UsageStats / HourlyUsagePopover 均懒加载。
+- **lazy 弹窗**：SessionDetail / SummaryModal / CommandPalette / UsageTrendModal / KnowledgeModal / Dashboard / EfficiencyInsights / Timeline / Backup / UsageStats / SessionInsights / HourlyUsagePopover 均懒加载。
 - **hooks**：`useUiState`（配置/目录/设置）、`useSearch`、`usePalette`（命令面板）、`useSummary`、`useDashboardStats`（60s+事件刷新）、`useDismiss`（点外部/Esc 关弹层）、`useEscape`、`useAnimatedNumber`、`usePomodoro`、`useSessionAgentStatuses`、`useRowWindow`（固定行高列表窗口化，见下）。
 - **长列表窗口化**：`components/SessionList.tsx` + `hooks/useRowWindow.ts`。行数 > 60 时只渲染视口附近的行，上下用 padding 占位（行高由首行实测，不硬编码）；键盘导航焦点行不在窗口内时，由 hook 直接滚动容器把它带进窗口。行结构统一为两行制（标题行 + 次要信息行），所有行等高是窗口化的前提。
 - **状态标记**：agent 状态标记同时用于状态栏、侧边栏会话行、标签页（`agentStatusStyle` 三态：emoji / 单色图标 / 圆点，统一由 `AgentStatusMark` 渲染）。

@@ -198,6 +198,22 @@
 
 ---
 
+## 模块 L：会话洞察（计划 + 改动）—— "这次会话在干什么"
+
+| 能力 | 实现要点 |
+|---|---|
+| 计划提取 | Claude Code 的 `TodoWrite` 每次调用都把**完整待办快照**写进 JSONL（`tool_use.input.todos[{content,status}]`）→ 取**最后一次**即当前计划；`updates` 记录快照次数（判断计划改过几轮）。未知 status 归 `pending`，缺 content 的条目丢弃 |
+| 改动提取 | `Edit`（old_string/new_string）、`MultiEdit`（edits[] 多条片段）、`Write`（content 全量，标 `written`）、`NotebookEdit`（notebook_path）、`str_replace_editor`（path/old_str/new_str）。按 `file_path` 聚合：编辑次数 + 增删行 + 片段列表 |
+| 行级增删（关键） | **不要用"旧块行数/新块行数"**：原地改一行会被算成 +N/-N，虚高。做法：先裁公共前后缀（覆盖"插入/删除若干行"这类最常见情形，零成本且精确），再对中段做 LCS（`Int32Array` 两行滚动，O(n·m) 内存可控）；中段 > 200 行时退化为整段替换统计 |
+| 边界与口径 | 每片段每侧截断 1200 字符、每文件最多 8 段、最多 60 个文件，超出只计数（`truncated` / `hiddenHunks` 让界面能说明"还有多少没展示"）；损坏行计入 `skipped`。**界面必须写明：这是"会话记录里的工具调用意图"，不是工作区实际 diff**（用户可能手改、也可能有未落盘的编辑） |
+| 缓存 | 独立 `insightsCache`（mtime+size 失效，容量 60），与 detail 缓存同套路；单文件一次顺序扫描（上限 6 万行） |
+| 界面 | `SessionInsightsModal`（lazy，独立 chunk 约 7KB）：顶部计划卡（进度条 + 勾选/转圈/待办 + 快照次数）、下方左文件清单右片段对照（旧块 `-` 红边、新块 `+` 强调色边）；头部「复制改动摘要」导出 Markdown（`buildInsightsMarkdown`，可直接贴进 PR 描述） |
+| 入口 | 信息面板底部「计划与改动」按钮 / 详情页工具栏 `ListChecks` / 会话右键菜单（归档会话也能看）。埋点 key `insights.opened` 需同步 `usage-store.ts` 白名单与 `UsageStatsModal` 标签表 |
+
+**坑位**：新增埋点 key 一定要加进 `usage-store.ts` 的 `KNOWN_KEYS`，否则 `incrementUsage` 静默丢弃（白名单校验）；`window.codeagentdesk.getSessionInsights` 需要会话已落盘（未绑定 sessionId 的会话要提前拦掉并提示）。
+
+---
+
 ## 坑位清单（二次开发务必避开）
 
 1. **`??` 与 `||` 混用**会触发 TS5076，需加括号：`a ?? (b || c)`。
@@ -215,7 +231,7 @@
 
 ## 工程实践（接手 agent 的操作约定）
 
-- 命令：`npm.cmd run typecheck`（tsc 双工程）、`npm.cmd run test`（vitest，22 用例）、`npm.cmd run build`（tsc main + vite）。
+- 命令：`npm.cmd run typecheck`（tsc 双工程）、`npm.cmd run test`（vitest，37 用例）、`npm.cmd run build`（tsc main + vite）。
 - 提交：每轮功能通过 typecheck + 全量测试后 `git commit` + `git push`；提交信息中文、多个 `-m`（避免引号/反引号问题）。
-- 测试：主进程纯逻辑（导出/解析/汇总）用 vitest + `vi.mock('electron')`；测试文件放 `src/main/__tests__/`，tsconfig 已排除。
+- 测试：主进程纯逻辑（导出/解析/汇总/洞察/取消语义）用 vitest + `vi.mock('electron')`；测试文件放 `src/main/__tests__/`，tsconfig 已排除。
 - 弹窗组件一律 `lazy()` 懒加载，减小主 chunk。

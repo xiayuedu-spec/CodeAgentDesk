@@ -23,7 +23,11 @@ const MAX_TEXT_LENGTH = 4000;
 const ACTIVE_GAP_MS = 5 * 60_000;
 
 /** 逐行扫描 JSONL（带行数上限与静默吞错），供各解析函数复用。 */
-function scanLines(filePath: string, limit: number, onLine: (line: string) => void): Promise<void> {
+export function scanJsonlLines(
+  filePath: string,
+  limit: number,
+  onLine: (line: string) => void,
+): Promise<void> {
   return new Promise((resolve) => {
     const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
     const reader = readline.createInterface({ input: stream, crlfDelay: Infinity });
@@ -70,7 +74,7 @@ export async function listSessions(
 
 export async function readChatEntries(filePath: string): Promise<ChatEntry[]> {
   const entries: ChatEntry[] = [];
-  await scanLines(filePath, MAX_DETAIL_LINES, (line) => {
+  await scanJsonlLines(filePath, MAX_DETAIL_LINES, (line) => {
     const entry = parseChatLine(line);
     if (entry) entries.push(entry);
   });
@@ -92,7 +96,7 @@ export async function readSessionDetail(filePath: string): Promise<SessionDetail
 
   const entries: SessionDetailEntry[] = [];
   const toolUses = new Map<string, { name: string; input: string }>();
-  await scanLines(filePath, MAX_DETAIL_LINES, (line) => {
+  await scanJsonlLines(filePath, MAX_DETAIL_LINES, (line) => {
     try {
       const event = JSON.parse(line) as {
         type?: string;
@@ -302,7 +306,7 @@ async function readReadableLines(filePath: string): Promise<SearchContextLine[]>
   const lines: SearchContextLine[] = [];
   let lineNumber = 0;
   // 收集文件内全部可读行（行号对齐原始 JSONL），再按命中位置截取上下文窗口。
-  await scanLines(filePath, MAX_SEARCH_LINES, (line) => {
+  await scanJsonlLines(filePath, MAX_SEARCH_LINES, (line) => {
     lineNumber += 1;
     const readable = extractReadableLine(line);
     if (!readable) return;
@@ -406,7 +410,7 @@ export async function readSessionUsage(filePath: string): Promise<SessionUsage> 
 /** 全量重读（初始或增量回退用），带行数上限保护。 */
 async function readSessionUsageFull(filePath: string): Promise<SessionUsage> {
   const usageByMessage = new Map<string, UsageSnapshot>();
-  await scanLines(filePath, MAX_DETAIL_LINES, (line) => {
+  await scanJsonlLines(filePath, MAX_DETAIL_LINES, (line) => {
     const parsed = parseUsageLine(line);
     if (parsed) usageByMessage.set(parsed.messageId, parsed.snapshot);
   });
@@ -751,7 +755,7 @@ export async function readSessionInfo(
   let cwd: string | undefined;
   let title: string | undefined;
   let startedAt: string | undefined;
-  await scanLines(file, MAX_SCAN_LINES, (line) => {
+  await scanJsonlLines(file, MAX_SCAN_LINES, (line) => {
     try {
       const event = JSON.parse(line) as {
         type?: string;
@@ -783,7 +787,7 @@ export async function readSessionInfo(
 export async function readSessionActiveMs(filePath: string): Promise<number> {
   let activeMs = 0;
   let prevTs: number | null = null;
-  await scanLines(filePath, MAX_SCAN_LINES, (line) => {
+  await scanJsonlLines(filePath, MAX_SCAN_LINES, (line) => {
     try {
       const event = JSON.parse(line) as { timestamp?: unknown };
       if (typeof event.timestamp !== 'string') return;

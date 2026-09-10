@@ -69,6 +69,7 @@ export const IpcChannel = {
   sessionError: 'session:error',
   taskProgress: 'task:progress',
   taskCancel: 'task:cancel',
+  sessionInsights: 'session:insights',
   updateCheck: 'update:check',
   updateInstall: 'update:install',
   updateStatus: 'update:status',

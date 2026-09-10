@@ -3769,6 +3769,26 @@ body,
 .info-item {
   padding: 15px 16px 14px;
 }
+/* 信息面板底部动作：计划与改动入口 */
+.info-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color var(--motion-micro) ease, border-color var(--motion-micro) ease;
+}
+.info-action:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
 .tab {
   padding: 0 10px 0 14px;
 }
@@ -5618,4 +5638,269 @@ textarea:focus-visible {
   to {
     transform: rotate(360deg);
   }
+}/* ============================================================
+   计划与改动（会话洞察）：TodoWrite 快照 + Edit/Write 改动清单
+   口径：来自会话记录里的工具调用片段，不是工作区实际 diff
+   ============================================================ */
+.insights-panel {
+  width: 860px;
+  max-width: 94vw;
+}
+.insights-session {
+  margin-left: 6px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+  color: var(--text-faint);
+  font-weight: 400;
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.insights-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.insights-scope {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.insights-scope strong {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.insights-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--bg-raised) 50%, transparent);
+  overflow: hidden;
+}
+.insights-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.insights-card-title {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.insights-card-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.insights-add {
+  color: var(--accent);
+  font-style: normal;
+}
+.insights-del {
+  color: var(--danger);
+  font-style: normal;
+}
+.insights-plan-bar {
+  height: 3px;
+  margin: 0 12px 4px;
+  border-radius: 999px;
+  background: var(--bg-inset);
+  overflow: hidden;
+}
+.insights-plan-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width var(--motion-data) ease;
+}
+.insights-todos {
+  margin: 0;
+  padding: 6px 12px 12px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.insights-todo {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 3px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.insights-todo.completed {
+  color: var(--text-faint);
+}
+.insights-todo.in_progress {
+  color: var(--text);
+}
+.insights-todo-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.insights-todo.completed .insights-todo-text {
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--text-faint) 60%, transparent);
+}
+.insights-todo-status {
+  flex: none;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+.insights-todo-done,
+.insights-todo-active {
+  color: var(--accent);
+  flex: none;
+  margin-top: 2px;
+}
+.insights-todo-pending {
+  color: var(--text-faint);
+  flex: none;
+  margin-top: 2px;
+}
+/* 文件清单 + 片段：左右分栏 */
+.insights-split {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: 220px;
+}
+.insights-files {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-right: 1px solid var(--border);
+  max-height: 46vh;
+  overflow: auto;
+}
+.insights-file {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-micro) ease, border-color var(--motion-micro) ease;
+}
+.insights-file:hover {
+  background: color-mix(in srgb, var(--bg-inset) 70%, transparent);
+}
+.insights-file.active {
+  border-color: var(--accent-dim);
+  background: var(--accent-soft);
+}
+.insights-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: 12px;
+}
+.insights-file-dir {
+  grid-column: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+.insights-file-nums {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+  display: inline-flex;
+  gap: 5px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.insights-file-edits {
+  color: var(--text-faint);
+  font-style: normal;
+}
+.insights-hunks {
+  padding: 10px 12px;
+  max-height: 46vh;
+  overflow: auto;
+}
+.insights-hunks-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.insights-hunks-head em {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--bg-inset);
+  color: var(--text-faint);
+  font-family: var(--sans);
+  font-style: normal;
+  font-size: 11px;
+}
+.insights-hunk + .insights-hunk {
+  margin-top: 12px;
+}
+.insights-hunk-head {
+  margin-bottom: 4px;
+  color: var(--text-faint);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+.insights-code {
+  margin: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.insights-code.old {
+  border-left: 2px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, var(--bg-inset));
+}
+.insights-code.new {
+  border-left: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-inset));
+}
+.insights-code + .insights-code {
+  margin-top: 4px;
+}
+.insights-line {
+  display: block;
+}
+.insights-code.old .insights-line::before {
+  content: '- ';
+  color: var(--danger);
+}
+.insights-code.new .insights-line::before {
+  content: '+ ';
+  color: var(--accent);
 }

@@ -5,6 +5,7 @@ import {
   Copy,
   FolderOpen,
   Link2,
+  ListChecks,
   Pencil,
   Pin,
   PinOff,
@@ -49,6 +50,7 @@ interface ContextMenusActions {
   setActiveId: (id: string) => void;
   openHistory: (record: SessionRecord) => void;
   openDetailById: (sessionId: string) => void;
+  openInsights: (sessionId: string) => void;
   restoreArchived: (sessionId: string, cwd: string) => void;
   copySessionText: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
@@ -93,6 +95,7 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
     setActiveId,
     openHistory,
     openDetailById,
+  openInsights,
     restoreArchived,
     copySessionText,
     onDeleteSession,
@@ -210,6 +213,20 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
               <BookOpen size={14} />
             </span>
             查看详情
+          </button>
+          <button
+            type="button"
+            disabled={!menuSession}
+            title="计划（TodoWrite 快照）与本次会话的文件改动"
+            onClick={() => {
+              openInsights(menu.sessionId);
+              closeMenu();
+            }}
+          >
+            <span className="context-menu-icon">
+              <ListChecks size={14} />
+            </span>
+            计划与改动
           </button>
           {menu.archived ? (
             <button

@@ -23,6 +23,7 @@ const KNOWN_KEYS = new Set([
   'efficiency.opened',
   'timeline.opened',
   'detail.opened',
+  'insights.opened',
   'export.md',
   'session.pin',
   'archive.delete',
