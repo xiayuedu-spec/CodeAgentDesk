@@ -4948,10 +4948,11 @@ textarea:focus-visible {
 .agent-status.mark-icon {
   margin-right: 4px;
 }
-.session-agent.mark-icon,
-.tab-agent.mark-icon {
-  flex: none;
+.session-agent.mark-icon {
   width: 16px;
+}
+.tab-agent.mark-icon {
+  width: 14px;
 }
 .settings-hint {
   margin-top: 6px;
