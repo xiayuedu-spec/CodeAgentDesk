@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { HourlyUsage } from '../../shared/types';
+import { SkeletonStack } from './Skeleton';
 
 interface HourlyUsagePopoverProps {
   limit: number;
@@ -46,7 +47,7 @@ export function HourlyUsagePopover({ limit }: HourlyUsagePopoverProps) {
     <div className="hourly-popover" onClick={(event) => event.stopPropagation()}>
       <div className="hourly-popover-title">今日每小时用量</div>
       {hours === null ? (
-        <div className="day-loading">正在统计…</div>
+        <SkeletonStack rows={2} />
       ) : total === 0 ? (
         <div className="hourly-popover-empty">今天还没有用量</div>
       ) : (

@@ -40,11 +40,17 @@ import { useEscape } from './hooks/useEscape';
 import { AGENT_STATUS_META, useSessionAgentStatuses } from './hooks/useAgentStatus';
 import { usePomodoro } from './hooks/usePomodoro';
 import { useToast } from './toast';
-import { TerminalPane } from './components/TerminalPane';
+import {
+  DEFAULT_TERMINAL_FONT_FAMILY,
+  DEFAULT_TERMINAL_FONT_SIZE,
+  TerminalPane,
+} from './components/TerminalPane';
 import { TitleBar } from './components/TitleBar';
 import { TabBar } from './components/TabBar';
 import { InfoPanel } from './components/InfoPanel';
 import { Welcome } from './components/Welcome';
+import { ErrorBar } from './components/ErrorBar';
+import { TaskProgressPanel, useTaskProgress } from './components/TaskProgress';
 import { StatusBar } from './components/StatusBar';
 import { SearchResults } from './components/SearchResults';
 import { SidebarBody } from './components/SidebarBody';
@@ -323,10 +329,12 @@ export default function App() {
         activeSessionId: active,
         collapsedGroups: [...collapsedGroups],
         collapsedSections: [...collapsedSections],
+        sidebarWidth,
+        infoWidth,
       });
     }, 400);
     return () => clearTimeout(timer);
-  }, [sessions, activeId, collapsedGroups, collapsedSections]);
+  }, [sessions, activeId, collapsedGroups, collapsedSections, sidebarWidth, infoWidth]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -353,6 +361,23 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [sessions, activeId]);
 
+  // 终端缩放：Ctrl+= / Ctrl+- / Ctrl+0（捕获阶段，避免被 xterm 吞掉）。
+  useEffect(() => {
+    const onZoomKey = (event: KeyboardEvent) => {
+      if (!event.ctrlKey || event.altKey || event.metaKey) return;
+      const current = claudeInfo?.config.terminalFontSize ?? DEFAULT_TERMINAL_FONT_SIZE;
+      let next: number | null = null;
+      if (event.key === '=' || event.key === '+') next = Math.min(20, current + 1);
+      else if (event.key === '-' || event.key === '_') next = Math.max(10, current - 1);
+      else if (event.key === '0') next = DEFAULT_TERMINAL_FONT_SIZE;
+      if (next === null || next === current) return;
+      event.preventDefault();
+      void window.codeagentdesk.setTerminalFont({ size: next }).then(refreshClaudeInfo);
+    };
+    window.addEventListener('keydown', onZoomKey, true);
+    return () => window.removeEventListener('keydown', onZoomKey, true);
+  }, [claudeInfo?.config.terminalFontSize, refreshClaudeInfo]);
+
   useEffect(() => {
     if (borrowedIds.length === 0) return;
     for (const sessionId of borrowedIds) {
@@ -373,6 +398,15 @@ export default function App() {
         setLoadingList(false);
         const state = await window.codeagentdesk.getUiState();
         if (cancelled) return;
+        // 恢复上次的布局宽度（侧边栏 / 信息面板）。
+        if (state.sidebarWidth) {
+          sidebarWidthRef.current = state.sidebarWidth;
+          setSidebarWidth(state.sidebarWidth);
+        }
+        if (state.infoWidth) {
+          infoWidthRef.current = state.infoWidth;
+          setInfoWidth(state.infoWidth);
+        }
         const restored: SessionView[] = [];
         for (const sessionId of state.openSessionIds) {
           const record = value.find((item) => item.sessionId === sessionId && !item.archived);
@@ -1166,6 +1200,7 @@ export default function App() {
   const activeAgentStatus = activeId ? (sessionStatuses[activeId] ?? 'idle') : 'idle';
   const activeAgentMeta = AGENT_STATUS_META[activeAgentStatus];
   const pomodoro = usePomodoro((claudeInfo?.config.pomodoroMinutes ?? 25) * 60_000);
+  const taskProgress = useTaskProgress();
   useEscape(Boolean(confirmDeleteOne), () => setConfirmDeleteOne(null));
   useEffect(() => {
     if (pomodoro.finished) toast.success('🍅 番茄钟完成，休息一下！');
@@ -1362,6 +1397,8 @@ export default function App() {
             title={formatSessionTitle(session)}
             status={session.status}
             active={!terminalStackHidden && session.id === activeId}
+            fontSize={claudeInfo?.config.terminalFontSize ?? DEFAULT_TERMINAL_FONT_SIZE}
+            fontFamily={claudeInfo?.config.terminalFontFamily ?? DEFAULT_TERMINAL_FONT_FAMILY}
             onDetail={() => {
               if (session.sessionId) void openDetailById(session.sessionId);
             }}
@@ -1450,6 +1487,9 @@ export default function App() {
     },
     handleSetAgentStatusStyle: (style: AgentStatusStyle) => void handleSetAgentStatusStyle(style),
     handleSetPomodoroMinutes: (minutes: number) => void handleSetPomodoroMinutes(minutes),
+    handleSetTerminalFont: (payload: { size?: number; family?: string }) => {
+      void window.codeagentdesk.setTerminalFont(payload).then(refreshClaudeInfo);
+    },
   };
 
   const contextMenusData = {
@@ -1567,7 +1607,6 @@ export default function App() {
               historyCount={historyRecords.length}
               records={records}
               groups={groups}
-              error={error}
               onNew={() => void handleNewSession()}
               onFocusHistory={() => sidebarBodyRef.current?.focus()}
               onOpenSummary={openSummary}
@@ -1600,7 +1639,6 @@ export default function App() {
                 <InfoPanel
                   session={activeSession}
                   usage={usage}
-                  error={error}
                   onResizeStart={startInfoResize}
                 />
               ) : (
@@ -1609,7 +1647,6 @@ export default function App() {
                   historyCount={historyRecords.length}
                   records={records}
                   groups={groups}
-                  error={error}
                   onNew={() => void handleNewSession()}
                   onFocusHistory={() => sidebarBodyRef.current?.focus()}
                   onOpenSummary={openSummary}
@@ -1620,6 +1657,10 @@ export default function App() {
             </>
           )}
         </div>
+        {error ? <ErrorBar message={error} onDismiss={() => setError(null)} /> : null}
+        {taskProgress.progress ? (
+          <TaskProgressPanel progress={taskProgress.progress} stages={taskProgress.stages} />
+        ) : null}
         <StatusBar
           sessionCount={sessions.length}
           archivedCount={archivedRecords.length}

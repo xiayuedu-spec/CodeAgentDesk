@@ -23,6 +23,14 @@ export function readConfig(): AppConfig {
         typeof parsed.pomodoroMinutes === 'number' && parsed.pomodoroMinutes >= 1
           ? Math.min(180, Math.round(parsed.pomodoroMinutes))
           : undefined,
+      terminalFontSize:
+        typeof parsed.terminalFontSize === 'number' && parsed.terminalFontSize >= 10
+          ? Math.min(20, Math.round(parsed.terminalFontSize))
+          : undefined,
+      terminalFontFamily:
+        typeof parsed.terminalFontFamily === 'string' && parsed.terminalFontFamily.trim()
+          ? parsed.terminalFontFamily.trim()
+          : undefined,
     };
   } catch {
     return {};

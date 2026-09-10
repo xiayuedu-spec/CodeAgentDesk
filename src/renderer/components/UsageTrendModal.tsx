@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import type { UsageTrendDay } from '../../shared/types';
 import { useEscape } from '../hooks/useEscape';
+import { SkeletonStack } from './Skeleton';
 
 interface UsageTrendModalProps {
   onClose: () => void;
@@ -70,7 +71,7 @@ export function UsageTrendModal({ onClose }: UsageTrendModalProps) {
         </div>
         <div className="day-body usage-trend-body">
           {days === null ? (
-            <div className="day-loading">正在统计…</div>
+            <SkeletonStack rows={4} />
           ) : maxTotal === 1 ? (
             <div className="day-empty">暂无用量数据</div>
           ) : (

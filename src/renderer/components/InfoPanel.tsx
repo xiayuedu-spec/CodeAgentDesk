@@ -5,11 +5,10 @@ import { statusLabel, type SessionView } from '../session-utils';
 interface InfoPanelProps {
   session: SessionView;
   usage: SessionUsage;
-  error: string | null;
   onResizeStart: (event: ReactMouseEvent) => void;
 }
 
-export function InfoPanel({ session, usage, error, onResizeStart }: InfoPanelProps) {
+export function InfoPanel({ session, usage, onResizeStart }: InfoPanelProps) {
   return (
     <section className="info-panel" aria-label="会话状态">
       <div className="info-resizer" onMouseDown={onResizeStart} title="拖动调整宽度" />
@@ -52,12 +51,6 @@ export function InfoPanel({ session, usage, error, onResizeStart }: InfoPanelPro
           </span>
         </div>
       </div>
-      {error ? (
-        <div className="info-item">
-          <span>错误</span>
-          <strong className="error-text truncate">{error}</strong>
-        </div>
-      ) : null}
     </section>
   );
 }

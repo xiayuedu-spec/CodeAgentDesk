@@ -9,6 +9,9 @@ interface TerminalPaneProps {
   title: string;
   status?: 'starting' | 'running' | 'ended';
   active: boolean;
+  /** 终端字号（px）与字体族，来自设置（支持 Ctrl +/- 即时缩放）。 */
+  fontSize?: number;
+  fontFamily?: string;
   onDetail?: () => void;
   onCopy?: () => void;
 }
@@ -41,11 +44,23 @@ function terminalTheme(skin: string): TerminalPalette {
   return TERMINAL_THEMES[skin] ?? TERMINAL_THEMES.default;
 }
 
+/** 终端字号/字体默认值与可选预设（与设置面板共用）。 */
+export const DEFAULT_TERMINAL_FONT_SIZE = 13;
+export const DEFAULT_TERMINAL_FONT_FAMILY = '"Cascadia Mono", Consolas, monospace';
+export const TERMINAL_FONT_PRESETS = [
+  { label: 'Cascadia Mono', value: '"Cascadia Mono", Consolas, monospace' },
+  { label: 'JetBrains Mono', value: '"JetBrains Mono", "Cascadia Mono", monospace' },
+  { label: 'Consolas', value: 'Consolas, "Courier New", monospace' },
+  { label: '等宽通用', value: 'ui-monospace, SFMono-Regular, Menlo, monospace' },
+];
+
 export function TerminalPane({
   id,
   title,
   status = 'ended',
   active,
+  fontSize = DEFAULT_TERMINAL_FONT_SIZE,
+  fontFamily = DEFAULT_TERMINAL_FONT_FAMILY,
   onDetail,
   onCopy,
 }: TerminalPaneProps) {
@@ -53,6 +68,8 @@ export function TerminalPane({
   const terminalRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
   const activeRef = useRef(active);
+  const fontSizeRef = useRef(fontSize);
+  const fontFamilyRef = useRef(fontFamily);
   const [hasSelection, setHasSelection] = useState(false);
   const [menu, setMenu] = useState<TerminalMenuState | null>(null);
   const [skin, setSkin] = useState(() => document.documentElement.dataset.theme ?? 'default');
@@ -90,6 +107,25 @@ export function TerminalPane({
     terminal.refresh(0, terminal.rows - 1);
   }, [skin]);
 
+  // 字号/字体变化（设置面板或 Ctrl +/- 缩放）即时生效并重新适配尺寸。
+  useEffect(() => {
+    fontSizeRef.current = fontSize;
+    fontFamilyRef.current = fontFamily;
+    const terminal = terminalRef.current;
+    const fit = fitRef.current;
+    if (!terminal) return;
+    terminal.options.fontSize = fontSize;
+    terminal.options.fontFamily = fontFamily;
+    if (fit && activeRef.current) {
+      try {
+        fit.fit();
+        terminal.refresh(0, terminal.rows - 1);
+      } catch {
+        // 终端尚未布局完成时忽略。
+      }
+    }
+  }, [fontSize, fontFamily]);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -97,8 +133,8 @@ export function TerminalPane({
     const terminal = new Terminal({
       cursorBlink: true,
       scrollback: 10000,
-      fontFamily: '"Cascadia Mono", Consolas, monospace',
-      fontSize: 13,
+      fontFamily: fontFamilyRef.current,
+      fontSize: fontSizeRef.current,
       theme: terminalTheme(skin),
     });
     const fit = new FitAddon();

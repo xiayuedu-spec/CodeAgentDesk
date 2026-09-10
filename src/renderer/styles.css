@@ -4858,7 +4858,7 @@ body,
   border-color: var(--accent-dim);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
-/* 行内"保存"按钮：覆盖 .settings-action 的全宽/上边距，与输入框同行 */
+/* 设置弹窗内联"保存"按钮：覆盖 .settings-action 的全宽/上边距，与输入框同行 */
 .settings-limit-save {
   flex: none;
   width: auto;
@@ -4867,6 +4867,30 @@ body,
   margin-top: 0;
   padding: 0 12px;
   white-space: nowrap;
+}
+/* 设置里的步进控件（终端字号 −/＋） */
+.settings-step {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color var(--motion-micro) ease, color var(--motion-micro) ease;
+}
+.settings-step:hover {
+  border-color: var(--accent-dim);
+}
+.settings-step-value {
+  flex: 1;
+  text-align: center;
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 /* 防御规则：设置弹窗内任何输入控件都不回落到浏览器默认配色 */
 .settings-popover input {
@@ -5273,4 +5297,147 @@ body,
 .dashboard-card-label,
 .eff-card-label {
   color: var(--text-faint);
+}
+
+/* ---- 全局错误条（任何模式下错误都可见） ---- */
+.error-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 6px 12px;
+  border-top: 1px solid color-mix(in srgb, var(--danger) 40%, var(--border));
+  background: color-mix(in srgb, var(--danger) 12%, var(--bg-raised));
+  color: var(--text);
+  animation: errorBarIn var(--motion-struct) cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes errorBarIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.error-bar-icon {
+  flex: none;
+  color: var(--danger);
+}
+.error-bar-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.error-bar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--border));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--danger);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--motion-micro) ease;
+}
+.error-bar-btn:hover {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+/* ---- 骨架屏（弹窗 / 列表加载统一形态） ---- */
+.skeleton {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--border) 55%, transparent) 0%,
+    color-mix(in srgb, var(--border-strong) 70%, transparent) 50%,
+    color-mix(in srgb, var(--border) 55%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+.skeleton-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+/* ---- 长任务分阶段进度（周报 / 知识库生成） ---- */
+.task-progress {
+  position: absolute;
+  right: 16px;
+  bottom: 44px;
+  z-index: 70;
+  width: 260px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--bg-raised) 94%, transparent);
+  box-shadow: var(--shadow-pop), var(--edge-highlight);
+  backdrop-filter: blur(12px) saturate(1.15);
+  -webkit-backdrop-filter: blur(12px) saturate(1.15);
+  animation: popoverIn var(--motion-struct) cubic-bezier(0.22, 1, 0.36, 1);
+}
+.task-progress-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.task-progress-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+.task-progress-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.task-progress-step.done {
+  color: var(--accent);
+}
+.task-progress-step.active {
+  color: var(--text);
+}
+.task-progress-bar {
+  height: 4px;
+  margin-top: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg-inset);
+}
+.task-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  transition: width var(--motion-data) ease;
+}
+.task-progress-check {
+  color: var(--accent);
+}
+/* 旋转图标（加载中） */
+.spin {
+  animation: spin 1s linear infinite;
+  color: var(--text-muted);
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

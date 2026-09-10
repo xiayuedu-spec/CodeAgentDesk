@@ -3,6 +3,7 @@ import { CalendarX, History, X } from 'lucide-react';
 import type { DayTimelineResult } from '../../shared/types';
 import { useEscape } from '../hooks/useEscape';
 import { EmptyState } from './EmptyState';
+import { SkeletonStack } from './Skeleton';
 
 interface TimelineModalProps {
   onClose: () => void;
@@ -115,7 +116,7 @@ export function TimelineModal({ onClose, onOpenDetail }: TimelineModalProps) {
           </div>
 
           {data === null ? (
-            <div className="day-loading">正在统计…</div>
+            <SkeletonStack rows={5} />
           ) : events.length === 0 ? (
             <EmptyState
               icon={<CalendarX size={40} strokeWidth={1.4} />}

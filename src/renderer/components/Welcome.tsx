@@ -9,7 +9,6 @@ interface WelcomeProps {
   historyCount: number;
   records: SessionRecord[];
   groups: GroupRecord[];
-  error: string | null;
   onNew: () => void;
   onFocusHistory: () => void;
   onOpenSummary: () => void;
@@ -109,7 +108,6 @@ export function Welcome({
   historyCount,
   records,
   groups,
-  error,
   onNew,
   onFocusHistory,
   onOpenSummary,
@@ -268,7 +266,6 @@ export function Welcome({
         </button>
       </div>
       <div className="welcome-hint">Ctrl+K 全局搜索 · Ctrl+T 新建会话 · Ctrl+1..9 切换标签</div>
-      {error ? <div className="welcome-error">{error}</div> : null}
     </div>
   );
 }

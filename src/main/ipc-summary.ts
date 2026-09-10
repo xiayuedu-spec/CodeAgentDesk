@@ -6,6 +6,7 @@ import type {
   KnowledgeGlobalResult,
   SummaryGetResult,
   SummaryHistoryResult,
+  TaskProgressEvent,
 } from '../shared/types';
 import { readConfig, resolveClaudeHome } from './config';
 import { ensureGlobalKnowledge, exportKnowledgeToFile, generateProjectKnowledge } from './knowledge';
@@ -20,9 +21,39 @@ import { computeEfficiencyInsights } from './ipc-usage';
 import { getSummaryText, listSummaries, saveSummary, type SummaryKind } from './summary-store';
 import type { SessionMetaStore } from './session-meta-store';
 import { collectRangeText, weekRangeFor } from './ipc-utils';
+import { broadcast } from './window-manager';
 
 export interface SummaryIpcDeps {
   metaStore: SessionMetaStore;
+}
+
+/** 上报长任务阶段进度（渲染层显示阶段进度面板）。 */
+function reportProgress(
+  task: TaskProgressEvent['task'],
+  title: string,
+  stage: string,
+  index: number,
+  total: number,
+): void {
+  broadcast(IpcChannel.taskProgress, {
+    task,
+    title,
+    stage,
+    index,
+    total,
+    done: false,
+  } satisfies TaskProgressEvent);
+}
+
+function reportProgressDone(task: TaskProgressEvent['task']): void {
+  broadcast(IpcChannel.taskProgress, {
+    task,
+    title: '',
+    stage: '',
+    index: 0,
+    total: 0,
+    done: true,
+  } satisfies TaskProgressEvent);
 }
 
 /** 总结与知识库域 IPC：日报/周报/月报生成与存取、知识库生成/导出/存取。 */
@@ -69,6 +100,7 @@ export function registerSummaryIpc({ metaStore }: SummaryIpcDeps): void {
       const combined = await collectRangeText(claudeHome, metaStore, monday, sunday);
       if (!combined.trim()) return { ok: false, message: `${monday} 周没有可总结的会话` };
       try {
+        reportProgress('week-summary', '生成周报', '读取并归纳本周会话', 1, 2);
         const text = await summarizeWeekText(combined);
         // 周反思：基于本周内容 + 效率统计生成复盘，追加到周报末尾；失败不阻塞周报。
         let finalText = text;
@@ -80,6 +112,7 @@ export function registerSummaryIpc({ metaStore }: SummaryIpcDeps): void {
             insights.totalTokens > 0
               ? Math.round((insights.outputTokens / insights.totalTokens) * 100)
               : 0;
+          reportProgress('week-summary', '生成周报', '生成本周复盘', 2, 2);
           const reflection = await summarizeWeekReflection(combined, {
             sessions: insights.sessionCount,
             hours,
@@ -93,8 +126,10 @@ export function registerSummaryIpc({ metaStore }: SummaryIpcDeps): void {
           // 反思失败静默降级，周报本身不受影响。
         }
         saveSummary('week', monday, finalText);
+        reportProgressDone('week-summary');
         return { ok: true, text: finalText };
       } catch (error) {
+        reportProgressDone('week-summary');
         return { ok: false, message: error instanceof Error ? error.message : String(error) };
       }
     },
@@ -141,6 +176,7 @@ export function registerSummaryIpc({ metaStore }: SummaryIpcDeps): void {
     async (_event, cwd: string, force?: boolean): Promise<SummaryGetResult> => {
       if (!cwd) return { ok: false, message: '缺少项目目录' };
       try {
+        reportProgress('knowledge', '生成项目知识库', '读取最近会话并提炼', 1, 1);
         const text = await generateProjectKnowledge(
           resolveClaudeHome(readConfig()),
           metaStore,
@@ -148,12 +184,15 @@ export function registerSummaryIpc({ metaStore }: SummaryIpcDeps): void {
           { force: force === true },
         );
         if (text === null) {
+          reportProgressDone('knowledge');
           return { ok: false, message: '知识库已是最新，暂无新增会话' };
         }
         // 生成即落盘：写入 PROJECT_KNOWLEDGE.md 并同步项目 CLAUDE.md（新会话自动带背景）。
         exportKnowledgeToFile(cwd, text);
+        reportProgressDone('knowledge');
         return { ok: true, text };
       } catch (error) {
+        reportProgressDone('knowledge');
         return { ok: false, message: error instanceof Error ? error.message : String(error) };
       }
     },

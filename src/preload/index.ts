@@ -20,6 +20,7 @@ import type {
   SessionDataEvent,
   SessionDetailResult,
   SessionErrorEvent,
+  TaskProgressEvent,
   SessionExitedEvent,
   SessionRecord,
   SearchResult,
@@ -53,6 +54,7 @@ const CHANNELS = {
   configSetTokenLimit: 'config:set-token-limit',
   configSetAgentStatusStyle: 'config:set-agent-status-style',
   configSetPomodoroMinutes: 'config:set-pomodoro-minutes',
+  configSetTerminalFont: 'config:set-terminal-font',
   configPickClaudeDir: 'config:pick-claude-dir',
   sessionsList: 'sessions:list',
   sessionsChanged: 'sessions:changed',
@@ -119,6 +121,7 @@ const CHANNELS = {
   sessionExited: 'session:exited',
   sessionBound: 'session:bound',
   sessionError: 'session:error',
+  taskProgress: 'task:progress',
 } as const;
 
 function subscribe<T>(channel: string, callback: (payload: T) => void): () => void {
@@ -141,6 +144,8 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.configSetAgentStatusStyle, style) as Promise<ClaudeConfigInfo>,
   setPomodoroMinutes: (minutes) =>
     ipcRenderer.invoke(CHANNELS.configSetPomodoroMinutes, minutes) as Promise<ClaudeConfigInfo>,
+  setTerminalFont: (payload) =>
+    ipcRenderer.invoke(CHANNELS.configSetTerminalFont, payload) as Promise<ClaudeConfigInfo>,
   pickClaudeDir: () =>
     ipcRenderer.invoke(CHANNELS.configPickClaudeDir) as Promise<PickClaudeDirResult>,
   listSessions: () => ipcRenderer.invoke(CHANNELS.sessionsList) as Promise<SessionRecord[]>,
@@ -241,6 +246,7 @@ const api: CodeAgentDeskApi = {
   onSessionBound: (callback) => subscribe<SessionBoundEvent>(CHANNELS.sessionBound, callback),
   onSessionError: (callback) => subscribe<SessionErrorEvent>(CHANNELS.sessionError, callback),
   onSessionsChanged: (callback) => subscribe<void>(CHANNELS.sessionsChanged, callback),
+  onTaskProgress: (callback) => subscribe<TaskProgressEvent>(CHANNELS.taskProgress, callback),
   checkForUpdates: () =>
     ipcRenderer.invoke(CHANNELS.updateCheck) as Promise<UpdateStatus>,
   installUpdate: () => ipcRenderer.invoke(CHANNELS.updateInstall) as Promise<void>,

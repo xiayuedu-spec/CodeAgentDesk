@@ -4,6 +4,11 @@ import type { AppInfo, AgentStatusStyle, ClaudeConfigInfo, DashboardStats, Theme
 import { folderName } from '../session-utils';
 import { THEMES, THEME_SWATCHES, isThemeUnlocked } from '../theme';
 import { HourlyUsagePopover } from './HourlyUsagePopover';
+import {
+  DEFAULT_TERMINAL_FONT_FAMILY,
+  DEFAULT_TERMINAL_FONT_SIZE,
+  TERMINAL_FONT_PRESETS,
+} from './TerminalPane';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 
 export const DEFAULT_HOURLY_LIMIT = 10_000_000;
@@ -33,6 +38,7 @@ interface SidebarFooterActions {
   handleSetTokenLimit: (limit: number) => void;
   handleSetAgentStatusStyle: (style: AgentStatusStyle) => void;
   handleSetPomodoroMinutes: (minutes: number) => void;
+  handleSetTerminalFont: (payload: { size?: number; family?: string }) => void;
 }
 
 export function SidebarFooter({
@@ -53,9 +59,12 @@ export function SidebarFooter({
     handleSetTokenLimit,
     handleSetAgentStatusStyle,
     handleSetPomodoroMinutes,
+    handleSetTerminalFont,
   } = actions;
 
   const limitTier = stats.hourlyPercent >= 100 ? 'danger' : stats.hourlyPercent >= 80 ? 'warn' : '';
+  const terminalFontSize = claudeInfo?.config.terminalFontSize ?? DEFAULT_TERMINAL_FONT_SIZE;
+  const terminalFontFamily = claudeInfo?.config.terminalFontFamily ?? DEFAULT_TERMINAL_FONT_FAMILY;
   const animatedPercent = useAnimatedNumber(stats.hourlyPercent);
   const animatedTokens = useAnimatedNumber(stats.hourlyTokens);
   const [limitInput, setLimitInput] = useState(
@@ -311,6 +320,53 @@ export function SidebarFooter({
               >
                 保存
               </button>
+            </div>
+            <div className="settings-sep" />
+            <div className="settings-label">终端字号（Ctrl +/- 缩放）</div>
+            <div className="settings-row">
+              <button
+                type="button"
+                className="settings-step"
+                aria-label="减小终端字号"
+                onClick={() =>
+                  handleSetTerminalFont({ size: Math.max(10, terminalFontSize - 1) })
+                }
+              >
+                −
+              </button>
+              <span className="settings-step-value">{terminalFontSize}px</span>
+              <button
+                type="button"
+                className="settings-step"
+                aria-label="增大终端字号"
+                onClick={() =>
+                  handleSetTerminalFont({ size: Math.min(20, terminalFontSize + 1) })
+                }
+              >
+                ＋
+              </button>
+              <button
+                type="button"
+                className="settings-action settings-limit-save"
+                onClick={() => handleSetTerminalFont({ size: DEFAULT_TERMINAL_FONT_SIZE })}
+              >
+                重置
+              </button>
+            </div>
+            <div className="settings-label">终端字体</div>
+            <div className="settings-row">
+              <select
+                className="settings-limit-input"
+                value={terminalFontFamily}
+                aria-label="终端字体"
+                onChange={(event) => handleSetTerminalFont({ family: event.target.value })}
+              >
+                {TERMINAL_FONT_PRESETS.map((preset) => (
+                  <option key={preset.value} value={preset.value}>
+                    {preset.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         ) : null}

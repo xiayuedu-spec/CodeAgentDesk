@@ -94,6 +94,22 @@ export function registerAppIpc({ onClaudeDirChanged }: AppIpcDeps): void {
     },
   );
 
+  ipcMain.handle(
+    IpcChannel.configSetTerminalFont,
+    (_event, payload: { size?: number; family?: string }): ClaudeConfigInfo => {
+      const config = readConfig();
+      const next = { ...config };
+      if (typeof payload?.size === 'number' && Number.isFinite(payload.size)) {
+        next.terminalFontSize = Math.min(20, Math.max(10, Math.round(payload.size)));
+      }
+      if (typeof payload?.family === 'string' && payload.family.trim()) {
+        next.terminalFontFamily = payload.family.trim();
+      }
+      writeConfig(next);
+      return readClaudeConfigInfo();
+    },
+  );
+
   ipcMain.handle(IpcChannel.configPickClaudeDir, async (): Promise<PickClaudeDirResult> => {
     const result = await dialog.showOpenDialog({
       title: '选择 Claude 目录',
@@ -131,6 +147,8 @@ export function registerAppIpc({ onClaudeDirChanged }: AppIpcDeps): void {
       activeSessionId: state.activeSessionId,
       collapsedGroups: Array.isArray(state.collapsedGroups) ? state.collapsedGroups : [],
       collapsedSections: Array.isArray(state.collapsedSections) ? state.collapsedSections : [],
+      sidebarWidth: state.sidebarWidth,
+      infoWidth: state.infoWidth,
     });
   });
 

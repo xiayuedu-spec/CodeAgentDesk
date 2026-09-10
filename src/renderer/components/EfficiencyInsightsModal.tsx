@@ -4,6 +4,7 @@ import type { EfficiencyInsights, FunStats } from '../../shared/types';
 import { folderName } from '../session-utils';
 import { useEscape } from '../hooks/useEscape';
 import { EmptyState } from './EmptyState';
+import { SkeletonStack } from './Skeleton';
 
 interface EfficiencyInsightsModalProps {
   onClose: () => void;
@@ -145,7 +146,7 @@ export function EfficiencyInsightsModal({ onClose }: EfficiencyInsightsModalProp
           </div>
 
           {data === null ? (
-            <div className="day-loading">正在统计…</div>
+            <SkeletonStack rows={4} />
           ) : data.sessionCount === 0 ? (
             <EmptyState
               icon={<CalendarX size={40} strokeWidth={1.4} />}

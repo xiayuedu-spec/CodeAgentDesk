@@ -51,6 +51,10 @@ export interface AppConfig {
   tokenLimitPerHour?: number;
   /** 番茄钟时长（分钟，默认 25）。 */
   pomodoroMinutes?: number;
+  /** 终端字号（px，10-20，默认 13）。 */
+  terminalFontSize?: number;
+  /** 终端字体族（默认 Cascadia Mono 系列）。 */
+  terminalFontFamily?: string;
   agentStatusStyle?: AgentStatusStyle;
   /** 彩蛋：是否已解锁隐藏主题（霓虹）。 */
   funUnlockedNeon?: boolean;
@@ -130,6 +134,10 @@ export interface UiState {
   activeSessionId?: string;
   collapsedGroups?: string[];
   collapsedSections?: string[];
+  /** 侧边栏宽度（px，180-480）。 */
+  sidebarWidth?: number;
+  /** 右侧信息面板宽度（px，180-480）。 */
+  infoWidth?: number;
 }
 
 export interface RestoreSessionResult {
@@ -382,6 +390,16 @@ export interface SessionErrorEvent {
   message: string;
 }
 
+/** 长任务阶段进度（周报/知识库等调用 claude 的耗时操作）。 */
+export interface TaskProgressEvent {
+  task: 'week-summary' | 'knowledge';
+  title: string;
+  stage: string;
+  index: number;
+  total: number;
+  done?: boolean;
+}
+
 export interface CodeAgentDeskApi {
   getPathForFile(file: File): string;
   getAppInfo(): Promise<AppInfo>;
@@ -391,6 +409,7 @@ export interface CodeAgentDeskApi {
   setTokenLimit(limit: number): Promise<ClaudeConfigInfo>;
   setAgentStatusStyle(style: AgentStatusStyle): Promise<ClaudeConfigInfo>;
   setPomodoroMinutes(minutes: number): Promise<ClaudeConfigInfo>;
+  setTerminalFont(payload: { size?: number; family?: string }): Promise<ClaudeConfigInfo>;
   pickClaudeDir(): Promise<PickClaudeDirResult>;
   listSessions(): Promise<SessionRecord[]>;
   listGroups(): Promise<GroupRecord[]>;
@@ -454,6 +473,7 @@ export interface CodeAgentDeskApi {
   onSessionBound(callback: (event: SessionBoundEvent) => void): () => void;
   onSessionError(callback: (event: SessionErrorEvent) => void): () => void;
   onSessionsChanged(callback: () => void): () => void;
+  onTaskProgress(callback: (event: TaskProgressEvent) => void): () => void;
   checkForUpdates(): Promise<UpdateStatus>;
   installUpdate(): Promise<void>;
   onUpdateStatus(callback: (status: UpdateStatus) => void): () => void;
