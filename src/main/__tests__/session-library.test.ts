@@ -114,3 +114,32 @@ describe('JSONL 解析（readSessionDetail 工具链）', () => {
     expect(entries[0].toolOutput).toBe('成功');
   });
 });
+
+describe('解析缓存（避免重复读盘）', () => {
+  it('文件未变化时复用详情结果（同一数组引用）', async () => {
+    const file = writeTemp(
+      JSON.stringify({ type: 'user', message: { content: '缓存测试' } }) + '\n',
+    );
+    const first = await readSessionDetail(file);
+    const second = await readSessionDetail(file);
+    expect(second).toBe(first);
+  });
+
+  it('文件更新后缓存失效并返回新内容', async () => {
+    const file = writeTemp(JSON.stringify({ type: 'user', message: { content: 'v1' } }) + '\n');
+    const first = await readSessionDetail(file);
+    expect(first).toHaveLength(1);
+    // 追加一行并让 mtime 变化（写入本身会更新 mtime，必要时显式设置）。
+    fs.appendFileSync(
+      file,
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'v2' }] } }) +
+        '\n',
+      'utf8',
+    );
+    const now = new Date();
+    fs.utimesSync(file, now, now);
+    const second = await readSessionDetail(file);
+    expect(second).not.toBe(first);
+    expect(second).toHaveLength(2);
+  });
+});

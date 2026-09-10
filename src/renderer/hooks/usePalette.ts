@@ -1,20 +1,26 @@
-import { useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { PaletteItem } from '../components/CommandPalette';
 
 /** 命令面板（Ctrl+P）状态与交互：过滤、键盘导航、选中执行。 */
-export function usePalette(items: () => PaletteItem[]) {
+export function usePalette(buildItems: () => PaletteItem[]) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState('');
   const [paletteIndex, setPaletteIndex] = useState(0);
 
-  const paletteItems = items();
-  const paletteFiltered = paletteQuery.trim()
-    ? paletteItems.filter((item) =>
-        `${item.label} ${item.hint ?? ''}`
-          .toLowerCase()
-          .includes(paletteQuery.trim().toLowerCase()),
-      )
-    : paletteItems;
+  // 面板关闭时不构建条目（避免每次渲染都重建数组）；打开时构建一次。
+  const buildRef = useRef(buildItems);
+  buildRef.current = buildItems;
+  const paletteItems = useMemo(
+    () => (paletteOpen ? buildRef.current() : []),
+    [paletteOpen],
+  );
+  const paletteFiltered = useMemo(() => {
+    const query = paletteQuery.trim().toLowerCase();
+    if (!query) return paletteItems;
+    return paletteItems.filter((item) =>
+      `${item.label} ${item.hint ?? ''}`.toLowerCase().includes(query),
+    );
+  }, [paletteItems, paletteQuery]);
   const paletteSafeIndex = paletteFiltered.length
     ? Math.min(paletteIndex, paletteFiltered.length - 1)
     : -1;

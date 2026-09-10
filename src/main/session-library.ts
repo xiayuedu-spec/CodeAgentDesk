@@ -78,6 +78,18 @@ export async function readChatEntries(filePath: string): Promise<ChatEntry[]> {
 }
 
 export async function readSessionDetail(filePath: string): Promise<SessionDetailEntry[]> {
+  // 解析缓存：同一文件未变化时复用（详情反复打开、详情内搜索都免重读）。
+  let stat: fs.Stats | null = null;
+  try {
+    stat = fs.statSync(filePath);
+  } catch {
+    return [];
+  }
+  const cached = detailCache.get(filePath);
+  if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) {
+    return cached.entries;
+  }
+
   const entries: SessionDetailEntry[] = [];
   const toolUses = new Map<string, { name: string; input: string }>();
   await scanLines(filePath, MAX_DETAIL_LINES, (line) => {
@@ -102,7 +114,31 @@ export async function readSessionDetail(filePath: string): Promise<SessionDetail
       // Ignore malformed lines.
     }
   });
+  cacheDetail(filePath, stat.mtimeMs, stat.size, entries);
   return entries;
+}
+
+/** 详情解析缓存（按 mtime+size 失效，容量上限防内存膨胀）。 */
+interface DetailCacheEntry {
+  mtimeMs: number;
+  size: number;
+  entries: SessionDetailEntry[];
+}
+const detailCache = new Map<string, DetailCacheEntry>();
+const DETAIL_CACHE_MAX = 80;
+
+function cacheDetail(
+  filePath: string,
+  mtimeMs: number,
+  size: number,
+  entries: SessionDetailEntry[],
+): void {
+  detailCache.set(filePath, { mtimeMs, size, entries });
+  while (detailCache.size > DETAIL_CACHE_MAX) {
+    const oldest = detailCache.keys().next().value;
+    if (oldest === undefined) break;
+    detailCache.delete(oldest);
+  }
 }
 
 function pushUserDetail(
@@ -204,39 +240,90 @@ export async function searchSessions(
   const needle = query.trim().toLowerCase();
   if (!needle) return [];
   const records = await listSessions(claudeHome, metaStore);
-  const results = await Promise.all(
-    records.map(async (record) => {
-      const hits = await searchFile(record.filePath, needle);
-      return {
-        sessionId: record.sessionId,
-        cwd: record.cwd,
-        archived: record.archived,
-        customName: record.customName,
-        hits,
-      };
-    }),
-  );
+  // 有界并发：会话很多时避免一次性打开大量文件句柄。
+  const results = await mapWithConcurrency(records, SEARCH_CONCURRENCY, async (record) => {
+    const hits = await searchFile(record.filePath, needle);
+    return {
+      sessionId: record.sessionId,
+      cwd: record.cwd,
+      archived: record.archived,
+      customName: record.customName,
+      hits,
+    };
+  });
   return results.filter((result) => result.hits.length > 0);
+}
+
+/** 搜索并发上限。 */
+const SEARCH_CONCURRENCY = 4;
+
+/** 有界并发 map（保持输入顺序）。 */
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  worker: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await worker(items[index]);
+    }
+  });
+  await Promise.all(runners);
+  return results;
 }
 
 /** 搜索命中内联预览：命中行前后各保留的行数（含命中行最多 5 行）。 */
 const SEARCH_CONTEXT_RADIUS = 2;
 
-async function searchFile(filePath: string, needle: string): Promise<SearchHit[]> {
-  const hits: SearchHit[] = [];
-  const readableLines: SearchContextLine[] = [];
+/** 可读行缓存：同一文件未变化时跳过重复解析（连续输入搜索时只重读变化的会话）。 */
+interface ReadableLinesEntry {
+  mtimeMs: number;
+  size: number;
+  lines: SearchContextLine[];
+}
+const readableLinesCache = new Map<string, ReadableLinesEntry>();
+const READABLE_LINES_CACHE_MAX = 120;
+
+async function readReadableLines(filePath: string): Promise<SearchContextLine[]> {
+  let stat: fs.Stats | null = null;
+  try {
+    stat = fs.statSync(filePath);
+  } catch {
+    return [];
+  }
+  const cached = readableLinesCache.get(filePath);
+  if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) {
+    return cached.lines;
+  }
+  const lines: SearchContextLine[] = [];
   let lineNumber = 0;
   // 收集文件内全部可读行（行号对齐原始 JSONL），再按命中位置截取上下文窗口。
   await scanLines(filePath, MAX_SEARCH_LINES, (line) => {
     lineNumber += 1;
     const readable = extractReadableLine(line);
     if (!readable) return;
-    readableLines.push({
+    lines.push({
       line: lineNumber,
       text: readable.text.replace(/\s+/g, ' ').trim(),
       role: readable.role,
     });
   });
+  readableLinesCache.set(filePath, { mtimeMs: stat.mtimeMs, size: stat.size, lines });
+  while (readableLinesCache.size > READABLE_LINES_CACHE_MAX) {
+    const oldest = readableLinesCache.keys().next().value;
+    if (oldest === undefined) break;
+    readableLinesCache.delete(oldest);
+  }
+  return lines;
+}
+
+async function searchFile(filePath: string, needle: string): Promise<SearchHit[]> {
+  const hits: SearchHit[] = [];
+  const readableLines = await readReadableLines(filePath);
   for (let i = 0; i < readableLines.length && hits.length < MAX_HITS_PER_SESSION; i += 1) {
     const entry = readableLines[i];
     if (!entry.text.toLowerCase().includes(needle)) continue;
