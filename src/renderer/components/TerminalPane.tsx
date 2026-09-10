@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
+import {
+  DEFAULT_TERMINAL_FONT_FAMILY,
+  DEFAULT_TERMINAL_FONT_SIZE,
+} from '../terminal-fonts';
 
 interface TerminalPaneProps {
   id: string;
@@ -39,15 +43,7 @@ function terminalTheme(skin: string): TerminalPalette {
   return TERMINAL_THEMES[skin] ?? TERMINAL_THEMES.default;
 }
 
-/** 终端字号/字体默认值与可选预设（与设置面板共用）。 */
-export const DEFAULT_TERMINAL_FONT_SIZE = 13;
-export const DEFAULT_TERMINAL_FONT_FAMILY = '"Cascadia Mono", Consolas, monospace';
-export const TERMINAL_FONT_PRESETS = [
-  { label: 'Cascadia Mono', value: '"Cascadia Mono", Consolas, monospace' },
-  { label: 'JetBrains Mono', value: '"JetBrains Mono", "Cascadia Mono", monospace' },
-  { label: 'Consolas', value: 'Consolas, "Courier New", monospace' },
-  { label: '等宽通用', value: 'ui-monospace, SFMono-Regular, Menlo, monospace' },
-];
+/** 终端字号/字体默认值与可选预设见 `renderer/terminal-fonts.ts`（单独模块，避免主 chunk 拉进 xterm）。 */
 
 export function TerminalPane({
   id,

@@ -34,7 +34,19 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    // 主 chunk 含 xterm/react 等核心库，体积由这些库决定；已用 lazy 拆分详情/弹窗。
-    chunkSizeWarningLimit: 600,
+    // 把第三方库拆成独立 chunk：升级应用代码时 xterm/react 不必重下（不改变总体积）。
+    // Vite 8 走 Rolldown，分包 API 是 output.codeSplitting（旧的 advancedChunks 已废弃）。
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: 'vendor-react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
+            { name: 'vendor-xterm', test: /node_modules[\\/]@xterm[\\/]/ },
+            { name: 'vendor-lucide', test: /node_modules[\\/]lucide-react[\\/]/ },
+          ],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 400,
   },
 });

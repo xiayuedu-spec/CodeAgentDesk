@@ -9,18 +9,29 @@
 # 开发模式（先编译主进程，再起 Vite + Electron）
 npm run dev
 
-# 质量门禁（每轮改动必须全过）
+# 质量门禁（每轮改动必须全过；verify = typecheck + test + build）
+npm run verify
 npm run typecheck   # tsc 双工程（main + renderer）
-npm run test        # vitest（15 用例，src/main/__tests__）
+npm run test        # vitest（37 用例，src/main/__tests__）
+npm run test:watch  # 监听模式（写解析器/纯逻辑时用）
 npm run build       # tsc main + vite build
 
-# 构建后运行 / 打包
+# 构建后运行 / 打包 / 发版
 npm start
 npm run package     # electron-builder 打 Windows 安装包
+npm version patch && git push --follow-tags   # 打 tag → CI 自动发 Release（见 .github/workflows/release.yml）
 
 # node-pty 原生模块重编译（重装依赖后必须执行）
 npm run rebuild
 ```
+
+CI（`.github/workflows/ci.yml`）：push / PR 自动跑 typecheck + test + build，并打印各 chunk 体积。发版走 `release.yml`（tag `v*` 触发，electron-builder `--publish always` 上传 nsis + latest.yml，供 electron-updater 拉取）。
+
+## 1.1 打包产物体积纪律
+
+- 首屏只加载 `index`（应用代码）+ `vendor-react` + `vendor-lucide`（约 300KB / 94KB gzip）；**xterm 约 330KB 是懒加载的**（`LazyTerminalPane`），首页/概览不为它买单。
+- 分包配置在 `vite.config.mts` 的 `build.rolldownOptions.output.codeSplitting`（Vite 8 = Rolldown；`advancedChunks` 已废弃）。
+- 新增重依赖（>50KB）前先想清楚它是否该在主路径上；终端字号/字体这类**常量**放 `renderer/terminal-fonts.ts`，不要从组件模块导出，否则会把整块依赖拖进主 chunk。
 
 版本：Electron 43.x、Vite 8.x、React 19、node-pty 1.1.0、chokidar 4.0.3（勿升 v5，纯 ESM）、TS 7、lucide-react。
 
@@ -129,13 +140,15 @@ src/
 - 会话文件定位统一走 `ipc-utils.ts` 的 `locateSessionFile()`。
 - 弹窗组件一律 `React.lazy`；空状态用 `EmptyState`；数字展示用 `useAnimatedNumber`；弹窗支持 Esc（`useEscape`）。
 - 高频统计主进程加 TTL + 显式失效；任何调 claude 的功能声明输入上限并优先增量。
-- 提交前至少 `npm run typecheck` + `npm run test` + `npm run build`；提交信息中文、多个 `-m`。
+- 提交前跑 `npm run verify`（= typecheck + test + build，CI 同款命令）；提交信息中文、多个 `-m`。
+- 新增/修改渲染层组件后顺手看一眼构建输出体积（CI 会打印 Top 12 chunk）：主 chunk 涨过 150KB 或首屏多出 vendor chunk 就该考虑 lazy 或分包。
 
 ## 7. 测试现状
 
-- Vitest（`npm run test`）：15 用例，覆盖 buildMarkdown 导出、JSONL 解析工具链、parseSummary。
+- Vitest（`npm run test`）：37 用例 —— buildMarkdown 导出、JSONL 解析/搜索/用量、parseSummary 与长任务取消语义、会话洞察（计划快照 / 改动聚合 / 行级 diff / 截断与缓存）。
 - 主进程测试用 `vi.mock('electron')`；测试文件在 `src/**/__tests__/`，已从构建 tsconfig 排除（`vitest.config.mts`）。
 - 可补：用量聚合、活跃时长、MBTI/宠物树等纯函数（`renderer/mbti.ts` 建议补用例）。
+- **暂未接入 ESLint**：本仓库 TS 7 + ESLint 10 的 typescript-eslint 兼容性尚未确认，先用 tsc 严格模式 + CI 门禁顶着；接入时建议只开 react-hooks 与正确性规则，不做风格规则。
 
 ## 8. 建议下一步（按 ROI，详见 docs/BACKLOG.md）
 

@@ -42,8 +42,7 @@ import { useToast } from './toast';
 import {
   DEFAULT_TERMINAL_FONT_FAMILY,
   DEFAULT_TERMINAL_FONT_SIZE,
-  TerminalPane,
-} from './components/TerminalPane';
+} from './terminal-fonts';
 import { TitleBar } from './components/TitleBar';
 import { TabBar } from './components/TabBar';
 import { InfoPanel } from './components/InfoPanel';
@@ -103,6 +102,10 @@ const LazySessionInsights = lazy(() =>
   import('./components/SessionInsightsModal').then((module) => ({
     default: module.SessionInsightsModal,
   })),
+);
+// xterm 约 330KB：只有真要开会话时才加载，首页/概览不必为它买单。
+const LazyTerminalPane = lazy(() =>
+  import('./components/TerminalPane').then((module) => ({ default: module.TerminalPane })),
 );
 
 export default function App() {
@@ -1447,12 +1450,14 @@ export default function App() {
           key={session.id}
           className={`terminal-slot ${session.id === activeId ? 'active' : ''}`}
         >
-          <TerminalPane
-            id={session.id}
-            active={!terminalStackHidden && session.id === activeId}
-            fontSize={claudeInfo?.config.terminalFontSize ?? DEFAULT_TERMINAL_FONT_SIZE}
-            fontFamily={claudeInfo?.config.terminalFontFamily ?? DEFAULT_TERMINAL_FONT_FAMILY}
-          />
+          <Suspense fallback={<div className="terminal-loading" />}>
+            <LazyTerminalPane
+              id={session.id}
+              active={!terminalStackHidden && session.id === activeId}
+              fontSize={claudeInfo?.config.terminalFontSize ?? DEFAULT_TERMINAL_FONT_SIZE}
+              fontFamily={claudeInfo?.config.terminalFontFamily ?? DEFAULT_TERMINAL_FONT_FAMILY}
+            />
+          </Suspense>
         </div>
       ))}
     </div>

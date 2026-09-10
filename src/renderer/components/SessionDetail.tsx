@@ -1,8 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, ListChecks, MessageSquare, Sparkles, X } from 'lucide-react';
 import type { SessionDetailResult } from '../../shared/types';
 import { useEscape } from '../hooks/useEscape';
 import { EmptyState } from './EmptyState';
+
+/** 首屏渲染条目数：长会话（上限 2000 条）不再一次性铺满 DOM。 */
+const PAGE_SIZE = 200;
 
 interface SessionDetailProps {
   detail: SessionDetailResult;
@@ -26,25 +29,41 @@ export function SessionDetail({
   onClose,
 }: SessionDetailProps) {
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const [visible, setVisible] = useState(PAGE_SIZE);
   useEscape(true, onClose);
 
-  // 从搜索结果跳转：定位并高亮包含命中文本的首个会话条目。
+  const entries = detail.entries;
+  // 换会话时回到首屏条数。
   useEffect(() => {
+    setVisible(PAGE_SIZE);
+  }, [detail.sessionId]);
+
+  // 搜索命中下标在**数据**上找（不是 DOM）：命中在窗口之外时先扩容再滚动。
+  const highlightIndex = useMemo(() => {
     const query = (highlightQuery ?? '').trim().toLowerCase();
-    const container = bodyRef.current;
-    if (!query || !container) return;
-    const entries = container.querySelectorAll<HTMLElement>('.chat-entry');
-    let target: HTMLElement | null = null;
-    for (const entry of entries) {
-      if ((entry.textContent ?? '').toLowerCase().includes(query)) {
-        target = entry;
-        break;
-      }
-    }
+    if (!query) return -1;
+    return entries.findIndex(
+      (entry) => entry.role !== 'tool' && (entry.text ?? '').toLowerCase().includes(query),
+    );
+  }, [entries, highlightQuery]);
+
+  useEffect(() => {
+    if (highlightIndex < 0) return;
+    setVisible((current) => Math.max(current, Math.min(entries.length, highlightIndex + 1)));
+  }, [highlightIndex, entries.length]);
+
+  useEffect(() => {
+    if (highlightIndex < 0) return;
+    const target = bodyRef.current?.querySelector<HTMLElement>(
+      `[data-entry-index="${highlightIndex}"]`,
+    );
     if (!target) return;
     target.classList.add('highlight');
     target.scrollIntoView({ block: 'center' });
-  }, [highlightQuery, detail.sessionId]);
+  }, [highlightIndex, visible]);
+
+  const shown = entries.slice(0, visible);
+  const remaining = entries.length - shown.length;
 
   const toolPreview = (value: string): string => {
     const singleLine = value.replace(/\s+/g, ' ').trim();
@@ -59,6 +78,10 @@ export function SessionDetail({
           <div className="detail-meta">
             <span>{detail.cwd || '未知目录'}</span>
             <span>{detail.sessionId}</span>
+            <span>
+              {entries.length} 条记录
+              {remaining > 0 ? `（已显示前 ${shown.length} 条）` : ''}
+            </span>
           </div>
         </div>
         <div className="detail-actions">
@@ -105,31 +128,46 @@ export function SessionDetail({
             ) : null}
           </div>
         ) : null}
-        {detail.entries.length === 0 ? (
+        {entries.length === 0 ? (
           <EmptyState
             icon={<MessageSquare size={36} strokeWidth={1.4} />}
             title="暂无内容"
             hint="这个会话还没有可展示的对话记录"
           />
         ) : (
-          detail.entries.map((entry, index) =>
-            entry.role === 'tool' ? (
-              <details key={index} className="tool-card">
-                <summary>
-                  <span className="tool-name">{entry.toolName ?? '工具调用'}</span>
-                  {entry.toolOutput ? (
-                    <span className="tool-preview">{toolPreview(entry.toolOutput)}</span>
-                  ) : null}
-                </summary>
-                {entry.toolOutput ? <pre className="tool-output">{entry.toolOutput}</pre> : null}
-              </details>
-            ) : (
-              <div key={index} className={`chat-entry ${entry.role}`}>
-                <div className="chat-role">{entry.role === 'user' ? 'User' : 'Claude'}</div>
-                <pre className="chat-text">{entry.text}</pre>
-              </div>
-            ),
-          )
+          <>
+            {shown.map((entry, index) =>
+              entry.role === 'tool' ? (
+                <details key={index} className="tool-card" data-entry-index={index}>
+                  <summary>
+                    <span className="tool-name">{entry.toolName ?? '工具调用'}</span>
+                    {entry.toolOutput ? (
+                      <span className="tool-preview">{toolPreview(entry.toolOutput)}</span>
+                    ) : null}
+                  </summary>
+                  {entry.toolOutput ? <pre className="tool-output">{entry.toolOutput}</pre> : null}
+                </details>
+              ) : (
+                <div
+                  key={index}
+                  className={`chat-entry ${entry.role}`}
+                  data-entry-index={index}
+                >
+                  <div className="chat-role">{entry.role === 'user' ? 'User' : 'Claude'}</div>
+                  <pre className="chat-text">{entry.text}</pre>
+                </div>
+              ),
+            )}
+            {remaining > 0 ? (
+              <button
+                type="button"
+                className="detail-more"
+                onClick={() => setVisible((current) => current + PAGE_SIZE)}
+              >
+                显示更多（还有 {remaining} 条）
+              </button>
+            ) : null}
+          </>
         )}
       </div>
     </div>

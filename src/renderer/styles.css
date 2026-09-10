@@ -1484,6 +1484,37 @@ button:focus-visible, input:focus-visible {
   gap: 4px;
   flex: none;
 }
+/* 详情页长会话：只渲染前 N 条 + 分页按钮；离屏条目交给浏览器跳过布局与绘制 */
+.chat-entry,
+.tool-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
+}
+.detail-more {
+  display: block;
+  width: 100%;
+  margin: 4px 0 12px;
+  padding: 9px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color var(--motion-micro) ease, border-color var(--motion-micro) ease;
+}
+.detail-more:hover {
+  color: var(--text);
+  border-color: var(--accent-dim);
+}
+
+/* xterm 懒加载占位：与终端同底色的空面板，避免首帧白闪 */
+.terminal-loading {
+  height: 100%;
+  min-height: 120px;
+  background: var(--bg-inset);
+}
+
 /* 单层 chrome：终端面板不再有独立头部，选中自动复制的提示改为浮层 */
 .terminal-pane {
   position: relative;

@@ -56,15 +56,19 @@ npm install        # postinstall 自动执行 patch-package（node-pty 修复补
 npm run dev        # 开发：tsc 编译 main + vite + electron
 ```
 
-质量门禁（每次改动必须通过）：
+质量门禁（每次改动必须通过；CI 跑同一条命令）：
 
 ```bash
+npm run verify      # = typecheck + test + build
 npm run typecheck   # tsc 双工程（main + renderer）
-npm run test        # vitest（15 用例，src/main/__tests__）
+npm run test        # vitest（37 用例，src/main/__tests__）
+npm run test:watch  # 监听模式
 npm run build       # tsc main + vite build
 ```
 
-打包安装包：`npm run package`（electron-builder，产物在 `dist/`）。重装依赖后若 node-pty 报错执行 `npm run rebuild`。
+打包与发版：`npm run package`（electron-builder，产物在 `release/`）；打 tag 即由 CI 自动发布安装包与 `latest.yml`（`npm version patch && git push --follow-tags`）。重装依赖后若 node-pty 报错执行 `npm run rebuild`。
+
+体积约定：首屏只加载应用代码 + react + 图标（约 300KB / 94KB gzip），**xterm 约 330KB 按需加载**（只在你真的开会话时下载），分包配置见 `vite.config.mts`。
 
 ---
 

@@ -1,0 +1,49 @@
+name: Release
+
+# 打 tag 即出安装包并发布到 GitHub Releases（electron-updater 从这里拉更新）。
+# 用法：npm version patch && git push --follow-tags   （tag 形如 v0.2.0）
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 发版前必须过闸：类型、单测、渲染层构建。
+      - name: Verify
+        run: |
+          npm run typecheck
+          npm run test
+
+      - name: Build and publish (nsis + latest.yml)
+        run: npm run package -- --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 自动更新不签名：跳过 electron-builder 的证书查找，避免 CI 上失败。
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Upload artifacts (workflow run)
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            release/*.exe
+            release/*.yml
+          if-no-files-found: warn
+          retention-days: 14

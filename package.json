@@ -16,6 +16,8 @@
     "start": "electron .",
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "npm run typecheck && npm run test && npm run build",
     "package": "npm run build && electron-builder"
   },
   "dependencies": {

@@ -8,7 +8,7 @@ import {
   DEFAULT_TERMINAL_FONT_FAMILY,
   DEFAULT_TERMINAL_FONT_SIZE,
   TERMINAL_FONT_PRESETS,
-} from './TerminalPane';
+} from '../terminal-fonts';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 
 export const DEFAULT_HOURLY_LIMIT = 10_000_000;

@@ -231,7 +231,11 @@
 
 ## 工程实践（接手 agent 的操作约定）
 
-- 命令：`npm.cmd run typecheck`（tsc 双工程）、`npm.cmd run test`（vitest，37 用例）、`npm.cmd run build`（tsc main + vite）。
-- 提交：每轮功能通过 typecheck + 全量测试后 `git commit` + `git push`；提交信息中文、多个 `-m`（避免引号/反引号问题）。
+- 命令：`npm.cmd run verify`（= typecheck + test + build，CI 同款）、`npm run test:watch`、`npm run build`（tsc main + vite）。
+- CI：`.github/workflows/ci.yml`（push/PR → verify + chunk 体积报告）；发版：`.github/workflows/release.yml`（tag `v*` → electron-builder `--publish always` 出 nsis + latest.yml）。
+- 体积纪律：首屏约 300KB（index + vendor-react + vendor-lucide）；**xterm ~330KB 懒加载**（`LazyTerminalPane`）；分包在 `vite.config.mts` 的 `build.rolldownOptions.output.codeSplitting`。常量要单独成模块（如 `renderer/terminal-fonts.ts`），别从重组件导出。
+- 长列表渲染：卡片/条目加 `content-visibility: auto` + `contain-intrinsic-size`；条目数可能上千的视图要做分页（`SessionDetail` 每页 200 条）或窗口化（`SessionList`）。
+- 提交：每轮功能通过 verify 后 `git commit` + `git push`；提交信息中文、多个 `-m`（避免引号/反引号问题）。
 - 测试：主进程纯逻辑（导出/解析/汇总/洞察/取消语义）用 vitest + `vi.mock('electron')`；测试文件放 `src/main/__tests__/`，tsconfig 已排除。
 - 弹窗组件一律 `lazy()` 懒加载，减小主 chunk。
+- 暂未接入 ESLint（TS 7 × ESLint 10 的 typescript-eslint 兼容性未确认）；靠 tsc 严格模式 + CI 门禁。
