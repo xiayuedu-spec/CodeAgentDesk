@@ -117,16 +117,16 @@ export function StatusBar({
 
   return (
     <footer className="status-bar">
-      <span className={`agent-status${agentAlert ? ' alert' : ''}`} title={agentStatusLabel}>
+      <span className={`agent-status${agentAlert ? ' alert' : ''}`} data-tip={agentStatusLabel}>
         {agentEmoji}
       </span>
       <span>{sessionCount} 会话</span>
       <span>{archivedCount} 归档</span>
-      <button type="button" className="status-day" title="返回首页" onClick={onOpenHome}>
+      <button type="button" className="status-day" data-tip="返回首页" onClick={onOpenHome}>
         <Home size={12} />
         首页
       </button>
-      <button type="button" className="status-day" title="生成今日总结" onClick={onOpenSummary}>
+      <button type="button" className="status-day" data-tip="生成今日总结" onClick={onOpenSummary}>
         <Sparkles size={12} />
         今日总结
       </button>
@@ -134,7 +134,7 @@ export function StatusBar({
         <button
           type="button"
           className={`status-day status-more${moreOpen ? ' active' : ''}`}
-          title="更多功能"
+          data-tip="更多功能"
           onClick={(event) => {
             event.stopPropagation();
             setMoreOpen((open) => !open);
@@ -169,7 +169,7 @@ export function StatusBar({
       <button
         type="button"
         className={`pomodoro${pomodoroRunning ? ' running' : ''}`}
-        title={`番茄钟 · 已完成 ${Math.round(pomodoroProgress * 100)}% · 左键开始/暂停，右键重置`}
+        data-tip={`番茄钟 · 已完成 ${Math.round(pomodoroProgress * 100)}% · 左键开始/暂停，右键重置`}
         onClick={onPomodoroToggle}
         onContextMenu={(event) => {
           event.preventDefault();
@@ -180,7 +180,7 @@ export function StatusBar({
       </button>
       <span className="status-bar-spacer" />
       <span>{claudeDirName}</span>
-      <span className="status-version" title="连点有惊喜" onClick={handleVersionClick}>
+      <span className="status-version" data-tip="连点有惊喜" onClick={handleVersionClick}>
         v{version}
       </span>
     </footer>

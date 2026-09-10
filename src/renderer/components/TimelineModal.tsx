@@ -160,7 +160,7 @@ export function TimelineModal({ onClose, onOpenDetail }: TimelineModalProps) {
                           background: colorOf(event.cwd),
                           gridColumn: lane + 1,
                         }}
-                        title={`${event.name}\n${formatTime(event.startMs)} - ${formatTime(event.endMs)} · ${formatDuration(event.endMs - event.startMs)}\n活跃 ${formatDuration(event.activeMs)}\n${event.cwd}`}
+                        data-tip={`${event.name} · ${formatTime(event.startMs)}-${formatTime(event.endMs)} · ${formatDuration(event.endMs - event.startMs)} · 活跃 ${formatDuration(event.activeMs)}`}
                         onClick={() => onOpenDetail(event.sessionId)}
                       />
                     );

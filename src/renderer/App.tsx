@@ -51,6 +51,7 @@ import { InfoPanel } from './components/InfoPanel';
 import { Welcome } from './components/Welcome';
 import { ErrorBar } from './components/ErrorBar';
 import { TaskProgressPanel, useTaskProgress } from './components/TaskProgress';
+import { TooltipLayer } from './components/TooltipLayer';
 import { StatusBar } from './components/StatusBar';
 import { SearchResults } from './components/SearchResults';
 import { SidebarBody } from './components/SidebarBody';
@@ -775,7 +776,11 @@ export default function App() {
     );
     await refreshRecords();
     if (ok > 0) {
-      toast.success(`已归档 ${ok} 个会话${errors.length > 0 ? `（${errors.length} 个失败）` : ''}`);
+      toast.success(`已归档 ${ok} 个会话${errors.length > 0 ? `（${errors.length} 个失败）` : ''}`, {
+        label: '撤销',
+        run: () =>
+          void undoArchive(targets.map((record) => ({ sessionId: record.sessionId, cwd: record.cwd }))),
+      });
     } else {
       toast.error(errors[0] ?? '归档失败');
     }
@@ -799,7 +804,11 @@ export default function App() {
     );
     await refreshRecords();
     if (ok > 0) {
-      toast.success(`已归档 ${ok} 个历史会话${errors.length > 0 ? `（${errors.length} 个失败）` : ''}`);
+      toast.success(`已归档 ${ok} 个历史会话${errors.length > 0 ? `（${errors.length} 个失败）` : ''}`, {
+        label: '撤销',
+        run: () =>
+          void undoArchive(targets.map((record) => ({ sessionId: record.sessionId, cwd: record.cwd }))),
+      });
     } else {
       toast.error(errors[0] ?? '归档失败');
     }
@@ -980,6 +989,18 @@ export default function App() {
     toast.success('已重命名');
   }
 
+  /** 撤销归档：把刚归档的会话放回历史（不打开终端）。 */
+  async function undoArchive(targets: { sessionId: string; cwd: string }[]): Promise<void> {
+    let ok = 0;
+    for (const target of targets) {
+      const result = await window.codeagentdesk.restoreArchivedSession(target.sessionId, target.cwd);
+      if (result.ok) ok += 1;
+    }
+    await refreshRecords();
+    if (ok > 0) toast.success(`已撤销归档（${ok} 个会话）`);
+    else toast.error('撤销失败');
+  }
+
   async function archiveSession(sessionId: string, cwd: string): Promise<void> {
     const result = await window.codeagentdesk.archiveSession(sessionId, cwd);
     if (!result.ok) {
@@ -999,7 +1020,8 @@ export default function App() {
     );
     setDetailSessionId((current) => (current === sessionId ? null : current));
     setDetail((current) => (current?.sessionId === sessionId ? null : current));
-    toast.success('已归档');
+    // 归档可逆 → 立即执行 + 撤销，而不是先弹确认。
+    toast.success('已归档', { label: '撤销', run: () => void undoArchive([{ sessionId, cwd }]) });
   }
 
   async function copySessionText(sessionId: string): Promise<void> {
@@ -1658,6 +1680,7 @@ export default function App() {
           )}
         </div>
         {error ? <ErrorBar message={error} onDismiss={() => setError(null)} /> : null}
+        <TooltipLayer />
         {taskProgress.progress ? (
           <TaskProgressPanel progress={taskProgress.progress} stages={taskProgress.stages} />
         ) : null}

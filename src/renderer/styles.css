@@ -3972,7 +3972,6 @@ body,
   -webkit-backdrop-filter: blur(12px);
   color: var(--text);
   font-size: 12px;
-  cursor: pointer;
   pointer-events: auto;
   animation: toastIn var(--motion-struct) cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -3997,6 +3996,103 @@ body,
 }
 .toast-message {
   overflow-wrap: anywhere;
+}
+/* Toast 行动按钮（撤销）与关闭按钮 */
+.toast-action {
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--motion-micro) ease;
+}
+.toast-action:hover {
+  background: var(--accent-soft);
+}
+.toast-close {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--motion-micro) ease;
+}
+.toast-close:hover {
+  color: var(--text);
+}
+
+/* ---- 全局自绘 Tooltip（替代原生 title） ---- */
+.app-tooltip {
+  position: fixed;
+  z-index: 200;
+  transform: translate(-50%, calc(-100% - 6px));
+  max-width: 320px;
+  padding: 5px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-raised) 96%, transparent);
+  box-shadow: var(--shadow-pop), var(--edge-highlight);
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.45;
+  pointer-events: none;
+  animation: fadeIn var(--motion-micro) ease;
+}
+
+/* ---- 键盘焦点可见性（:focus-visible 统一光圈） ---- */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 1px;
+}
+button:focus-visible,
+[role='tab']:focus-visible,
+[role='menuitem']:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-color: var(--accent-dim);
+}
+
+/* ---- 浅色主题深度策略：清晰边框 + 极浅阴影（不用毛玻璃） ---- */
+:root[data-theme='mac'] .day-panel,
+:root[data-theme='green'] .day-panel,
+:root[data-theme='sepia'] .day-panel,
+:root[data-theme='warm'] .day-panel,
+:root[data-theme='mac'] .context-menu,
+:root[data-theme='green'] .context-menu,
+:root[data-theme='sepia'] .context-menu,
+:root[data-theme='warm'] .context-menu,
+:root[data-theme='mac'] .settings-popover,
+:root[data-theme='green'] .settings-popover,
+:root[data-theme='sepia'] .settings-popover,
+:root[data-theme='warm'] .settings-popover,
+:root[data-theme='mac'] .toast,
+:root[data-theme='green'] .toast,
+:root[data-theme='sepia'] .toast,
+:root[data-theme='warm'] .toast,
+:root[data-theme='mac'] .app-tooltip,
+:root[data-theme='green'] .app-tooltip,
+:root[data-theme='sepia'] .app-tooltip,
+:root[data-theme='warm'] .app-tooltip {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--bg-raised);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 @keyframes toastIn {
   from {
