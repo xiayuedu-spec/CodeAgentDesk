@@ -147,6 +147,18 @@
 
 ---
 
+## 模块 H：长线维护基建（团队推广前提）
+
+| 功能 | 实现要点 |
+|---|---|
+| **自动更新** | 依赖 `electron-updater`；`updater.ts`：`setupAutoUpdater()` 仅在 `app.isPackaged` 生效，`autoDownload=false` + `update-available` → `downloadUpdate()` → `update-downloaded` 广播 → `quitAndInstall()`；IPC `update:check/install` + 事件 `update:status`；发布源配在打包配置的 `publish`（GitHub Releases 需 `GH_TOKEN`，内网可改 generic）。**开发模式必须安全降级**（返回 `kind:'dev'`） |
+| **备份 / 迁移** | `backup.ts`：导出把应用数据 JSON 白名单复制到 `codeagentdesk-backup-<日期>/`；导入先快照当前数据到 `pre-import-<ts>/` 再覆盖，找不到目标文件则报错不写入；弹窗 `BackupModal`（导出/导入 + 换机说明）。会话 JSONL 不在范围内 |
+| **功能使用统计** | `usage-store.ts`：`incrementUsage(key)`（**白名单校验**）+ `listUsage()`，存 `usage-stats.json` 的 `{count,lastAt}`；渲染层在关键动作埋点（命令面板/搜索/总结/知识库/详情/导出/番茄钟/视图打开）；`UsageStatsModal` 按占比条展示，指导功能删减 |
+| 终端选中自动复制 | xterm `onSelectionChange` → `navigator.clipboard.writeText(selection)` + 1.5s「已复制」徽章；保留 `Ctrl+C/V` 与右键菜单 |
+| 分组/历史区批量归档 | 分组标题右键「全部归档」= 该组历史会话；历史会话区块标题右键「全部归档」= **仅未分组**历史会话（已分组的归各组管理）；归档会话右键「恢复（放回历史会话）」只恢复不打开 |
+
+---
+
 ## 坑位清单（二次开发务必避开）
 
 1. **`??` 与 `||` 混用**会触发 TS5076，需加括号：`a ?? (b || c)`。

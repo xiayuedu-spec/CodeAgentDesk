@@ -38,6 +38,9 @@ src/
 │  ├─ ipc-usage.ts        # dashboard/趋势/小时用量/效率洞察/时间线（dashboard 有 60s TTL）
 │  ├─ ipc-fun.ts          # 成就/项目性格/彩蛋解锁（60s TTL）
 │  ├─ ipc-utils.ts        # locateSessionFile / weekRangeFor / collectRangeText / emptyUsage
+│  ├─ updater.ts          # 自动更新（仅打包环境；发布源在 electron-builder.yml publish）
+│  ├─ backup.ts           # 备份/迁移应用数据（导入前自动快照 pre-import-*）
+│  ├─ usage-store.ts      # 功能使用统计（本地计数，key 白名单）
 │  ├─ session-manager.ts  # node-pty 生命周期（startedAt→durationMs 供完成通知）
 │  ├─ session-watcher.ts  # chokidar 监听 JSONL → 绑定 sessionId → 广播 sessionsChanged
 │  ├─ session-library.ts  # JSONL 解析/搜索/用量增量缓存/活跃时长/小时聚合
@@ -57,7 +60,8 @@ src/
 │  ├─ hooks/              # useUiState/useSearch/usePalette/useSummary/useDashboardStats/
 │  │                      # useDismiss/useEscape/useAnimatedNumber/usePomodoro/useSessionAgentStatuses
 │  └─ components/         # 展示组件；弹窗一律 lazy：SessionDetail/SummaryModal/CommandPalette/
-│                         # UsageTrendModal/KnowledgeModal/Dashboard/EfficiencyInsights/Timeline/HourlyUsagePopover
+│                         # UsageTrendModal/KnowledgeModal/Dashboard/EfficiencyInsights/Timeline/
+│                         # Backup/UsageStats/HourlyUsagePopover
 └─ shared/                # ipc-contract.ts（通道唯一来源）+ types.ts（类型 + CodeAgentDeskApi）
 ```
 
@@ -103,6 +107,9 @@ src/
 17. **归档借出**：点击归档行→移回 projects + resume 但 UI 仍标记归档；切走自动放回；右键「恢复」才永久取消归档。
 18. **claude -p 调用**：Windows 上 claude 是 `.cmd`，`spawn` 必须 `shell:true`；指令+内容走 stdin；60s 超时；消耗真实 token，注意预算。
 19. **拖放路径**：Electron ≥32 移除 `File.path`，必须 `webUtils.getPathForFile`；监听挂 window **capture 阶段**。
+20. **自动更新**：electron-updater 只在 `app.isPackaged` 生效；发布需 `GH_TOKEN`（或把 `electron-builder.yml` 的 `publish` 改内网 generic 源）；开发模式必须安全降级（返回 `kind:'dev'`，不抛错）。
+21. **使用统计 key 白名单**：`usage-store.ts` 只接受白名单 key，新增埋点必须同时加 key，否则静默忽略（不报错，容易漏统计）。
+22. **终端选中自动复制**：在 xterm `onSelectionChange` 里写剪贴板；保留 `Ctrl+C` 分支（无选中时仍是中断信号）。
 
 ### 主题系统（新增皮肤同步 6 处）
 1. `src/shared/types.ts`：`ThemeName` 联合类型
@@ -126,11 +133,16 @@ src/
 - 主进程测试用 `vi.mock('electron')`；测试文件在 `src/**/__tests__/`，已从构建 tsconfig 排除（`vitest.config.mts`）。
 - 可补：用量聚合、活跃时长、MBTI/宠物树等纯函数（`renderer/mbti.ts` 建议补用例）。
 
-## 8. 建议下一步（按 ROI）
+## 8. 建议下一步（按 ROI，详见 docs/BACKLOG.md）
 
-1. **知识库同步 CLAUDE.md** ✅（已实现：单项目 + 全局）
-2. 上下文占用预警（侧边栏估算 token，长会话标红）
-3. 日报/周报定时提醒（晚间通知生成草稿）
-4. 会话标签系统（自定义标签跨分组筛选）
-5. 团队向：CLAUDE.md 模板库、知识库/总结同步团队 git 仓库、团队周报汇总
-6. 功能使用统计（本地统计各功能使用次数，指导培训/删减）
+**P0 长线维护地基（已完成）**：
+1. ✅ 自动更新（electron-updater + GitHub Releases）
+2. ✅ 备份 / 迁移（应用数据导出导入 + 导入前快照）
+3. ✅ 功能使用统计（本地计数 + 统计弹窗，季度审计依据）
+4. ✅ 知识库同步 CLAUDE.md（单项目 + 全局记忆）
+
+**P1 团队推广（下一批）**：团队 CLAUDE.md 模板库 → 知识库/总结同步团队 git 仓库 → 团队周报汇总 → 内网发布源。
+
+**P2 效率补强**：上下文占用预警 · 日报/周报定时提醒 · 会话标签系统 · 每日站会简报 · 会话克隆。
+
+**P3 趣味（占比 ≤20%）**：随机短句 · 撒花特效 · 成就解锁特效 · 工作星座/效率天气 · 彩蛋总览页。

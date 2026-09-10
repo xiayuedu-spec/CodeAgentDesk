@@ -19,13 +19,13 @@ main ──webContents.send(broadcast)──> renderer（sessionData/exited/chan
 
 | 域 | 通道（节选） | 说明 |
 |---|---|---|
-| app | `app:get-info` `config:get` `config:set-claude-dir` `config:set-theme` `config:set-token-limit` `config:set-agent-status-style` `config:set-pomodoro-minutes` `config:pick-claude-dir` `recent-dirs:get` `ui:get-state` `ui:save-state` `window:*` `session:open-cwd` | 应用信息、配置、窗口控制、UI 状态、shell 打开路径 |
+| app | `app:get-info` `config:get` `config:set-claude-dir` `config:set-theme` `config:set-token-limit` `config:set-agent-status-style` `config:set-pomodoro-minutes` `config:pick-claude-dir` `recent-dirs:get` `ui:get-state` `ui:save-state` `window:*` `session:open-cwd` `update:check/install` `backup:export/import` `usage:stat-increment/stat-list` | 应用信息、配置、窗口控制、UI 状态、shell 打开路径、自动更新、备份迁移、使用统计 |
 | sessions | `sessions:list` `session:create/resume/rename/archive/delete/detail/summarize/export/read-text/usage/write/resize/close` `archive:restore` `search:query` `session:set-pinned` | 会话生命周期、终端 IO、搜索 |
 | groups | `groups:list/create/rename/delete/set-color` `session:set-group` | 分组管理 |
 | summary | `day:summarize` `week:summarize` `month:summarize` `summaries:list/get` `summary:save` `knowledge:generate/list/get/save/export/ensure-global` | 总结、知识库 |
 | usage | `dashboard:stats` `usage:trend` `usage:hourly` `efficiency:insights` `timeline:day` | 统计、效率、时间线 |
 | fun | `fun:stats` `fun:unlock-neon` | 成就/性格/彩蛋 |
-| events | `session:data/exited/bound/error` `sessions:changed` `window:maximized-changed` | 主→渲染广播 |
+| events | `session:data/exited/bound/error` `sessions:changed` `window:maximized-changed` `update:status` | 主→渲染广播 |
 
 事件广播（主进程 `broadcast(channel, payload)` → 渲染层 `onXxx(callback)` 订阅并返回退订函数）。
 
@@ -41,7 +41,9 @@ main ──webContents.send(broadcast)──> renderer（sessionData/exited/chan
 | `recent-dirs.json` | 新建会话的最近目录 |
 | `summaries.json` | `day` / `week` / `month` 三类总结（key = 日期/周一日期） |
 | `knowledge.json` | 按项目 key（cwd 编码）存知识文本 + `sessionIds` 指纹（增量用） |
+| `usage-stats.json` | 功能使用计数：`{ [key]: { count, lastAt } }`（key 白名单校验，仅本地） |
 | `window-state.json` | 窗口位置/大小/最大化 |
+| `pre-import-<ts>/` | 导入备份前的原数据快照（备份/迁移用） |
 | `error.log` | 主进程未捕获异常 |
 
 ### 会话数据（Claude 目录）
@@ -81,11 +83,24 @@ main ──webContents.send(broadcast)──> renderer（sessionData/exited/chan
 ### 4.8 限额预警
 `usage-warning.ts`：每 5 分钟轮询 `getCurrentHourUsage`（整点口径，按 updatedAt 归小时），80%/100% 分级系统通知，按自然小时重置。
 
+### 4.9 自动更新（`updater.ts`）
+`setupAutoUpdater()` 仅在 `app.isPackaged` 时生效：`autoDownload=false` → `update-available` 广播并自动 `downloadUpdate()` → `update-downloaded` 广播（渲染层 toast + 菜单项「重启并安装更新」）→ `quitAndInstall()`。
+发布源在 `electron-builder.yml` 的 `publish`（GitHub Releases，打包需 `GH_TOKEN`；内网可改 generic）。开发模式 `checkForUpdates()` 返回 `kind:'dev'` 安全降级。
+
+### 4.10 备份 / 迁移（`backup.ts`）
+- 导出：把 `STORE_FILES`（config/session-meta/groups/ui-state/recent-dirs/summaries/knowledge/window-state）复制到所选目录的 `codeagentdesk-backup-<日期>/`。
+- 导入：先从备份目录复制数据文件到 userData，导入前把原文件快照到 `pre-import-<ts>/`（可回退）；找不到任何目标文件则报错不写入。
+- 会话 JSONL 在 Claude 目录，不在备份范围（文档已提示）。
+
+### 4.11 功能使用统计（`usage-store.ts`）
+`incrementUsage(key)` 仅接受白名单 key（防污染），写 `{count,lastAt}`；渲染层在关键动作处调用（命令面板/搜索/总结/知识库/详情/导出/番茄钟/各视图打开）。纯本地、不采集内容，用于季度功能审计。
+
 ## 5. 渲染层模式
 
-- **容器-展示**：`App.tsx` 持有状态/effects/handlers，向下传 `data`/`actions` 分组 props（SidebarBody/StatusBar/ContextMenus 等）。
-- **lazy 弹窗**：SessionDetail / SummaryModal / CommandPalette / UsageTrendModal / KnowledgeModal / Dashboard / EfficiencyInsights / Timeline / HourlyUsagePopover 均懒加载。
+- **容器-展示**：`App.tsx` 持有状态/effects/handlers，向下传 `data`/`actions` 分组 props（SidebarBody/StatusBar/TabBar/ContextMenus 等）。
+- **lazy 弹窗**：SessionDetail / SummaryModal / CommandPalette / UsageTrendModal / KnowledgeModal / Dashboard / EfficiencyInsights / Timeline / Backup / UsageStats / HourlyUsagePopover 均懒加载。
 - **hooks**：`useUiState`（配置/目录/设置）、`useSearch`、`usePalette`（命令面板）、`useSummary`、`useDashboardStats`（60s+事件刷新）、`useDismiss`（点外部/Esc 关弹层）、`useEscape`、`useAnimatedNumber`、`usePomodoro`、`useSessionAgentStatuses`。
+- **状态显示**：agent 状态表情同时用于状态栏、侧边栏会话行、标签页（`agentStatusStyle` 可切圆点）。
 - **主题**：`:root[data-theme=...]` 变量块 ×7；所有颜色走 `var(--*)` / `color-mix`；新增主题需同步 6 处（`ThemeName` / `normalizeTheme` / `theme.ts` 三表 / CSS 变量块 / 设置过滤逻辑）。
 
 ## 6. 测试
