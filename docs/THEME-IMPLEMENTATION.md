@@ -2,7 +2,7 @@
 
 > 读者：接手 CodeAgentDesk（或需要移植本主题系统）的 agent/开发者。
 > 配套文档：`docs/DESIGN-LANGUAGE.md`（设计令牌与规范）、`docs/ARCHITECTURE.md`（整体架构）、`agent.md`（坑点清单）。
-> 当前主题数：**9 套**（7 常规 + 2 隐藏彩蛋）。
+> 当前主题数：**10 套**（8 常规 + 2 隐藏彩蛋）。
 
 ---
 
@@ -33,14 +33,14 @@ readClaudeConfigInfo() ──IPC config:get──▶ useUiState().claudeInfo.con
 ```ts
 export type ThemeName =
   | 'default' | 'mac' | 'green' | 'sepia' | 'amber' | 'mist'
-  | 'warm'                      // 常规主题
+  | 'warm' | 'claude'           // 常规主题（claude = 界面语言级主题，见 §4）
   | 'neon' | 'term';            // 隐藏彩蛋主题
 ```
 
 ### ② `src/main/config.ts` — 持久化白名单
 ```ts
 function normalizeTheme(value: unknown): ThemeName {
-  const allowed: readonly ThemeName[] = ['default','mac','green','sepia','amber','mist','warm','neon','term'];
+  const allowed: readonly ThemeName[] = ['default','mac','green','sepia','amber','mist','warm','claude','neon','term'];
   return allowed.includes(value as ThemeName) ? (value as ThemeName) : 'default';
 }
 ```
@@ -138,7 +138,7 @@ ipcMain.handle(IpcChannel.funUnlockTheme, (_e, theme: string) => {
 
 ---
 
-## 4. 参考实现：两套已落地主题
+## 4. 参考实现：三套已落地主题
 
 ### 暖白珊瑚（Anthropic 暖色，常规主题）
 | 令牌 | 值 | 依据 |
@@ -152,6 +152,48 @@ ipcMain.handle(IpcChannel.funUnlockTheme, (_e, theme: string) => {
 | `color-scheme` | `light` | — |
 
 终端：`background #faf9f5` / `cursor #cc785c` / `selection #f0d9cd`。
+
+### Claude 纸感（界面语言级主题，常规主题）
+和 `warm` 的区别：`warm` 只换配色，`claude` 换的是**界面语言**——同一套文档层级下更像"读的界面"而不是"用的界面"。
+
+| 令牌 | 值 | 依据 |
+|---|---|---|
+| `--bg` | `#faf9f5` | 画布留最亮的纸（正文阅读面） |
+| `--bg-raised` | `#f0eee6` | 侧栏/工具条稍暗一档（Claude 的导航比画布暗） |
+| `--bg-inset` | `#e9e5da` | 内嵌凹槽 + 选中态填充 |
+| `--border` / `--border-strong` | `#e2ddd2` / `#d0c9ba` | 暖灰 hairline |
+| `--text` / `--text-muted` / `--text-faint` | `#141413` / `#55534d` / `#85827a` | 暖墨黑 + 两级弱化 |
+| `--accent` / `--accent-dim` / `--accent-strong` | `#d97757` / `#b85c3f` / `#e6906f` | Claude 珊瑚（比 warm 更橙） |
+| `--radius-sm/md/lg` | 8 / 10 / 14 | 纸感要克制，不要气泡感 |
+| `color-scheme` | `light` | — |
+
+性格 override（同一个主题块里聚合，别散落）：
+```css
+/* 1. 去装饰：纸面不该有光晕 / 毛玻璃 / 多层投影 */
+:root[data-theme='claude'] .main { background: var(--bg); background-image: none; }
+:root[data-theme='claude'] .sidebar::before { display: none; }
+:root[data-theme='claude'] .day-panel { backdrop-filter: none; box-shadow: 0 1px 2px rgba(20,20,19,.06); }
+
+/* 2. 衬线标题：Claude 的识别度大半来自这里（正文仍是 sans） */
+:root[data-theme='claude'] .welcome-title,
+:root[data-theme='claude'] .day-title,
+:root[data-theme='claude'] .detail-title,
+:root[data-theme='claude'] .brand > span:last-child {
+  font-family: ui-serif, "Iowan Old Style", Palatino, Georgia, "Songti SC", serif;
+}
+
+/* 3. 主 CTA 用墨色而不是强调色：强调色只留给链接与选中 */
+:root[data-theme='claude'] .new-session { background: var(--text); color: #f7f5ee; border-radius: 999px; }
+
+/* 4. 选中用浅填充，不用左色条与发光 */
+:root[data-theme='claude'] .session-row.active { background: var(--bg-inset); box-shadow: none; }
+:root[data-theme='claude'] .session-row.active::before { display: none; }
+
+/* 5. 对话：助手正文落在画布上，用户发言才是暖色气泡 */
+:root[data-theme='claude'] .chat-entry { border: 0; background: transparent; }
+:root[data-theme='claude'] .chat-entry.user { background: var(--bg-raised); border: 1px solid var(--border); }
+```
+> 要点：**主题可以改界面语言，不只是配色**。但性格 override 必须"整体换"，只改一两处的效果是"配色错了"而不是"换风格"。
 
 ### 终端（OpenCode 式极简，隐藏彩蛋）
 变量块取 OpenCode 语义色（accent 用 success 绿），并额外做**性格 override**：

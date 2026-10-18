@@ -12,6 +12,7 @@ export const THEME_BACKGROUND: Record<ThemeName, string> = {
   amber: '#16120b',
   mist: '#131619',
   warm: '#faf9f5',
+  claude: '#faf9f5',
   neon: '#0a0614',
   term: '#0b0b0b',
 };
@@ -24,6 +25,7 @@ export const THEMES: { name: ThemeName; label: string }[] = [
   { name: 'amber', label: '琥珀夜间' },
   { name: 'mist', label: '柔雾深青' },
   { name: 'warm', label: '暖白珊瑚' },
+  { name: 'claude', label: 'Claude 纸感' },
   { name: 'neon', label: '霓虹·隐藏' },
   { name: 'term', label: '终端·隐藏' },
 ];
@@ -36,6 +38,7 @@ export const THEME_SWATCHES: Record<ThemeName, { bg: string; fg: string; accent:
   amber: { bg: '#16120b', fg: '#e2cfa5', accent: '#e0a64e' },
   mist: { bg: '#131619', fg: '#c6cdd4', accent: '#58a0a8' },
   warm: { bg: '#faf9f5', fg: '#141413', accent: '#cc785c' },
+  claude: { bg: '#f0eee6', fg: '#141413', accent: '#d97757' },
   neon: { bg: '#0a0614', fg: '#e6e1ff', accent: '#00e5ff' },
   term: { bg: '#0b0b0b', fg: '#e8e8e8', accent: '#30d158' },
 };

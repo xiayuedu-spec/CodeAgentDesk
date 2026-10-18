@@ -1916,6 +1916,35 @@ button:focus-visible, input:focus-visible {
   --danger: #c64545;
 }
 
+/* Claude 风格：象牙纸感画布 + 暖墨文字 + 珊瑚强调 + 衬线标题
+   与 warm（暖白珊瑚）的区别：warm 只换配色，claude 换的是**界面语言**
+   ——去装饰（无光晕/毛玻璃）、主按钮改墨色、标题用衬线、行距更松。 */
+:root[data-theme='claude'] {
+  color-scheme: light;
+  /* 纸叠：画布最亮，侧栏/工具条稍暗，内嵌凹槽最暗 */
+  --bg: #faf9f5;
+  --bg-raised: #f0eee6;
+  --bg-inset: #e9e5da;
+  --border: #e2ddd2;
+  --border-strong: #d0c9ba;
+  --text: #141413;
+  --text-muted: #55534d;
+  --text-faint: #85827a;
+  --accent: #d97757;
+  --accent-dim: #b85c3f;
+  --accent-glow: rgba(217, 119, 87, 0.2);
+  --accent-glow-strong: rgba(217, 119, 87, 0.36);
+  --accent-soft: rgba(217, 119, 87, 0.12);
+  --accent-strong: #e6906f;
+  --focus-ring: rgba(217, 119, 87, 0.45);
+  --selection: rgba(217, 119, 87, 0.2);
+  --warn: #b07d2a;
+  --danger: #b8402f;
+  /* 圆角更克制：纸感不要气泡感 */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
 /* 隐藏主题：终端（OpenCode 式极简——近黑画布、hairline 文字块、小圆角、无投影） */
 :root[data-theme='term'] {
   color-scheme: dark;
@@ -6091,4 +6120,153 @@ textarea:focus-visible {
 }
 .info-item:last-of-type {
   border-bottom: 0;
+}
+/* ================================================================
+   主题性格覆盖：Claude （data-theme='claude'）
+   目标不是"再加一套配色"，而是把整体语言换成 Anthropic 的纸感：
+   1) 去装饰：渐变光晕 / 毛玻璃 / 多层阴影全部退掉
+   2) 衬线标题 + 松行距，正文留白更像读物
+   3) 主按钮用墨色而不是强调色（claude.ai 的主 CTA 是深墨）
+   4) 会话行/标签用"浅色填充"表达选中，不用左色条与发光
+   ================================================================ */
+
+/* ---- 1. 去装饰：纸面不该有光晕与毛玻璃 ---- */
+:root[data-theme='claude'] .main {
+  background: var(--bg);
+  background-image: none;
+}
+:root[data-theme='claude'] .sidebar,
+:root[data-theme='claude'] .tab-bar,
+:root[data-theme='claude'] .status-bar,
+:root[data-theme='claude'] .sidebar-footer {
+  background: var(--bg-raised);
+  background-image: none;
+}
+:root[data-theme='claude'] .sidebar::before {
+  display: none;
+}
+:root[data-theme='claude'] .titlebar-dot {
+  box-shadow: none;
+}
+:root[data-theme='claude'] .brand-icon {
+  background: var(--text);
+  color: var(--bg);
+  border-radius: 9px;
+  box-shadow: none;
+}
+/* 面板/浮层：一层极浅阴影 + 保留 hairline，不做毛玻璃 */
+:root[data-theme='claude'] .day-panel,
+:root[data-theme='claude'] .context-menu,
+:root[data-theme='claude'] .terminal-context-menu,
+:root[data-theme='claude'] .settings-popover,
+:root[data-theme='claude'] .status-more-menu,
+:root[data-theme='claude'] .new-menu,
+:root[data-theme='claude'] .group-manage-popover,
+:root[data-theme='claude'] .toast,
+:root[data-theme='claude'] .confirm-dialog {
+  background: var(--bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 1px 2px rgba(20, 20, 19, 0.06), 0 12px 32px rgba(20, 20, 19, 0.1);
+}
+:root[data-theme='claude'] .terminal-pane,
+:root[data-theme='claude'] .info-panel,
+:root[data-theme='claude'] .session-detail,
+:root[data-theme='claude'] .search-results,
+:root[data-theme='claude'] .archive-detail {
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+/* ---- 2. 衬线标题：Claude 的识别度大半来自这里 ---- */
+:root[data-theme='claude'] .brand > span:last-child,
+:root[data-theme='claude'] .welcome-title,
+:root[data-theme='claude'] .day-title,
+:root[data-theme='claude'] .detail-title {
+  font-family: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia,
+    "Songti SC", "Source Han Serif SC", serif;
+  letter-spacing: -0.01em;
+}
+:root[data-theme='claude'] .welcome-title {
+  /* 衬线标题不做渐变裁切（纸感里渐变字反而廉价） */
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--text);
+}
+:root[data-theme='claude'] .brand > span:last-child {
+  font-size: 15px;
+}
+
+/* ---- 3. 正文更松：长文本可读性 ---- */
+:root[data-theme='claude'] .chat-text,
+:root[data-theme='claude'] .day-text,
+:root[data-theme='claude'] .tool-output {
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+/* ---- 4. 主按钮改墨色（强调色留给链接与选中） ---- */
+:root[data-theme='claude'] .new-session,
+:root[data-theme='claude'] .welcome-btn.primary {
+  background: var(--text);
+  border-color: transparent;
+  border-radius: 999px;
+  color: #f7f5ee;
+  box-shadow: none;
+}
+:root[data-theme='claude'] .new-session:not(:disabled):hover,
+:root[data-theme='claude'] .welcome-btn.primary:hover {
+  background: #2c2c28;
+  color: #f7f5ee;
+}
+
+/* ---- 5. 选中用浅填充，不用左侧色条与发光 ---- */
+:root[data-theme='claude'] .session-row.active {
+  background: var(--bg-inset);
+  border-color: transparent;
+  box-shadow: none;
+}
+:root[data-theme='claude'] .session-row.active::before {
+  display: none;
+}
+:root[data-theme='claude'] .session-row:hover {
+  background: color-mix(in srgb, var(--bg-inset) 55%, transparent);
+}
+:root[data-theme='claude'] .tab {
+  background: transparent;
+  border-color: transparent;
+}
+:root[data-theme='claude'] .tab.active {
+  background: var(--bg);
+  border-color: var(--border);
+  box-shadow: 0 1px 2px rgba(20, 20, 19, 0.05);
+}
+
+/* ---- 6. 对话框：用户发言用暖色气泡，助手正文直接落在画布上 ---- */
+/* 助手正文直接落在画布上（无卡片无边框），用户发言才是暖色气泡 */
+:root[data-theme='claude'] .chat-entry {
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  padding: 0 2px;
+  margin-bottom: 18px;
+}
+:root[data-theme='claude'] .chat-entry.user {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+:root[data-theme='claude'] .chat-role {
+  letter-spacing: 0.04em;
+}
+/* 纸感细节：侧栏吸顶标题跟随侧栏底色（默认用 --bg，会在这套里偏亮）；
+   终端面板底色与终端画布一致，避免 xterm 画布四周出现一圈异色 */
+:root[data-theme='claude'] .group-label,
+:root[data-theme='claude'] .group-label.section-toggle {
+  background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
+}
+:root[data-theme='claude'] .terminal-pane {
+  background: var(--bg);
+}
+:root[data-theme='claude'] .terminal-slot.active .terminal-pane {
+  box-shadow: 0 0 0 1px var(--border-strong);
 }

@@ -74,6 +74,7 @@ function normalizeTheme(value: unknown): ThemeName {
     'amber',
     'mist',
     'warm',
+    'claude',
     'neon',
     'term',
   ];

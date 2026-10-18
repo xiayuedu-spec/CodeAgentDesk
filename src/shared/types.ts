@@ -39,6 +39,7 @@ export type ThemeName =
   | 'amber'
   | 'mist'
   | 'warm'
+  | 'claude'
   | 'neon'
   | 'term';
 
