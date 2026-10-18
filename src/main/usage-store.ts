@@ -24,6 +24,7 @@ const KNOWN_KEYS = new Set([
   'timeline.opened',
   'detail.opened',
   'insights.opened',
+  'plan.continue',
   'export.md',
   'session.pin',
   'archive.delete',

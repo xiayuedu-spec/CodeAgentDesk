@@ -14,6 +14,7 @@ import type {
   ResumeSessionResult,
   SearchResult,
   SessionDetailResult,
+  SessionGitInfo,
   SessionInsights,
   SessionOpResult,
   SessionRecord,
@@ -32,6 +33,7 @@ import {
 } from './session-library';
 import { buildMarkdown } from './export';
 import { emptyInsights, readSessionInsights } from './session-insights';
+import { readSessionGit } from './git-info';
 import { recordRecentDir } from './recent-dirs';
 import { summarizeSession } from './summarize';
 import type { SessionMetaStore } from './session-meta-store';
@@ -347,6 +349,11 @@ export function registerSessionsIpc({ sessions, watcher, metaStore }: SessionsIp
       if (!filePath) return emptyInsights(sessionId);
       return readSessionInsights(filePath, sessionId);
     },
+  );
+
+  ipcMain.handle(
+    IpcChannel.sessionGit,
+    (_event, cwd: string): Promise<SessionGitInfo | null> => readSessionGit(cwd),
   );
 
   ipcMain.handle(

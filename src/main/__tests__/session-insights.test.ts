@@ -198,3 +198,61 @@ describe('readSessionInsights 计划与改动提取', () => {
     expect(insights.changes).toEqual([]);
   });
 });
+describe('会话痕迹统计', () => {
+  it('轮次只算带文本的 user 消息，纯 tool_result 不算', async () => {
+    const file = writeSession([
+      { type: 'user', message: { role: 'user', content: [{ type: 'text', text: '帮我改一下' }] } },
+      {
+        type: 'user',
+        message: {
+          role: 'user',
+          content: [{ type: 'tool_result', tool_use_id: 'x', content: 'ok' }],
+        },
+      },
+      { type: 'user', message: { role: 'user', content: '第二句直接是字符串' } },
+    ]);
+    const insights = await readSessionInsights(file, 's1');
+    // 两条真实对话：一条是 block 数组里的 text，一条是裸字符串 content；纯 tool_result 不计。
+    expect(insights.stats.turns).toBe(2);
+  });
+
+  it('统计工具调用次数与失败数（is_error）', async () => {
+    const file = writeSession([
+      toolUse('Bash', { command: 'ls' }),
+      toolUse('Read', { file_path: 'a.ts' }),
+      {
+        type: 'user',
+        message: {
+          role: 'user',
+          content: [
+            { type: 'tool_result', tool_use_id: 't-Bash', is_error: true, content: 'failed' },
+            { type: 'tool_result', tool_use_id: 't-Read', content: 'ok' },
+          ],
+        },
+      },
+    ]);
+    const insights = await readSessionInsights(file, 's1');
+    expect(insights.stats.toolCalls).toBe(2);
+    expect(insights.stats.errors).toBe(1);
+  });
+
+  it('活跃时长只累加 ≤5 分钟的相邻间隔，首末时间取记录里的 timestamp', async () => {
+    const file = writeSession([
+      toolUse('Read', { file_path: 'a.ts' }, '2026-01-01T00:00:00Z'),
+      toolUse('Read', { file_path: 'b.ts' }, '2026-01-01T00:02:00Z'), // +2min
+      toolUse('Read', { file_path: 'c.ts' }, '2026-01-01T01:00:00Z'), // 58min 挂机，不计
+      toolUse('Read', { file_path: 'd.ts' }, '2026-01-01T01:01:00Z'), // +1min
+    ]);
+    const insights = await readSessionInsights(file, 's1');
+    expect(insights.stats.activeMs).toBe(3 * 60_000);
+    expect(insights.stats.startedAt).toBe('2026-01-01T00:00:00Z');
+    expect(insights.stats.lastAt).toBe('2026-01-01T01:01:00Z');
+  });
+
+  it('没有时间戳的会话：痕迹全 0，不抛错', async () => {
+    const file = writeSession([toolUse('Read', { file_path: 'a.ts' })]);
+    const insights = await readSessionInsights(file, 's1');
+    expect(insights.stats).toMatchObject({ turns: 0, toolCalls: 1, errors: 0, activeMs: 0 });
+    expect(insights.stats.startedAt).toBeUndefined();
+  });
+});

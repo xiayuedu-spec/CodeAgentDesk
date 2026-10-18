@@ -4,6 +4,7 @@ import type {
   SessionFileChange,
   SessionInsights,
   SessionPlan,
+  SessionStats,
   SessionTodo,
 } from '../shared/types';
 import { scanJsonlLines } from './session-library';
@@ -16,6 +17,8 @@ const MAX_HUNK_CHARS = 1200;
 const MAX_HUNKS_PER_FILE = 8;
 /** 最多列出的文件数（超出合并为"其他"计数）。 */
 const MAX_FILES = 60;
+/** 活跃时长判定：相邻事件间隔不超过该值才计入（与效率洞察同口径）。 */
+const ACTIVE_GAP_MS = 5 * 60_000;
 
 const TODO_STATUSES: SessionTodo['status'][] = ['pending', 'in_progress', 'completed'];
 
@@ -245,6 +248,9 @@ export async function readSessionInsights(
   let plan: SessionPlan | null = null;
   let skipped = 0;
   let calls = 0;
+  // 会话痕迹：同一次扫描顺带累计，避免为了"轮次/工具调用/失败数"再读一遍文件。
+  const stats: SessionStats = { turns: 0, toolCalls: 0, errors: 0, activeMs: 0 };
+  let previousAt = 0;
 
   await scanJsonlLines(filePath, MAX_INSIGHT_LINES, (line) => {
     if (!line.trim()) return;
@@ -255,11 +261,39 @@ export async function readSessionInsights(
       skipped += 1;
       return;
     }
+
+    // 时间线：首末时间 + 活跃时长（相邻间隔 ≤5 分钟才累加，避免把挂机算进活跃）。
+    const stamp = event.timestamp ? Date.parse(event.timestamp) : Number.NaN;
+    if (Number.isFinite(stamp)) {
+      if (!stats.startedAt) stats.startedAt = event.timestamp;
+      stats.lastAt = event.timestamp;
+      if (previousAt > 0) {
+        const gap = stamp - previousAt;
+        if (gap > 0 && gap <= ACTIVE_GAP_MS) stats.activeMs += gap;
+      }
+      previousAt = stamp;
+    }
+
     const content = event.message?.content;
-    if (!Array.isArray(content)) return;
+    const isUserEvent = event.type === 'user' || event.message?.role === 'user';
+    if (!Array.isArray(content)) {
+      // 少数记录把 content 写成裸字符串：能算一轮真实对话。
+      if (typeof content === 'string' && content.trim() && isUserEvent) stats.turns += 1;
+      return;
+    }
+    let hasHumanText = false;
     for (const block of content) {
       const item = asRecord(block);
-      if (!item || item.type !== 'tool_use') continue;
+      if (!item) continue;
+
+      if (item.type === 'tool_result') {
+        if (item.is_error === true) stats.errors += 1;
+        continue;
+      }
+      if (item.type === 'text' && asText(item.text)) hasHumanText = true;
+      if (item.type !== 'tool_use') continue;
+
+      stats.toolCalls += 1;
       const name = asText(item.name);
       const input = asRecord(item.input);
       if (!name || !input) continue;
@@ -273,6 +307,8 @@ export async function readSessionInsights(
       }
       if (CHANGE_TOOLS.has(name)) applyChangeTool(changes, name, input);
     }
+    // 纯 tool_result 的 user 消息不算一轮对话。
+    if (hasHumanText && isUserEvent) stats.turns += 1;
   });
 
   const list = [...changes.values()].sort(
@@ -289,6 +325,7 @@ export async function readSessionInsights(
     plan,
     changes: list.slice(0, MAX_FILES),
     totals,
+    stats,
     skipped,
   };
 
@@ -308,6 +345,7 @@ export function emptyInsights(sessionId: string): SessionInsights {
     plan: null,
     changes: [],
     totals: { files: 0, added: 0, removed: 0, edits: 0 },
+    stats: { turns: 0, toolCalls: 0, errors: 0, activeMs: 0 },
     skipped: 0,
   };
 }

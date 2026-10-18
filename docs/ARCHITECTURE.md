@@ -96,12 +96,20 @@ main ──webContents.send(broadcast)──> renderer（sessionData/exited/chan
 `incrementUsage(key)` 仅接受白名单 key（防污染），写 `{count,lastAt}`；渲染层在关键动作处调用（命令面板/搜索/总结/知识库/详情/导出/番茄钟/各视图打开）。纯本地、不采集内容，用于季度功能审计。
 
 ### 4.12 会话洞察（`session-insights.ts`）
-从会话 JSONL 提取两类信息，按 mtime+size 缓存（容量 60）：
+从会话 JSONL **一次顺序扫描**同时产出三块信息，按 mtime+size 缓存（容量 60）：
 
 - **计划**：`TodoWrite` 工具调用的**末次快照**（todos 数组 + status），记录快照次数与时间戳。
 - **改动**：`Edit` / `MultiEdit` / `Write` / `NotebookEdit` / `str_replace_editor` 的 `file_path` 与 old/new 片段。行级增删用近似 diff：先裁公共前后缀，再对中段做 LCS（中段 > 200 行退化为整段替换统计），避免原地改一行被算成整块 +N/-N。
+- **痕迹（`stats`）**：真实轮次（含文本的 user 消息，纯 tool_result 不算）、工具调用数、`is_error` 的 tool_result 数、首末时间戳、活跃时长（相邻事件 ≤5 分钟累加，与效率洞察同口径）。**不读 token 也能回答"这个会话跑了多久、失败几次"**。
 
 边界（写进界面提示）：每片段每侧保留 1200 字符、每文件 8 个片段、最多 60 个文件，超出只计数；**口径是"会话记录里的工具调用意图"，不等于工作区当前内容**。IPC：`session:insights`。
+
+### 4.13 工作区 git 摘要（`git-info.ts`）
+`git -C <cwd> status --porcelain=v1 --branch -uno` 一次调用取「分支 + 未提交数 + ahead/behind」，4s 超时，按 cwd 缓存 20s（右栏切换会话会频繁请求）。非仓库 / 没装 git / 超时统一返回 `null`，界面直接不显示该行。IPC：`session:git`。
+
+### 4.14 右栏仪表（`components/InfoPanel.tsx` + `hooks/useSessionRail.ts`）
+Token 统计默认关闭后，右栏从"用量展示"改成**当前会话的仪表**：状态 + 活跃时长 → 计划进度（可「继续未完成的 N 项」一键注入提示）→ 本次改动（文件 +N/-M）→ 痕迹（轮次/工具调用/失败/开始时间）→ git 分支与未提交数 → 会话 ID/目录。
+数据由 `useSessionRail` 拉取：会话洞察 + git，会话 `running` 时每 15s 刷新（主进程按 mtime/git 缓存，未变化时几乎零成本）；窗口隐藏或面板折叠时停止轮询。**续做提示是单行文本 + 一次回车写进 pty**，不用 bracketed paste，避免不同 TUI 版本把转义序列当字面量。
 
 ## 5. 渲染层模式
 

@@ -70,6 +70,7 @@ export const IpcChannel = {
   taskProgress: 'task:progress',
   taskCancel: 'task:cancel',
   sessionInsights: 'session:insights',
+  sessionGit: 'session:git',
   updateCheck: 'update:check',
   updateInstall: 'update:install',
   updateStatus: 'update:status',

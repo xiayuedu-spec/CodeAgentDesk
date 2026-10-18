@@ -15,11 +15,9 @@ import type {
   SearchResult,
   SessionDetailResult,
   SessionRecord,
-  SessionUsage,
   ThemeName,
 } from '../shared/types';
 import {
-  EMPTY_USAGE,
   folderName,
   type ContextMenuState,
   type GroupMenuState,
@@ -37,6 +35,7 @@ import { useDashboardStats } from './hooks/useDashboardStats';
 import { useDismiss } from './hooks/useDismiss';
 import { useEscape } from './hooks/useEscape';
 import { useSessionAgentStatuses } from './hooks/useAgentStatus';
+import { useSessionRail } from './hooks/useSessionRail';
 import { usePomodoro } from './hooks/usePomodoro';
 import { useToast } from './toast';
 import {
@@ -177,7 +176,6 @@ export default function App() {
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
   const [detail, setDetail] = useState<SessionDetailResult | null>(null);
   const [detailQuery, setDetailQuery] = useState('');
-  const [usage, setUsage] = useState<SessionUsage>(EMPTY_USAGE);
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [borrowedIds, setBorrowedIds] = useState<string[]>([]);
@@ -293,8 +291,6 @@ export default function App() {
     void window.codeagentdesk.setWindowBackgroundColor(THEME_BACKGROUND[theme]);
   }, [claudeInfo]);
 
-  const activeSessionId = sessions.find((item) => item.id === activeId)?.sessionId;
-
   // 窗口最小化/隐藏时暂停高频轮询，减少无意义 IPC 与扫描。
   const [pageHidden, setPageHidden] = useState(document.hidden);
   useEffect(() => {
@@ -302,33 +298,6 @@ export default function App() {
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
-
-  useEffect(() => {
-    const session = sessions.find((item) => item.id === activeId);
-    if (!session?.sessionId) {
-      setUsage(EMPTY_USAGE);
-      return;
-    }
-    // 信息面板折叠、窗口隐藏或 Token 统计关闭时暂停轮询。
-    if (!infoOpen || pageHidden || !dashboard.stats.tokenStatsEnabled) return;
-    let cancelled = false;
-    const refresh = () => {
-      window.codeagentdesk
-        .getSessionUsage(session.id)
-        .then((value) => {
-          if (!cancelled) setUsage(value);
-        })
-        .catch((reason: unknown) => {
-          if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
-        });
-    };
-    refresh();
-    const timer = setInterval(refresh, 3000);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [activeId, activeSessionId, infoOpen, pageHidden, dashboard.stats.tokenStatsEnabled]);
 
   useEffect(() => {
     const ids = sessions
@@ -868,6 +837,24 @@ export default function App() {
     });
   }
 
+  /**
+   * 把「继续未完成计划」的提示写进当前会话终端。
+   * 单行文本 + 一次回车：不用 bracketed paste，避免不同 TUI 版本把转义序列当字面量打出来。
+   */
+  function handleContinuePlan(
+    session: { id: string; status: string } | null,
+    prompt: string,
+  ): void {
+    if (!session) return;
+    if (session.status === 'ended') {
+      toast.info('会话已结束，先恢复会话再继续计划');
+      return;
+    }
+    window.codeagentdesk.writeSession(session.id, `${prompt}\r`);
+    bumpUsage('plan.continue');
+    toast.success('已把续做提示发到终端');
+  }
+
   function openGroupMenu(id: string, name: string, x: number, y: number): void {
     setGroupMenu({ id, name, x, y });
   }
@@ -1257,6 +1244,15 @@ export default function App() {
   const activeSession = sessions.find((session) => session.id === activeId) ?? null;
   const sessionStatuses = useSessionAgentStatuses();
   const activeAgentStatus = activeId ? (sessionStatuses[activeId] ?? 'idle') : 'idle';
+  // 右栏数据：洞察（计划/改动/痕迹）+ 工作区 git 摘要；会话运行中每 15s 自助刷新。
+  // 窗口隐藏时停止轮询（回到前台会立刻补一次）。
+  const rail = useSessionRail(
+    activeSession?.sessionId,
+    activeSession?.cwd,
+    !pageHidden &&
+      infoOpen &&
+      (activeSession?.status === 'running' || activeSession?.status === 'starting'),
+  );
   const pomodoro = usePomodoro((claudeInfo?.config.pomodoroMinutes ?? 25) * 60_000);
   const taskProgress = useTaskProgress();
   useEscape(Boolean(confirmDeleteOne), () => setConfirmDeleteOne(null));
@@ -1704,10 +1700,11 @@ export default function App() {
               ) : activeSession ? (
                 <InfoPanel
                   session={activeSession}
-                  usage={usage}
-                  tokenStatsEnabled={dashboard.stats.tokenStatsEnabled}
+                  insights={rail.insights}
+                  git={rail.git}
                   onResizeStart={startInfoResize}
                   onOpenInsights={() => openInsights({ sessionId: activeSession.sessionId })}
+                  onContinuePlan={(prompt) => handleContinuePlan(activeSession, prompt)}
                 />
               ) : (
                 <Welcome

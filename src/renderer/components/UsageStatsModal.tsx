@@ -21,6 +21,7 @@ const LABELS: Record<string, string> = {
   'timeline.opened': '打开工作时间线',
   'detail.opened': '查看会话详情',
   'insights.opened': '查看计划与改动',
+  'plan.continue': '从右栏继续未完成计划',
   'export.md': '导出 Markdown',
   'session.pin': '置顶/取消置顶会话',
   'archive.delete': '删除归档会话',

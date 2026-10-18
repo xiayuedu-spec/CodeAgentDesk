@@ -162,14 +162,39 @@ export interface SessionFileChange {
   hiddenHunks: number;
 }
 
-/** 会话洞察：计划进度 + 改动清单（口径见界面提示：来自会话记录，非工作区实际内容）。 */
+/** 会话痕迹：不需要读 token 的行为统计（右栏用）。 */
+export interface SessionStats {
+  /** 真实人类轮次（含文本的 user 消息，不含纯 tool_result）。 */
+  turns: number;
+  /** 工具调用次数（tool_use 块）。 */
+  toolCalls: number;
+  /** 失败的 tool_result 数（is_error）。 */
+  errors: number;
+  startedAt?: string;
+  lastAt?: string;
+  /** 活跃时长：相邻事件间隔 ≤5 分钟的累加（与效率洞察同口径）。 */
+  activeMs: number;
+}
+
+/** 会话洞察：计划进度 + 改动清单 + 行为痕迹（口径见界面提示：来自会话记录，非工作区实际内容）。 */
 export interface SessionInsights {
   sessionId: string;
   plan: SessionPlan | null;
   changes: SessionFileChange[];
   totals: { files: number; added: number; removed: number; edits: number };
+  stats: SessionStats;
   /** 解析时跳过的行数（损坏行 / 超出行数上限）。 */
   skipped: number;
+}
+
+/** 工作区 git 状态（非仓库时为 null）。 */
+export interface SessionGitInfo {
+  branch: string;
+  /** 未提交文件数（含未跟踪）。 */
+  dirty: number;
+  /** 领先/落后远端的提交数（有 upstream 时）。 */
+  ahead: number;
+  behind: number;
 }
 
 export interface ExportResult {
@@ -506,6 +531,7 @@ export interface CodeAgentDeskApi {
   exportSessionMarkdown(sessionId: string, cwd?: string): Promise<ExportResult>;
   readSessionText(sessionId: string): Promise<ReadSessionTextResult>;
   getSessionInsights(sessionId: string): Promise<SessionInsights>;
+  getSessionGit(cwd: string): Promise<SessionGitInfo | null>;
   getUiState(): Promise<UiState>;
   saveUiState(state: UiState): Promise<void>;
   minimizeWindow(): Promise<void>;
