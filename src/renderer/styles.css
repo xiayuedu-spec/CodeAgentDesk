@@ -6149,9 +6149,10 @@ textarea:focus-visible {
   box-shadow: none;
 }
 :root[data-theme='claude'] .brand-icon {
-  background: var(--text);
-  color: var(--bg);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
   border-radius: 9px;
+  color: var(--accent);
   box-shadow: none;
 }
 /* 面板/浮层：一层极浅阴影 + 保留 hairline，不做毛玻璃 */
@@ -6163,6 +6164,8 @@ textarea:focus-visible {
 :root[data-theme='claude'] .new-menu,
 :root[data-theme='claude'] .group-manage-popover,
 :root[data-theme='claude'] .toast,
+:root[data-theme='claude'] .hourly-popover,
+:root[data-theme='claude'] .palette,
 :root[data-theme='claude'] .confirm-dialog {
   background: var(--bg);
   backdrop-filter: none;
@@ -6170,6 +6173,7 @@ textarea:focus-visible {
   box-shadow: 0 1px 2px rgba(20, 20, 19, 0.06), 0 12px 32px rgba(20, 20, 19, 0.1);
 }
 :root[data-theme='claude'] .terminal-pane,
+:root[data-theme='claude'] .terminal-surface,
 :root[data-theme='claude'] .info-panel,
 :root[data-theme='claude'] .session-detail,
 :root[data-theme='claude'] .search-results,
@@ -6204,19 +6208,40 @@ textarea:focus-visible {
   line-height: 1.75;
 }
 
-/* ---- 4. 主按钮改墨色（强调色留给链接与选中） ---- */
+/* ---- 4. 按钮：纸面上不要墨黑块 ----
+   主 CTA 用珊瑚实心（全界面唯一的高饱和面），品牌瓦片退成柔和珊瑚底；
+   其余按钮一律靠 hairline + 表面色阶。深色主题为"浮起"加的黑色重阴影，
+   在纸上会像脏边，这里一并减淡。 */
+:root[data-theme='claude'] {
+  /* 珊瑚面上的文字用暖奶油白，避免冷白显脏 */
+  --on-accent: #fdf8f2;
+}
 :root[data-theme='claude'] .new-session,
 :root[data-theme='claude'] .welcome-btn.primary {
-  background: var(--text);
+  background: var(--accent);
   border-color: transparent;
   border-radius: 999px;
-  color: #f7f5ee;
-  box-shadow: none;
+  color: var(--on-accent);
+  box-shadow: 0 1px 2px rgba(184, 92, 63, 0.2);
 }
 :root[data-theme='claude'] .new-session:not(:disabled):hover,
 :root[data-theme='claude'] .welcome-btn.primary:hover {
-  background: #2c2c28;
-  color: #f7f5ee;
+  background: var(--accent-dim);
+  color: var(--on-accent);
+}
+:root[data-theme='claude'] .mode-switch button.active {
+  box-shadow: 0 1px 2px rgba(20, 20, 19, 0.06), inset 0 0 0 1px var(--border);
+  color: var(--text);
+}
+:root[data-theme='claude'] .usage-bar {
+  box-shadow: inset 0 1px 2px rgba(20, 20, 19, 0.08);
+}
+:root[data-theme='claude'] .icon-button:hover,
+:root[data-theme='claude'] .settings-action:hover,
+:root[data-theme='claude'] .archive-toolbar-btn:hover {
+  background: var(--bg-inset);
+  border-color: var(--border-strong);
+  color: var(--text);
 }
 
 /* ---- 5. 选中用浅填充，不用左侧色条与发光 ---- */
