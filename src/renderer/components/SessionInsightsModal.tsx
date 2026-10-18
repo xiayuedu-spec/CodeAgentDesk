@@ -25,6 +25,16 @@ function statusIcon(status: SessionTodo['status']) {
   return <CircleDashed size={13} className="insight-todo-pending" />;
 }
 
+/**
+ * 路径中段省略：保留首段（盘符/根）与末尾两段。
+ * 比 CSS `direction: rtl` 截断可靠——后者会让路径首尾的斜杠被 bidi 重排。
+ */
+export function shortenPath(value: string, keepTail = 2): string {
+  const parts = value.split(/[\\/]+/).filter(Boolean);
+  if (parts.length <= keepTail + 1) return value;
+  return `${parts[0]}\\…\\${parts.slice(-keepTail).join('\\')}`;
+}
+
 /** 把洞察导出成可粘贴的 Markdown 摘要（交接 / 写 PR 描述用）。 */
 export function buildInsightsMarkdown(title: string, insights: SessionInsights): string {
   const lines: string[] = [`## ${title}`, ''];
@@ -149,7 +159,7 @@ export function SessionInsightsModal({ sessionId, title, onClose }: SessionInsig
               </div>
 
               {plan ? (
-                <section className="insights-card">
+                <section className="insights-card plan">
                   <div className="insights-card-head">
                     <span className="insights-card-title">
                       计划 · {planDone}/{plan.todos.length} 完成
@@ -174,7 +184,7 @@ export function SessionInsightsModal({ sessionId, title, onClose }: SessionInsig
               ) : null}
 
               {insights.changes.length > 0 ? (
-                <section className="insights-card">
+                <section className="insights-card changes">
                   <div className="insights-card-head">
                     <span className="insights-card-title">
                       改动 · {insights.totals.files} 个文件
@@ -198,7 +208,7 @@ export function SessionInsightsModal({ sessionId, title, onClose }: SessionInsig
                             onClick={() => setSelectedPath(change.path)}
                           >
                             <span className="insights-file-name">{folderName(change.path)}</span>
-                            <span className="insights-file-dir">{change.path}</span>
+                            <span className="insights-file-dir">{shortenPath(change.path)}</span>
                             <span className="insights-file-nums">
                               <i className="insights-add">+{change.added}</i>
                               <i className="insights-del">-{change.removed}</i>

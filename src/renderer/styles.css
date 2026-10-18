@@ -28,6 +28,8 @@
   --radius-lg: 10px;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.12), 0 10px 28px rgba(0, 0, 0, 0.16);
   --shadow-pop: 0 4px 10px rgba(0, 0, 0, 0.18), 0 18px 40px rgba(0, 0, 0, 0.28);
+  /* 强调色/危险色实心面上的文字色（9 套主题统一） */
+  --on-accent: #f5fffd;
   /* 两行制会话行的统一行高（窗口化虚拟列表按实测行高推进，此值仅作下限与首帧估算） */
   --session-row-h: 48px;
 }
@@ -107,7 +109,7 @@ button, input {
   place-items: center;
   width: 26px;
   height: 26px;
-  color: #ffffff;
+  color: var(--on-accent);
   background: linear-gradient(135deg, var(--accent-strong), var(--accent-dim));
   border-radius: 7px;
   box-shadow: 0 2px 10px var(--accent-glow);
@@ -213,7 +215,7 @@ button, input {
   border: 0;
   border-radius: var(--radius-md);
   background: linear-gradient(180deg, var(--accent-strong), var(--accent-dim));
-  color: #f5fffd;
+  color: var(--on-accent);
   cursor: pointer;
   opacity: 1;
   transition: background-color var(--motion-struct) ease,
@@ -261,6 +263,8 @@ button, input {
   align-items: center;
   gap: 4px;
   height: 42px;
+  min-width: 0;
+  overflow: hidden;
   padding: 6px 10px;
   background: linear-gradient(
     180deg,
@@ -273,9 +277,25 @@ button, input {
     color var(--motion-micro) ease;
 }
 
+/* 标签列表：横向滚动区（滚动条高度归零，靠滚动位置本身表达溢出） */
+.tab-list {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.tab-list::-webkit-scrollbar {
+  height: 0;
+}
 .tab {
   display: flex;
   align-items: center;
+  flex: none;
+  max-width: 220px;
   gap: 7px;
   height: 30px;
   padding: 0 8px 0 12px;
@@ -353,10 +373,10 @@ button, input {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
   grid-template-rows: minmax(0, 1fr);
-  gap: 12px;
+  gap: 16px;
   flex: 1;
   min-height: 0;
-  padding: 12px;
+  padding: 16px;
 }
 
 .terminal-surface {
@@ -396,9 +416,8 @@ button, input {
 .info-panel {
   display: flex;
   flex-direction: column;
-  gap: 1px;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -409,12 +428,24 @@ button, input {
   position: relative;
 }
 
+/* 信息面板内容区：滚动只发生在这里（面板本身裁圆角），底部动作贴住面板底部 */
+.info-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .info-item {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: none;
   min-width: 0;
-  padding: 14px 14px 13px;
+  padding: 15px 16px 14px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -570,7 +601,7 @@ button, input {
 
 .new-session:not(:disabled):hover {
   border-color: transparent;
-  color: #f5fffd;
+  color: var(--on-accent);
   filter: brightness(1.05);
   box-shadow: 0 4px 12px var(--accent-glow-strong),
     inset 0 1px 0 rgba(255, 255, 255, 0.22);
@@ -614,6 +645,9 @@ button, input {
   z-index: 100;
   min-width: 140px;
   padding: 4px;
+  /* 菜单可能比窗口还高（会话菜单十余项）：限高内滚，配合定位钳制不会溢出屏幕 */
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
   background: color-mix(in srgb, var(--bg-raised) 86%, transparent);
   border: 1px solid var(--border-strong);
   border-radius: 6px;
@@ -1250,9 +1284,11 @@ button:focus-visible, input:focus-visible {
 .status-bar {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   height: 30px;
   flex: none;
+  min-width: 0;
+  overflow: hidden;
   padding: 0 12px;
   border-top: 1px solid var(--border);
   background: linear-gradient(
@@ -1268,8 +1304,20 @@ button:focus-visible, input:focus-visible {
   box-shadow: 0 -1px 0 var(--border);
 }
 
+/* 窄窗口优先级：动作按钮固定宽度不被压缩，环境信息（计数/目录/版本）让位并省略。
+   注意排除 .status-bar-spacer——它是撑开左右两侧的弹性占位，不能被这里收窄。 */
+.status-bar > button,
+.status-bar > .status-more-wrap,
+.status-bar > .pomodoro {
+  flex: none;
+}
+.status-bar > span:not(.status-bar-spacer) {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 .status-bar-spacer {
-  flex: 1;
+  flex: 1 1 auto;
 }
 
 .chat-entry.assistant {
@@ -1282,13 +1330,13 @@ button:focus-visible, input:focus-visible {
 
 :root[data-theme='mac'] .new-session {
   background: linear-gradient(180deg, #0a84ff, #0a6fe0);
-  color: #ffffff;
+  color: var(--on-accent);
   box-shadow: 0 2px 8px var(--accent-glow),
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 :root[data-theme='mac'] .new-session:not(:disabled):hover {
-  color: #ffffff;
+  color: var(--on-accent);
   filter: brightness(1.05);
   box-shadow: 0 4px 12px var(--accent-glow-strong),
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
@@ -1437,7 +1485,7 @@ button:focus-visible, input:focus-visible {
 
 .titlebar-button.close:hover {
   background: #e81123;
-  color: #ffffff;
+  color: var(--on-accent);
 }
 
 .terminal-status {
@@ -1672,10 +1720,14 @@ button:focus-visible, input:focus-visible {
 
 .detail-meta {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 2px 12px;
   min-width: 0;
   color: var(--text-faint);
   font-size: 11px;
+}
+.detail-meta > span {
+  min-width: 0;
 }
 
 .detail-actions {
@@ -1938,11 +1990,16 @@ button:focus-visible, input:focus-visible {
 }
 
 /* 终端操作并入标签栏：整块右对齐，与标签之间加一条 hairline 分隔 */
+.tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .tab-actions {
   display: inline-flex;
   align-items: center;
+  flex: none;
   gap: 2px;
-  margin-left: auto;
   padding-left: 8px;
   border-left: 1px solid var(--border);
   align-self: center;
@@ -2109,7 +2166,7 @@ body.resizing-sidebar, body.resizing-info {
 .welcome-btn.primary {
   border: 0;
   background: linear-gradient(180deg, var(--accent-strong), var(--accent-dim));
-  color: #f5fffd;
+  color: var(--on-accent);
   box-shadow: 0 4px 14px var(--accent-glow),
     inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
@@ -3121,7 +3178,7 @@ button:active, .tab:active, .session-row:active {
 .archive-toolbar-btn.danger.confirming {
   background: var(--danger);
   border-color: var(--danger);
-  color: #ffffff;
+  color: var(--on-accent);
 }
 .archive-selected-count {
   margin-left: auto;
@@ -3567,7 +3624,6 @@ button:active:not(:disabled),
 }
 .info-item {
   position: relative;
-  padding: 13px 14px 12px;
 }
 .info-item strong {
   font-variant-numeric: tabular-nums;
@@ -3748,10 +3804,6 @@ body,
 .sidebar-body {
   padding: 6px 10px;
 }
-/* 两行制行更"高"，纵向内边距回调到 8px，保持列表密度（行高见 --session-row-h） */
-.session-row {
-  padding: 8px 10px;
-}
 .group-header {
   padding: 8px 10px 6px;
 }
@@ -3794,12 +3846,6 @@ body,
 }
 
 /* ---- 6. 留白：内容区 / 信息面板 ---- */
-.content {
-  padding: 16px;  gap: 16px;
-}
-.info-item {
-  padding: 15px 16px 14px;
-}
 /* 信息面板底部动作：计划与改动入口 */
 .info-action {
   display: inline-flex;
@@ -4510,7 +4556,7 @@ textarea:focus-visible {
 .confirm-btn.danger {
   border-color: var(--danger);
   background: var(--danger);
-  color: #ffffff;
+  color: var(--on-accent);
 }
 .confirm-btn.danger:hover {
   opacity: 0.9;
@@ -5473,8 +5519,9 @@ textarea:focus-visible {
 .status-bar > span {
   color: var(--text-faint);
 }
+/* 状态栏层级：环境信息（计数/目录/版本）最淡；可点动作次之；hover 才提亮到文字色 */
 .status-day {
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 .status-day:hover {
   color: var(--text);
@@ -5692,8 +5739,12 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 .insights-scope {
+  flex: none;
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -5806,15 +5857,39 @@ textarea:focus-visible {
 .insights-split {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
-  min-height: 220px;
+  flex: 1;
+  min-height: 0;
+}
+/* 改动卡占满剩余高度，只有左右两列各自滚动（避免弹窗套三层滚动条） */
+.insights-card.changes {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.insights-card.changes > .insights-card-head {
+  flex: none;
+}
+/* 计划卡：待办多时自己滚，不挤压改动区 */
+.insights-card.plan {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+.insights-card.plan > .insights-card-head,
+.insights-card.plan > .insights-plan-bar {
+  flex: none;
+}
+.insights-card.plan > .insights-todos {
+  overflow-y: auto;
+  max-height: 30vh;
 }
 .insights-files {
   margin: 0;
   padding: 6px;
   list-style: none;
   border-right: 1px solid var(--border);
-  max-height: 46vh;
-  overflow: auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 .insights-file {
   display: grid;
@@ -5848,8 +5923,6 @@ textarea:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  direction: rtl;
-  text-align: left;
   color: var(--text-faint);
   font-size: 11px;
 }
@@ -5868,8 +5941,8 @@ textarea:focus-visible {
 }
 .insights-hunks {
   padding: 10px 12px;
-  max-height: 46vh;
-  overflow: auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 .insights-hunks-head {
   display: flex;

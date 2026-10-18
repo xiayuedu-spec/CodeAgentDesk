@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { BookOpen, Copy, PanelLeft, PanelLeftClose, Plus, X } from 'lucide-react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { AgentStatusStyle } from '../../shared/types';
@@ -43,66 +44,82 @@ export function TabBar({
   onCopyActive,
   onDetailActive,
 }: TabBarProps) {
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  // 标签多到需要滚动时，切换会话要把激活页带回视野（键盘 / 侧栏切换都会触发）。
+  useEffect(() => {
+    if (!activeId) return;
+    const list = listRef.current;
+    const tab = list?.querySelector<HTMLElement>(`[data-tab-id="${activeId}"]`);
+    tab?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [activeId]);
+
   return (
     <div className="tab-bar" role="tablist" aria-label="打开的会话">
-      {sessions.map((session, i) => (
-        <div
-          key={session.id}
-          className={`tab ${session.id === activeId ? 'active' : ''}${
-            dragIndex === i ? ' dragging' : ''
-          }${session.activity ? ' has-activity' : ''}`}
-          role="tab"
-          aria-selected={session.id === activeId}
-          tabIndex={0}
-          draggable
-          onDragStart={() => onDragStart(i)}
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={(event) => {
-            event.preventDefault();
-            if (dragIndex == null) return;
-            const from = dragIndex;
-            const to = i;
-            onDrop(from, to);
-          }}
-          onDragEnd={onDragEnd}
-          onClick={() => onSelect(session.id)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') onSelect(session.id);
-          }}
-          onContextMenu={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            if (session.sessionId) {
-              onContextMenu(event, session.sessionId, session.cwd);
-            }
-          }}
-        >
-          {agentStatusStyle === 'dot' ? (
-            <span
-              className={`tab-dot ${session.status}`}
-              title={statusLabel(session.status)}
-            />
-          ) : (
-            <AgentStatusMark
-              status={sessionStatuses[session.id] ?? 'idle'}
-              style={agentStatusStyle}
-              className="tab-agent"
-            />
-          )}
-          <span>{formatSessionTitle(session)}</span>
-          <button
-            type="button"
-            className="icon-button tab-close"
-            aria-label="关闭会话"
-            onClick={(event) => {
+      {/* 标签多时横向滚动；动作按钮在容器外，固定右侧不随滚动消失 */}
+      <div className="tab-list" ref={listRef}>
+        {sessions.map((session, i) => (
+          <div
+            key={session.id}
+            data-tab-id={session.id}
+            className={`tab ${session.id === activeId ? 'active' : ''}${
+              dragIndex === i ? ' dragging' : ''
+            }${session.activity ? ' has-activity' : ''}`}
+            role="tab"
+            aria-selected={session.id === activeId}
+            tabIndex={0}
+            draggable
+            onDragStart={() => onDragStart(i)}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              if (dragIndex == null) return;
+              const from = dragIndex;
+              const to = i;
+              onDrop(from, to);
+            }}
+            onDragEnd={onDragEnd}
+            onClick={() => onSelect(session.id)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') onSelect(session.id);
+            }}
+            onContextMenu={(event) => {
+              event.preventDefault();
               event.stopPropagation();
-              onClose(session.id);
+              if (session.sessionId) {
+                onContextMenu(event, session.sessionId, session.cwd);
+              }
             }}
           >
-            <X size={14} />
-          </button>
-        </div>
-      ))}
+            {agentStatusStyle === 'dot' ? (
+              <span
+                className={`tab-dot ${session.status}`}
+                title={statusLabel(session.status)}
+              />
+            ) : (
+              <AgentStatusMark
+                status={sessionStatuses[session.id] ?? 'idle'}
+                style={agentStatusStyle}
+                className="tab-agent"
+              />
+            )}
+            <span className="tab-label" title={formatSessionTitle(session)}>
+              {formatSessionTitle(session)}
+            </span>
+            <button
+              type="button"
+              className="icon-button tab-close"
+              aria-label="关闭会话"
+              onClick={(event) => {
+                event.stopPropagation();
+                onClose(session.id);
+              }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
       {activeId && (onCopyActive || onDetailActive) ? (
         <div className="tab-actions">
           {onCopyActive ? (

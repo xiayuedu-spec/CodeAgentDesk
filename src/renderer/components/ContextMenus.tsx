@@ -15,6 +15,8 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+import { useLayoutEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { GROUP_COLORS } from '../../shared/types';
 import type { GroupRecord, SessionRecord } from '../../shared/types';
 import type {
@@ -66,6 +68,53 @@ interface ContextMenusActions {
   createGroupAndMove: () => void;
 }
 
+/**
+ * 右键菜单容器：先按鼠标坐标渲染，再测量自身尺寸把浮层拉回视口内。
+ * 修复"在窗口下部右键，菜单溢出到屏幕外"的问题（会话菜单已十余项，很容易触底）。
+ */
+function ClampedMenu({
+  x,
+  y,
+  className,
+  children,
+}: {
+  x: number;
+  y: number;
+  className: string;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number }>({ left: x, top: y });
+
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) {
+      setPos({ left: x, top: y });
+      return;
+    }
+    // 尺寸与位置无关，用当前 rect 的宽高即可。
+    const { width, height } = element.getBoundingClientRect();
+    const margin = 8;
+    const left = Math.max(margin, Math.min(x, window.innerWidth - width - margin));
+    const top = Math.max(margin, Math.min(y, window.innerHeight - height - margin));
+    setPos((current) =>
+      current.left === left && current.top === top ? current : { left, top },
+    );
+  }, [x, y]);
+
+  return (
+    <div
+      ref={ref}
+      className={className}
+      role="menu"
+      style={{ left: pos.left, top: pos.top }}
+      onClick={(event) => event.stopPropagation()}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function ContextMenus({ data, actions }: { data: ContextMenusData; actions: ContextMenusActions }) {
   const { menu, menuSession, groupMenu, sectionMenu, moveMenu, groups, moveNewOpen, moveNewName, sessions, records } = data;
   // 分组内可归档的历史会话数（未归档且未运行中）——"全部归档"使用。
@@ -115,12 +164,7 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
   return (
     <>
       {menu ? (
-        <div
-          className="context-menu"
-          role="menu"
-          style={{ left: menu.x, top: menu.y }}
-          onClick={(event) => event.stopPropagation()}
-        >
+        <ClampedMenu x={menu.x} y={menu.y} className="context-menu">
           <button
             type="button"
             disabled={!menuSession || menu.archived}
@@ -299,16 +343,11 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
             </span>
             复制路径
           </button>
-        </div>
+        </ClampedMenu>
       ) : null}
 
       {groupMenu ? (
-        <div
-          className="context-menu"
-          role="menu"
-          style={{ left: groupMenu.x, top: groupMenu.y }}
-          onClick={(event) => event.stopPropagation()}
-        >
+        <ClampedMenu x={groupMenu.x} y={groupMenu.y} className="context-menu">
           <button
             type="button"
             role="menuitem"
@@ -367,16 +406,11 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
             </span>
             删除分组
           </button>
-        </div>
+        </ClampedMenu>
       ) : null}
 
       {sectionMenu ? (
-        <div
-          className="context-menu"
-          role="menu"
-          style={{ left: sectionMenu.x, top: sectionMenu.y }}
-          onClick={(event) => event.stopPropagation()}
-        >
+        <ClampedMenu x={sectionMenu.x} y={sectionMenu.y} className="context-menu">
           <button
             type="button"
             role="menuitem"
@@ -391,16 +425,11 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
             </span>
             全部归档（{historyCountAll} 个历史会话）
           </button>
-        </div>
+        </ClampedMenu>
       ) : null}
 
       {moveMenu ? (
-        <div
-          className="context-menu move-menu"
-          role="menu"
-          style={{ left: moveMenu.x, top: moveMenu.y }}
-          onClick={(event) => event.stopPropagation()}
-        >
+        <ClampedMenu x={moveMenu.x} y={moveMenu.y} className="context-menu move-menu">
           {moveNewOpen ? (
             <div className="move-new-row">
               <input
@@ -456,7 +485,7 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
             </span>
             新建分组…
           </button>
-        </div>
+        </ClampedMenu>
       ) : null}
     </>
   );
