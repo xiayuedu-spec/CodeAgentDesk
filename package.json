@@ -1,6 +1,6 @@
 {
   "name": "codeagentdesk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Claude Code unified window manager desktop app",
   "main": "dist-electron/main/index.js",
   "private": true,
