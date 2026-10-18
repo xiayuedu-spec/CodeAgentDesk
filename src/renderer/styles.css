@@ -6008,3 +6008,87 @@ textarea:focus-visible {
   content: '+ ';
   color: var(--accent);
 }
+
+/* ================================================================
+   v6 精修：圆角语法 / 去抖动 / 吸顶分区 / 面板内凹 / 眉标统一
+   原则：只改颜色、圆角、hover 与层级，不动尺寸与结构（低风险覆盖）
+   ================================================================ */
+
+/* ---- 1. 圆角语法：内嵌元素的半径 = 外层半径 − 内边距 ----
+   之前 v5 把 --radius-md 提到 16px，但菜单项/开关项仍是 4-5px，
+   形成"大方框里套尖角小块"的廉价感。 */
+.mode-switch button,
+.context-menu button,
+.terminal-context-menu button,
+.group-manage-row,
+.group-manage-color,
+.settings-path {
+  border-radius: var(--radius-sm);
+}
+/* 小图标按钮做成正圆：方角×小尺寸是最容易显廉价的组合 */
+.tab-close,
+.search-clear {
+  border-radius: 50%;
+}
+/* 行内命中高亮不跟随大圆角（会变成胶囊），保持贴合文字 */
+.search-context-line.hit {
+  border-radius: 6px;
+}
+
+/* ---- 2. 去抖动：hover 不再平移 ----
+   两行制行高下，translateX/Y 会让文字随指针"抖"，且与选中态的
+   内阴影抢层级。改为纯背景/描边反馈。 */
+.session-row:hover,
+.tab:hover {
+  transform: none;
+}
+.tab:hover {
+  background: color-mix(in srgb, var(--bg-inset) 88%, var(--text) 5%);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+/* 激活标签：去掉与大圆角打架的顶部直线，改用底部一条 accent 内收边 */
+.tab.active::before {
+  display: none;
+}
+.tab.active {
+  box-shadow:
+    0 2px 14px var(--accent-glow),
+    inset 0 -1px 0 color-mix(in srgb, var(--accent) 38%, transparent);
+}
+
+/* ---- 3. 侧栏分区标题吸顶 ----
+   历史会话可能很长，滚动时"当前会话/历史会话/分组"要一直可见。
+   用半透明 + 毛玻璃而不是实色，避免与侧栏底色不匹配出现色块。 */
+.group-label,
+.group-label.section-toggle {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ---- 4. 终端面板内凹 + 与激活标签呼应 ---- */
+.terminal-slot.active .terminal-pane {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--accent) 16%, transparent),
+    0 14px 36px rgba(0, 0, 0, 0.14);
+}
+.terminal-host {
+  padding: 10px 12px;
+}
+
+/* 吸顶标题会遮住 scrollIntoView 的目标行：给行留出标题高度的滚动边距 */
+.session-row {
+  scroll-margin-top: 34px;
+}
+/* ---- 5. 信息面板：眉标统一 + 末项去线 ---- */
+.info-item > span {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+.info-item:last-of-type {
+  border-bottom: 0;
+}
