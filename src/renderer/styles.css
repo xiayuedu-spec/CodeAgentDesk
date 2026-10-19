@@ -1288,7 +1288,10 @@ button:focus-visible, input:focus-visible {
   height: 30px;
   flex: none;
   min-width: 0;
-  overflow: hidden;
+  /* 不要在这里用 overflow:hidden ——「更多」菜单与审批收件箱都是向上弹出的绝对定位
+     子元素，会被整块裁掉（表现为"点了没反应"）。窄窗口靠下面的 span 收缩 + 省略号
+     处理，超出窗口的部分由 body 的 overflow:hidden 兜底。 */
+  overflow: visible;
   padding: 0 12px;
   border-top: 1px solid var(--border);
   background: linear-gradient(
