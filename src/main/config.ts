@@ -32,6 +32,8 @@ export function readConfig(): AppConfig {
           ? parsed.terminalFontFamily.trim()
           : undefined,
       showTokenStats: parsed.showTokenStats === true,
+      // 默认开启：不开的话知识永远不会自动积累。
+      autoKnowledge: parsed.autoKnowledge !== false,
     };
   } catch {
     return {};

@@ -244,6 +244,20 @@ export default function App() {
   } = useOverlays(bumpUsage);
 
   // 自动更新：订阅状态 + 启动静默检查（打包环境生效，开发模式返回 dev 不提示）。
+  // 自动沉淀完成 → 提示用户去核验（不自动打开面板，避免打断）。
+  useEffect(() => {
+    return window.codeagentdesk.onAutoKnowledge(({ count, titles }) => {
+      const first = titles[0] ? `「${titles[0]}」` : '';
+      toast.success(`已自动沉淀 ${count} 张知识草稿${first ? `：${first}` : ''}`, {
+        label: '去核验',
+        run: () => {
+          const target = sessions.find((session) => session.id === activeId) ?? null;
+          if (target?.cwd) openCards({ cwd: target.cwd, title: formatSessionTitle(target) });
+        },
+      });
+    });
+  }, [activeId, sessions, toast]);
+
   useEffect(() => {
     const unsubscribe = window.codeagentdesk.onUpdateStatus((status) => {
       if (status.kind === 'available') {
@@ -815,6 +829,12 @@ export default function App() {
   async function handleSetPomodoroMinutes(minutes: number): Promise<void> {
     await window.codeagentdesk.setPomodoroMinutes(minutes);
     await refreshClaudeInfo();
+  }
+
+  async function handleSetAutoKnowledge(enabled: boolean): Promise<void> {
+    await window.codeagentdesk.setAutoKnowledge(enabled);
+    await refreshClaudeInfo();
+    toast.success(enabled ? '已开启自动沉淀知识' : '已关闭自动沉淀知识');
   }
 
   async function handleSetShowTokenStats(enabled: boolean): Promise<void> {
@@ -1467,6 +1487,7 @@ export default function App() {
     },
     handleSetAgentStatusStyle: (style: AgentStatusStyle) => void handleSetAgentStatusStyle(style),
     handleSetShowTokenStats: (enabled: boolean) => void handleSetShowTokenStats(enabled),
+    handleSetAutoKnowledge: (enabled: boolean) => void handleSetAutoKnowledge(enabled),
     handleSetPomodoroMinutes: (minutes: number) => void handleSetPomodoroMinutes(minutes),
     handleSetTerminalFont: (payload: { size?: number; family?: string }) => {
       void window.codeagentdesk.setTerminalFont(payload).then(refreshClaudeInfo);

@@ -148,6 +148,18 @@ Token 统计默认关闭后，右栏从"用量展示"改成**当前会话的仪�
 - **过期**：卡片记录 `files`（涉及源码），将来可比对文件 mtime/是否存在来标"可能过期"（**本期未实现**，字段已留）。
 - **跟随仓库**：卡片是提交进 git 的文件，同事拉代码就拿到，不需要服务器。IPC：`knowledge:cards-list` / `knowledge:card-save` / `knowledge:card-delete`。
 
+### 4.19 自动沉淀（`auto-knowledge.ts`）
+知识卡片默认**自动生成 + 人工核验**：手动记卡不现实，但自动写进 `verified` 又会污染知识库。
+
+- **触发**：会话结束（`session.onExit` 且拿到 sessionId + cwd）后台跑一次，不阻塞用户；**同一会话只分析一次**（`knowledge-auto.json` 记 sessionId，最多 800 条）。
+- **门槛**：对话轮次 ≥ 4，或出现过失败的 tool_result；太短的会话直接跳过（省一次模型调用）。
+- **提取**：`runClaude` + 结构化提示（要求只输出 JSON 数组），四类：pitfall/decision/flow/module，单次最多 3 张；提示词里带上**已有卡片标题**让它别重复。
+- **防幻觉**：模型给的 `files` 逐个校验是否真的存在于 cwd，不存在的丢掉；标题再做一次本地判重（归一化后相等、或长标题包含短标题，且短标题 ≥ 8 字）。
+- **落盘**：全部写成 `status: draft`，并记 `sessionId` 便于回溯原始对话；**绝不自动置为 verified**。
+- **提示**：产出非空时广播 `knowledge:auto`，界面弹 toast（带「去核验」按钮直达卡片面板）。
+- **开关**：`config.autoKnowledge`（默认开启；不开的话知识永远不会积累），设置弹窗里可关。
+- **失败策略**：模型不可用/超时不标记「已分析」，下次还会重试；单张卡片写失败不影响其它。
+
 ## 5. 渲染层模式
 
 - **容器-展示**：`App.tsx` 持有状态/effects/handlers，向下传 `data`/`actions` 分组 props（SidebarBody/StatusBar/TabBar/ContextMenus 等）。

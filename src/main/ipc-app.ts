@@ -75,6 +75,14 @@ export function registerAppIpc({ onClaudeDirChanged }: AppIpcDeps): void {
   );
 
   ipcMain.handle(
+    IpcChannel.configSetAutoKnowledge,
+    (_event, enabled: unknown): ClaudeConfigInfo => {
+      writeConfig({ ...readConfig(), autoKnowledge: enabled === true });
+      return readClaudeConfigInfo();
+    },
+  );
+
+  ipcMain.handle(
     IpcChannel.configSetAgentStatusStyle,
     (_event, style: unknown): ClaudeConfigInfo => {
       writeConfig({
