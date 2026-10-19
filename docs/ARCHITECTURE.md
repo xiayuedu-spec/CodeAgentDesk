@@ -124,7 +124,9 @@ Token 统计默认关闭后，右栏从"用量展示"改成**当前会话的仪�
 
 - **容器-展示**：`App.tsx` 持有状态/effects/handlers，向下传 `data`/`actions` 分组 props（SidebarBody/StatusBar/TabBar/ContextMenus 等）。
 - **lazy 弹窗**：SessionDetail / SummaryModal / CommandPalette / UsageTrendModal / KnowledgeModal / Dashboard / EfficiencyInsights / Timeline / Backup / UsageStats / SessionInsights / HourlyUsagePopover 均懒加载。
-- **hooks**：`useUiState`（配置/目录/设置）、`useSearch`、`usePalette`（命令面板）、`useSummary`、`useDashboardStats`（60s+事件刷新）、`useDismiss`（点外部/Esc 关弹层）、`useEscape`、`useAnimatedNumber`、`usePomodoro`、`useSessionAgentStatuses`、`useRowWindow`（固定行高列表窗口化，见下）。
+- **hooks**：`useUiState`（配置/目录/设置）、`useSearch`、`usePalette`（命令面板）、`useSummary`、`useDashboardStats`（60s+事件刷新）、`useDismiss`（点外部/Esc 关弹层）、`useEscape`、`useAnimatedNumber`、`usePomodoro`、`useSessionAgentStatuses`、`useRowWindow`（固定行高列表窗口化，见下）、`useSessionRail`（右栏数据，挂在 InfoPanel 内部）、`useOverlays`（10 个浮层开关 + 4 个带埋点的 opener）。
+
+`App.tsx` 是容器（状态/effects/handlers），已按职责外提两块：浮层开关 → `useOverlays`（10 个布尔量 + 4 个带埋点的 opener）；派生会话列表 → `useSessionLists`（历史/归档拆分、分组区块、未分组回落、导航序号、日历计数，约 140 行纯计算）。App 从 1997 行降到 1863 行。剩余大头是 49 个 handler（归档/分组/重命名/置顶/搜索/总结/知识库），需要按域继续拆。
 - **长列表窗口化**：`components/SessionList.tsx` + `hooks/useRowWindow.ts`。行数 > 60 时只渲染视口附近的行，上下用 padding 占位（行高由首行实测，不硬编码）；键盘导航焦点行不在窗口内时，由 hook 直接滚动容器把它带进窗口。行结构统一为两行制（标题行 + 次要信息行），所有行等高是窗口化的前提。
 - **状态标记**：agent 状态标记同时用于状态栏、侧边栏会话行、标签页（`agentStatusStyle` 三态：emoji / 单色图标 / 圆点，统一由 `AgentStatusMark` 渲染）。
 - **终端 chrome**：只有一层——`TabBar` 兼作终端操作条（复制内容 / 查看详情），`TerminalPane` 只渲染 xterm 宿主；选中自动复制提示为浮层徽章。

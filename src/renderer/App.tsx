@@ -22,8 +22,6 @@ import {
   formatSessionTitle,
   type ContextMenuState,
   type GroupMenuState,
-  type GroupSection,
-  type GroupSectionItem,
   type MoveMenuState,
   type SessionView,
 } from './session-utils';
@@ -36,6 +34,8 @@ import { useDashboardStats } from './hooks/useDashboardStats';
 import { useDismiss } from './hooks/useDismiss';
 import { useEscape } from './hooks/useEscape';
 import { useSessionAgentStatuses } from './hooks/useAgentStatus';
+import { useOverlays } from './hooks/useOverlays';
+import { useSessionLists } from './hooks/useSessionLists';
 import { usePomodoro } from './hooks/usePomodoro';
 import { useToast } from './toast';
 import {
@@ -57,13 +57,6 @@ import { ContextMenus } from './components/ContextMenus';
 import type { PaletteItem } from './components/CommandPalette';
 
 /** 稳定分区：置顶项排到最前，其余保持原顺序（Array.prototype.sort 在 V8 中稳定，但显式分区更清晰）。 */
-function withPinnedFirst<T>(items: T[], isPinned: (item: T) => boolean): T[] {
-  const pinned: T[] = [];
-  const rest: T[] = [];
-  for (const item of items) (isPinned(item) ? pinned : rest).push(item);
-  return [...pinned, ...rest];
-}
-
 // 首屏不渲染的重组件按需加载，减小主 chunk。
 const LazySessionDetail = lazy(() =>
   import('./components/SessionDetail').then((module) => ({ default: module.SessionDetail })),
@@ -200,13 +193,6 @@ export default function App() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const [confirmDeleteOne, setConfirmDeleteOne] = useState<string | null>(null);
-  const [usageTrendOpen, setUsageTrendOpen] = useState(false);
-  const [knowledgeOpen, setKnowledgeOpen] = useState(false);
-  const [dashboardOpen, setDashboardOpen] = useState(false);
-  const [efficiencyOpen, setEfficiencyOpen] = useState(false);
-  const [timelineOpen, setTimelineOpen] = useState(false);
-  const [backupOpen, setBackupOpen] = useState(false);
-  const [usageStatsOpen, setUsageStatsOpen] = useState(false);
   /** 计划与改动弹窗（null 关闭；path 用于从右栏点某个文件直接定位）。 */
   const [insightsTarget, setInsightsTarget] = useState<{
     sessionId: string;
@@ -223,22 +209,27 @@ export default function App() {
   const bumpUsage = (key: string): void => {
     void window.codeagentdesk.incrementUsageStat(key);
   };
-  const openDashboard = (): void => {
-    bumpUsage('dashboard.opened');
-    setDashboardOpen(true);
-  };
-  const openEfficiency = (): void => {
-    bumpUsage('efficiency.opened');
-    setEfficiencyOpen(true);
-  };
-  const openTimeline = (): void => {
-    bumpUsage('timeline.opened');
-    setTimelineOpen(true);
-  };
-  const openKnowledge = (): void => {
-    bumpUsage('knowledge.opened');
-    setKnowledgeOpen(true);
-  };
+  // 浮层开关集中在 useOverlays（10 个布尔量 + 4 个带埋点的 opener 原本占了 App 开头一段）。
+  const {
+    usageTrendOpen,
+    setUsageTrendOpen,
+    knowledgeOpen,
+    setKnowledgeOpen,
+    dashboardOpen,
+    setDashboardOpen,
+    efficiencyOpen,
+    setEfficiencyOpen,
+    timelineOpen,
+    setTimelineOpen,
+    backupOpen,
+    setBackupOpen,
+    usageStatsOpen,
+    setUsageStatsOpen,
+    openDashboard,
+    openEfficiency,
+    openTimeline,
+    openKnowledge,
+  } = useOverlays(bumpUsage);
 
   // 自动更新：订阅状态 + 启动静默检查（打包环境生效，开发模式返回 dev 不提示）。
   useEffect(() => {
@@ -1301,10 +1292,19 @@ export default function App() {
   useEffect(() => {
     if (activeId) setHomeOpen(false);
   }, [activeId]);
-  const historyRecords = records.filter(
-    (record) => !record.archived && !sessions.some((s) => s.sessionId === record.sessionId),
-  );
-  const archivedRecords = records.filter((record) => record.archived);
+  // 派生列表（历史/归档/分组区块/导航序号…）已抽到 useSessionLists。
+  const {
+    historyRecords,
+    archivedRecords,
+    groupSections,
+    ungroupedRunning,
+    ungroupedHistory,
+    rowIndexByKey,
+    navItems,
+    activeNav,
+    sessionCounts,
+  } = useSessionLists({ records, sessions, groups, collapsedGroups, mode, navIndex });
+  const navClass = (index: number): string => (activeNav === index ? ' nav-focus' : '');
   const menuSession = menu
     ? sessions.find((session) => session.sessionId === menu.sessionId) ??
       records.find((record) => record.sessionId === menu.sessionId) ??
@@ -1329,140 +1329,6 @@ export default function App() {
     if (paletteOpen) bumpUsage('palette.opened');
   }, [paletteOpen]);
 
-  // 会话 → 分组/置顶映射预建一次，分组与未分组计算共用（避免 filter 内逐会话 find）。
-  const recordGroupBySession = useMemo(
-    () => new Map(records.map((record) => [record.sessionId, record.group])),
-    [records],
-  );
-  const recordPinnedBySession = useMemo(
-    () => new Map(records.map((record) => [record.sessionId, record.pinned === true])),
-    [records],
-  );
-
-  // 分组是会话管理的核心容器：运行中 + 历史会话都按组归类（运行中在前），分组区块默认在上方。
-  // 未分组的会话分别回落到"当前会话 / 历史会话"区块，不单独建"未分组"区块。
-  // 置顶会话在各自区块内排到最前。
-  const groupSections = useMemo<GroupSection[]>(() => {
-    const groupById = new Map(groups.map((group) => [group.id, group]));
-    const byGroup = new Map<string, GroupSectionItem[]>();
-    const pushItem = (item: GroupSectionItem): void => {
-      const groupId = item.sessionId
-        ? recordGroupBySession.get(item.sessionId)
-        : undefined;
-      if (groupId && groupById.has(groupId)) {
-        const list = byGroup.get(groupId) ?? [];
-        list.push(item);
-        byGroup.set(groupId, list);
-      }
-    };
-    for (const session of sessions) {
-      pushItem({
-        key: `s:${session.id}`,
-        kind: 'running',
-        id: session.id,
-        sessionId: session.sessionId,
-        cwd: session.cwd,
-      });
-    }
-    for (const record of historyRecords) {
-      pushItem({
-        key: `h:${record.sessionId}`,
-        kind: 'history',
-        sessionId: record.sessionId,
-        cwd: record.cwd,
-      });
-    }
-    return groups
-      .map((group) => ({
-        key: group.id,
-        group,
-        items: withPinnedFirst(byGroup.get(group.id) ?? [], (item) =>
-          item.sessionId ? Boolean(recordPinnedBySession.get(item.sessionId)) : false,
-        ),
-        collapsed: collapsedGroups.has(group.id),
-      }))
-      .filter((section) => section.items.length > 0);
-  }, [groups, records, sessions, historyRecords, collapsedGroups]);
-
-  const ungroupedRunning = useMemo(
-    () =>
-      withPinnedFirst(
-        sessions.filter((session) => {
-          const groupId = session.sessionId
-            ? recordGroupBySession.get(session.sessionId)
-            : undefined;
-          return !groupId || !groups.some((group) => group.id === groupId);
-        }),
-        (session) =>
-          session.sessionId ? Boolean(recordPinnedBySession.get(session.sessionId)) : false,
-      ),
-    [groups, recordGroupBySession, recordPinnedBySession, sessions],
-  );
-
-  const ungroupedHistory = useMemo(
-    () =>
-      withPinnedFirst(
-        historyRecords.filter((record) => {
-          const groupId = record.group;
-          return !groupId || !groups.some((group) => group.id === groupId);
-        }),
-        (record) => record.pinned === true,
-      ),
-    [groups, historyRecords],
-  );
-
-  const visibleRows: GroupSectionItem[] = [
-    ...groupSections.flatMap((section) => (section.collapsed ? [] : section.items)),
-    ...ungroupedRunning.map((session) => ({
-      key: `s:${session.id}`,
-      kind: 'running' as const,
-      id: session.id,
-      sessionId: session.sessionId,
-      cwd: session.cwd,
-    })),
-    ...ungroupedHistory.map((record) => ({
-      key: `h:${record.sessionId}`,
-      kind: 'history' as const,
-      sessionId: record.sessionId,
-      cwd: record.cwd,
-    })),
-  ];
-  const rowIndexByKey = new Map(visibleRows.map((item, index) => [item.key, index]));
-
-  const navItems: {
-    key: string;
-    kind: 'running' | 'history' | 'archived';
-    id?: string;
-    sessionId?: string;
-    cwd: string;
-  }[] =
-    mode === 'sessions'
-      ? visibleRows.map((item) => ({
-          key: item.key,
-          kind: item.kind,
-          id: item.id,
-          sessionId: item.sessionId,
-          cwd: item.cwd,
-        }))
-      : mode === 'archive'
-        ? archivedRecords.map((record) => ({
-            key: `a:${record.sessionId}`,
-            kind: 'archived' as const,
-            sessionId: record.sessionId,
-            cwd: record.cwd,
-          }))
-        : [];
-  const activeNav = navItems.length ? Math.min(navIndex, navItems.length - 1) : -1;
-  const navClass = (index: number): string => (activeNav === index ? ' nav-focus' : '');
-
-  const sessionCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const record of records) {
-      const date = (record.updatedAt || '').slice(0, 10);
-      counts.set(date, (counts.get(date) ?? 0) + 1);
-    }
-    return counts;
-  }, [records]);
 
   useEffect(() => {
     if (activeNav < 0) return;
