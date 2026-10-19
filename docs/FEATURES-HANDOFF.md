@@ -212,7 +212,6 @@
 | 右栏仪表 | `components/InfoPanel.tsx` + `hooks/useSessionRail.ts`。Token 统计默认关闭后，右栏改成「会话仪表」：状态/活跃时长 → 计划进度 → 本次改动 → 痕迹（轮次/工具调用/失败/开始时间，与 insights 同一次扫描产出）→ git 分支 → 会话 ID/目录。**「继续未完成的 N 项」**先原位展开预览（发送/取消）再写 pty，提示是**单行** + 一次回车（不用 bracketed paste）。数据 hook 挂在面板内部，15s 轮询不会重渲染整个 App；改动文件行可点击，带 `initialPath` 打开洞察弹窗定位到该文件。git 走 `git-info.ts`：一次 `git status --porcelain=v1 --branch -uno` 取分支 + 脏文件 + ahead/behind，4s 超时、按 cwd 缓存 **10s**（必须小于 15s 轮询间隔，否则数字永远不更新），非仓库返回 `null`（该行不显示）。**洞察与 git 共用一个 15s 轮询**（running + 面板展开 + 窗口可见时才跑）；数据按 sessionId/cwd 缓存在渲染层，切回看过的会话不闪「读取中」，换会话也不会串号 |
 | 待审批收件箱 | `StatusBar` + `App` 的 `approvals`（`useMemo` 保持引用稳定，避免「新进入等待」提示每次渲染重跑）。状态栏 `⚠ N` 胶囊 → 浮层列出等待中的会话 → 点击 `setActiveId` 直达；全部处理完自动收起。新进入等待时弹一次 toast（`useRef<Set<ptyId>>` 去重，离开等待即移除）。判定源是 `useSessionAgentStatuses` 的 `approval` 状态，不需要任何新 IPC |
 | 工作区改动审查 | `git-diff.ts` + `GitDiffModal`。`git status -uall -z` + `git diff HEAD --unified=3 --no-color -M` 并行取数，未跟踪文件读内容合成全新增 hunk（校验路径不逃出 cwd 根，二进制/>200KB 只标记）。`parseUnifiedDiff` 是纯函数（8 个单测）：按 `diff --git` 聚块、`@@` 头推进新旧行号、识别新建/删除/重命名/二进制；二进制没有 `---/+++` 行，路径从 `diff --git` 行尾兜底。预算：每文件 400 行入内存（计数仍准）、最多 80 文件、8MB/8s。入口：右栏 git 卡 + 右键菜单。**暂存/提交**：文件行圆形勾选（`git add -- path` / `git reset -q HEAD -- path`，unborn HEAD 退化为 `git rm --cached`）、头部全部暂存（`git add -A`）、底部提交栏（`git commit -m`，**只提交已暂存**、不带 `-a`、不加 `--no-verify`，message 走 execFile 单参数、上限 4000）。失败回显 git stderr 前 4 行且保留输入；`git-write.test.ts` 是真跑 git 的集成测试 |
-| 任务运行器 | `task-runner.ts` + `TaskRunnerModal`。读 `package.json#scripts`，按 lockfile 认包管理器；`spawn(manager, ['run', script], {shell:win32})` 流式回传，每任务 400k 字符输出上限、最多 3 并发；停止用 `taskkill /pid /T /F`（shell 起的 cmd 只 kill 壳没用）。**只跑声明过的脚本**，不提供自由 shell。入口：右栏 git 卡片「运行任务」 |
 
 **坑位（内存）**：解析缓存的上限要按「条数 × 单条最坏体积」估，别只看条数；任何从 JSONL 里提取并长期缓存的对象（尤其 `tool_use.input`）都必须截断——一次整文件 Write 的 input 能有几十上百 KB，还会被复制多份。渲染层同理（`useSessionRail` 的缓存上限 8 条）。
 
@@ -246,8 +245,8 @@
 - 体积纪律：首屏约 300KB（index + vendor-react + vendor-lucide）；**xterm ~330KB 懒加载**（`LazyTerminalPane`）；分包在 `vite.config.mts` 的 `build.rolldownOptions.output.codeSplitting`。常量要单独成模块（如 `renderer/terminal-fonts.ts`），别从重组件导出。
 - 长列表渲染：卡片/条目加 `content-visibility: auto` + `contain-intrinsic-size`；条目数可能上千的视图要做分页（`SessionDetail` 每页 200 条）或窗口化（`SessionList`）。
 - 提交：每轮功能通过 verify 后 `git commit` + `git push`；提交信息中文、多个 `-m`（避免引号/反引号问题）。
-- 测试（83 个）：主进程纯逻辑（导出/解析/汇总/洞察/取消语义）用 vitest + `vi.mock('electron')`；**渲染层纯函数**放 `src/renderer/__tests__/`（`insights-utils.ts` 这类无 React 依赖的模块）；**写操作真跑集成测试**（`git-write.test.ts` 真 git、`task-runner.test.ts` 真 spawn）。
-- 断言别放进 `setTimeout` / 回调里：抛出的 expect 只会变成未处理异常，测试照样"通过"（`stopTask` 那条就踩过）。
+- 测试（75 个）：主进程纯逻辑（导出/解析/汇总/洞察/取消语义）用 vitest + `vi.mock('electron')`；**渲染层纯函数**放 `src/renderer/__tests__/`（`insights-utils.ts` 这类无 React 依赖的模块）；**写操作真跑集成测试**（`git-write.test.ts` 真 git）。
+- 断言别放进 `setTimeout` / 回调里：抛出的 expect 只会变成未处理异常，测试照样"通过"。
 - 弹窗组件一律 `lazy()` 懒加载，减小主 chunk。
 - **CSS 合并的实测结论**（省得后人再评估一次）：用脚本统计 `styles.css` 的 904 条顶层规则、766 个单选择器组，其中重复的只有 26 个，且**真正被后者覆盖的死声明只有 25 条、可整块删除 5 个**——占全文件不到 1%。所以"把 v3/v4/v5/v6 合并成一层"的收益极低、风险很高（没法自动化验证层叠），**不建议做机械合并**；正确做法是新增样式加到对应层（见 `styles.css` 顶部的地图注释）。
 - 暂未接入 ESLint（TS 7 × ESLint 10 的 typescript-eslint 兼容性未确认）；靠 tsc 严格模式 + CI 门禁。

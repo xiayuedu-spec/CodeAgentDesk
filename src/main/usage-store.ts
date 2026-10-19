@@ -27,7 +27,6 @@ const KNOWN_KEYS = new Set([
   'plan.continue',
   'approval.jump',
   'diff.opened',
-  'tasks.opened',
   'export.md',
   'session.pin',
   'archive.delete',

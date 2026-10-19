@@ -138,15 +138,6 @@ Token 统计默认关闭后，右栏从"用量展示"改成**当前会话的仪�
 - **测试**：`git-write.test.ts` 是**真跑 git 的集成测试**（临时仓库 + 环境变量设身份），覆盖暂存/取消/全部暂存/非仓库/空信息/真实提交/无暂存内容/超长信息。
 
 
-### 4.17 任务运行器（`task-runner.ts` + `TaskRunnerModal`）
-补齐"验证"这一环：跑 `package.json` 里**声明过的**脚本，看结构化输出与退出码。
-
-- **只跑声明过的脚本**：`listScripts(cwd)` 读 `package.json#scripts`，按 lockfile 判断包管理器（pnpm/yarn/bun/npm）。**刻意不提供自由 shell**——那等于在应用里开一个无约束终端，与"审查后落地"的定位不符；临时命令走会话里的 Claude Code（可记录可审计）。
-- **执行**：`spawn(manager, ['run', script], { shell: win32 })`，stdout/stderr 合并流式回传；每个任务最多保留 400k 字符输出（超出只留前段），最多 3 个并发。
-- **停止**：Windows 按进程树 `taskkill /pid /T /F`（`shell:true` 起的是 cmd，只 kill 壳没用）。
-- **界面**：左侧脚本列表（名字 + 原命令），右侧实时输出（`--mono-code` 等宽、自动滚底）、状态徽标（运行中 / 通过 / 退出码）、停止按钮；入口在右栏 git 卡片的「运行任务」。
-- **测试**：`task-runner.test.ts` 真跑脚本（临时项目 + `node -e`），覆盖 scripts 解析、包管理器识别、未声明脚本被拒、真实执行拿到输出与退出码、非零退出码、停止长任务。
-
 ## 5. 渲染层模式
 
 - **容器-展示**：`App.tsx` 持有状态/effects/handlers，向下传 `data`/`actions` 分组 props（SidebarBody/StatusBar/TabBar/ContextMenus 等）。

@@ -24,7 +24,6 @@ const LABELS: Record<string, string> = {
   'plan.continue': '从右栏继续未完成计划',
   'approval.jump': '从收件箱跳转到等待中的会话',
   'diff.opened': '审查工作区改动（git diff）',
-  'tasks.opened': '打开任务运行器',
   'export.md': '导出 Markdown',
   'session.pin': '置顶/取消置顶会话',
   'archive.delete': '删除归档会话',

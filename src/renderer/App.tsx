@@ -90,9 +90,6 @@ const LazyBackup = lazy(() =>
 const LazyUsageStats = lazy(() =>
   import('./components/UsageStatsModal').then((module) => ({ default: module.UsageStatsModal })),
 );
-const LazyTaskRunner = lazy(() =>
-  import('./components/TaskRunnerModal').then((module) => ({ default: module.TaskRunnerModal })),
-);
 const LazyGitDiff = lazy(() =>
   import('./components/GitDiffModal').then((module) => ({ default: module.GitDiffModal })),
 );
@@ -199,8 +196,6 @@ export default function App() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const [confirmDeleteOne, setConfirmDeleteOne] = useState<string | null>(null);
-  /** 任务运行器弹窗（null 关闭；cwd 决定跑哪个项目）。 */
-  const [taskTarget, setTaskTarget] = useState<{ cwd: string; title?: string } | null>(null);
   /** 工作区改动审查弹窗（null 关闭；cwd 决定看哪个仓库）。 */
   const [diffTarget, setDiffTarget] = useState<{ cwd: string; title?: string } | null>(null);
   /** 计划与改动弹窗（null 关闭；path 用于从右栏点某个文件直接定位）。 */
@@ -826,16 +821,6 @@ export default function App() {
   async function handleCancelTask(): Promise<void> {
     const result = await window.codeagentdesk.cancelTask();
     toast.info(result.ok ? '已请求取消任务' : '当前没有可取消的任务');
-  }
-
-  /** 打开任务运行器（本会话 cwd 的 package.json scripts）。 */
-  function openTasks(target: { cwd?: string; title?: string }): void {
-    if (!target.cwd) {
-      toast.info('这个会话还没有工作目录');
-      return;
-    }
-    bumpUsage('tasks.opened');
-    setTaskTarget({ cwd: target.cwd, title: target.title });
   }
 
   /** 打开工作区改动审查（本会话 cwd 的 git diff）。 */
@@ -1650,12 +1635,6 @@ export default function App() {
                       title: formatSessionTitle(activeSession),
                     })
                   }
-                  onOpenTasks={() =>
-                    openTasks({
-                      cwd: activeSession.cwd,
-                      title: formatSessionTitle(activeSession),
-                    })
-                  }
                 />
               ) : (
                 <Welcome
@@ -1833,16 +1812,6 @@ export default function App() {
       {usageStatsOpen ? (
         <Suspense fallback={null}>
           <LazyUsageStats onClose={() => setUsageStatsOpen(false)} />
-        </Suspense>
-      ) : null}
-
-      {taskTarget ? (
-        <Suspense fallback={null}>
-          <LazyTaskRunner
-            cwd={taskTarget.cwd}
-            title={taskTarget.title}
-            onClose={() => setTaskTarget(null)}
-          />
         </Suspense>
       ) : null}
 

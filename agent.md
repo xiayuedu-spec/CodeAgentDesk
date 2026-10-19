@@ -12,7 +12,7 @@ npm run dev
 # 质量门禁（每轮改动必须全过；verify = typecheck + test + build）
 npm run verify
 npm run typecheck   # tsc 双工程（main + renderer）
-npm run test        # vitest（83 用例，main 解析层 + renderer 纯函数 + git 写操作集成）
+npm run test        # vitest（75 用例，main 解析层 + renderer 纯函数 + git 写操作集成）
 npm run test:watch  # 监听模式（写解析器/纯逻辑时用）
 npm run build       # tsc main + vite build
 
@@ -145,7 +145,7 @@ src/
 
 ## 7. 测试现状
 
-- Vitest（`npm run test`）：83 用例 —— 主进程：buildMarkdown 导出、JSONL 解析/搜索/用量、parseSummary 与长任务取消语义、会话洞察（计划快照 / 改动聚合 / 行级 diff / 截断与缓存 / 痕迹统计）；渲染层纯函数（`src/renderer/__tests__/`）：续做提示拼装、路径中段省略、时长/时间格式化、洞察 Markdown 导出；git 写操作（`git-write.test.ts`）是**真跑 git 的集成测试**（临时仓库 + 环境变量设身份）。
+- Vitest（`npm run test`）：75 用例 —— 主进程：buildMarkdown 导出、JSONL 解析/搜索/用量、parseSummary 与长任务取消语义、会话洞察（计划快照 / 改动聚合 / 行级 diff / 截断与缓存 / 痕迹统计）；渲染层纯函数（`src/renderer/__tests__/`）：续做提示拼装、路径中段省略、时长/时间格式化、洞察 Markdown 导出；git 写操作（`git-write.test.ts`）是**真跑 git 的集成测试**（临时仓库 + 环境变量设身份）。
 - **渲染层纯逻辑一律抽到 `renderer/insights-utils.ts` 这类无 React 依赖的模块再测**——别在 `.tsx` 里定义后指望 node 环境去测组件。
 - 主进程测试用 `vi.mock('electron')`；测试文件在 `src/**/__tests__/`，已从构建 tsconfig 排除（`vitest.config.mts`）。
 - 可补：MBTI/宠物树等纯函数（`renderer/mbti.ts` 建议补用例）。
