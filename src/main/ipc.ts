@@ -8,6 +8,7 @@ import { registerSessionsIpc } from './ipc-sessions';
 import { registerSummaryIpc } from './ipc-summary';
 import { registerUsageIpc } from './ipc-usage';
 import { registerFunIpc } from './ipc-fun';
+import { registerTasksIpc } from './ipc-tasks';
 
 /**
  * 按域注册全部 IPC 处理器：
@@ -17,6 +18,7 @@ import { registerFunIpc } from './ipc-fun';
  * - ipc-summary：日报/周报/月报、知识库
  * - ipc-usage：今日概览、用量趋势、每小时用量、效率洞察
  * - ipc-fun：成就徽章、项目性格、彩蛋
+ * - ipc-tasks：任务运行器（package.json scripts 的启动/停止/流式输出）
  */
 export function registerIpcHandlers(
   sessions: SessionManager,
@@ -31,4 +33,5 @@ export function registerIpcHandlers(
   registerSummaryIpc({ metaStore });
   registerUsageIpc({ sessions, metaStore });
   registerFunIpc({ metaStore });
+  registerTasksIpc();
 }

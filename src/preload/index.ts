@@ -21,6 +21,8 @@ import type {
   SessionDetailResult,
   SessionErrorEvent,
   GitOpResult,
+  TaskRunEvent,
+  TaskScriptList,
   SessionGitInfo,
   WorktreeDiff,
   SessionInsights,
@@ -133,6 +135,10 @@ const CHANNELS = {
   sessionDiff: 'session:diff',
   sessionStage: 'session:stage',
   sessionCommit: 'session:commit',
+  taskListScripts: 'task:list-scripts',
+  taskStart: 'task:start',
+  taskStop: 'task:stop',
+  taskRun: 'task:run',
 } as const;
 
 function subscribe<T>(channel: string, callback: (payload: T) => void): () => void {
@@ -240,6 +246,15 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.sessionStage, { cwd, paths, staged }) as Promise<GitOpResult>,
   commitChanges: (cwd, message) =>
     ipcRenderer.invoke(CHANNELS.sessionCommit, { cwd, message }) as Promise<GitOpResult>,
+  listTaskScripts: (cwd) =>
+    ipcRenderer.invoke(CHANNELS.taskListScripts, cwd) as Promise<TaskScriptList>,
+  startTask: (cwd, script) =>
+    ipcRenderer.invoke(CHANNELS.taskStart, { cwd, script }) as Promise<{
+      id: string;
+      manager: string;
+    } | null>,
+  stopTask: (id) => ipcRenderer.invoke(CHANNELS.taskStop, id) as Promise<{ ok: boolean }>,
+  onTaskRun: (callback) => subscribe<TaskRunEvent>(CHANNELS.taskRun, callback),
   getUiState: () => ipcRenderer.invoke(CHANNELS.uiGetState) as Promise<UiState>,
   saveUiState: (state) => ipcRenderer.invoke(CHANNELS.uiSaveState, state) as Promise<void>,
   minimizeWindow: () => ipcRenderer.invoke(CHANNELS.windowMinimize) as Promise<void>,

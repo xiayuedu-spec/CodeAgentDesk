@@ -187,6 +187,28 @@ export interface SessionInsights {
   skipped: number;
 }
 
+/** 项目里可运行的任务（package.json scripts）。 */
+export interface TaskScript {
+  name: string;
+  command: string;
+}
+
+export interface TaskScriptList {
+  cwd: string;
+  /** npm / pnpm / yarn / bun（按 lockfile 判断）。 */
+  manager: string;
+  scripts: TaskScript[];
+  hasPackageJson: boolean;
+}
+
+/** 任务输出事件：data = 增量输出，exit = 结束（code 为 null 表示被信号杀掉）。 */
+export interface TaskRunEvent {
+  id: string;
+  kind: 'data' | 'exit';
+  chunk?: string;
+  code?: number | null;
+}
+
 /** git 写操作（暂存/提交）的结果。 */
 export interface GitOpResult {
   ok: boolean;
@@ -583,6 +605,10 @@ export interface CodeAgentDeskApi {
   getWorktreeDiff(cwd: string): Promise<WorktreeDiff>;
   stageFiles(cwd: string, paths: string[], staged: boolean): Promise<GitOpResult>;
   commitChanges(cwd: string, message: string): Promise<GitOpResult>;
+  listTaskScripts(cwd: string): Promise<TaskScriptList>;
+  startTask(cwd: string, script: string): Promise<{ id: string; manager: string } | null>;
+  stopTask(id: string): Promise<{ ok: boolean }>;
+  onTaskRun(callback: (event: TaskRunEvent) => void): () => void;
   getUiState(): Promise<UiState>;
   saveUiState(state: UiState): Promise<void>;
   minimizeWindow(): Promise<void>;
