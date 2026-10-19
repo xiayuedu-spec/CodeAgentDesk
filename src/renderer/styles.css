@@ -6674,3 +6674,56 @@ textarea:focus-visible {
   color: var(--text-faint);
   font-size: 11px;
 }
+/* 右栏改动文件：可点击 → 打开弹窗并定位该文件 */
+.rail-file {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 4px;
+  margin: 0 -4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-micro) ease, color var(--motion-micro) ease;
+}
+.rail-file:hover {
+  background: var(--bg-inset);
+  color: var(--text);
+}
+.rail-file:hover .rail-file-name {
+  color: var(--text);
+}
+
+/* 洞察弹窗的痕迹条：一行看完轮次/工具/失败/活跃/开始/分支 */
+.insights-stats {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 0 2px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.insights-stats b {
+  color: var(--text);
+  font-weight: 600;
+}
+.insights-stats .danger b,
+.insights-stats.danger b {
+  color: var(--danger);
+}
+.insights-stats .danger {
+  color: color-mix(in srgb, var(--danger) 70%, var(--text-faint));
+}
+.insights-git {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  color: var(--text-muted);
+}

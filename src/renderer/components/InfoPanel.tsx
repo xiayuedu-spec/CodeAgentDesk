@@ -10,18 +10,17 @@ import {
   ListChecks,
   Send,
 } from 'lucide-react';
-import type { SessionGitInfo, SessionInsights, SessionTodo } from '../../shared/types';
-import { statusLabel, type SessionView } from '../session-utils';
+import type { SessionTodo } from '../../shared/types';
+import { formatClock, formatDuration, statusLabel, type SessionView } from '../session-utils';
+import { useSessionRail } from '../hooks/useSessionRail';
 
 interface InfoPanelProps {
   session: SessionView;
-  /** 会话洞察：计划 / 改动 / 痕迹（null = 读取中或还没有记录）。 */
-  insights: SessionInsights | null;
-  /** 工作区 git 摘要（非仓库为 null，整行隐藏）。 */
-  git: SessionGitInfo | null;
+  /** 是否轮询（会话运行中 + 面板展开 + 窗口可见由上层判定）。 */
+  running: boolean;
   onResizeStart: (event: ReactMouseEvent) => void;
-  /** 打开「计划与改动」全量弹窗。 */
-  onOpenInsights?: () => void;
+  /** 打开「计划与改动」全量弹窗；传 path 时定位到该文件。 */
+  onOpenInsights?: (path?: string) => void;
   /** 把未完成计划拼成续做提示注入会话。 */
   onContinuePlan?: (prompt: string) => void;
 }
@@ -30,21 +29,6 @@ interface InfoPanelProps {
 const PLAN_PREVIEW = 5;
 /** 改动清单最多直接展示几个文件。 */
 const FILES_PREVIEW = 5;
-
-function formatMinutes(ms: number): string {
-  if (!ms) return '—';
-  const minutes = Math.round(ms / 60_000);
-  if (minutes < 60) return `${minutes} 分钟`;
-  const hours = Math.floor(minutes / 60);
-  return `${hours} 小时 ${minutes % 60} 分`;
-}
-
-function formatClock(iso: string | undefined): string {
-  if (!iso) return '—';
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '—';
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
 
 function planIcon(status: SessionTodo['status']) {
   if (status === 'completed') return <CircleCheck size={12} className="rail-todo-done" />;
@@ -77,12 +61,13 @@ export function buildContinuePrompt(plan: {
  */
 export function InfoPanel({
   session,
-  insights,
-  git,
+  running,
   onResizeStart,
   onOpenInsights,
   onContinuePlan,
 }: InfoPanelProps) {
+  // 数据在面板内部取：15s 轮询只重渲染这一棵小树，不再把整个 App 叫醒。
+  const { insights, git } = useSessionRail(session.sessionId, session.cwd, running);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
   // 换会话时收起预览，避免把上一个会话的提示发给新会话。
   useEffect(() => {
@@ -111,7 +96,7 @@ export function InfoPanel({
         <header className="rail-head">
           <span className={`rail-status ${session.status}`}>{statusLabel(session.status)}</span>
           <span className="rail-active">
-            活跃 {stats ? formatMinutes(stats.activeMs) : '—'}
+            活跃 {stats ? formatDuration(stats.activeMs) : '—'}
           </span>
         </header>
 
@@ -210,19 +195,26 @@ export function InfoPanel({
             <>
               <ul className="rail-files">
                 {insights.changes.slice(0, FILES_PREVIEW).map((change) => (
-                  <li key={change.path} title={change.path}>
-                    <span className="rail-file-name">
-                      {change.path.split(/[\\/]/).pop() ?? change.path}
-                    </span>
-                    <span className="rail-file-nums">
-                      <i className="rail-add">+{change.added}</i>
-                      <i className="rail-del">-{change.removed}</i>
-                    </span>
+                  <li key={change.path}>
+                    <button
+                      type="button"
+                      className="rail-file"
+                      title={`${change.path}（点击查看片段）`}
+                      onClick={() => onOpenInsights?.(change.path)}
+                    >
+                      <span className="rail-file-name">
+                        {change.path.split(/[\\/]/).pop() ?? change.path}
+                      </span>
+                      <span className="rail-file-nums">
+                        <i className="rail-add">+{change.added}</i>
+                        <i className="rail-del">-{change.removed}</i>
+                      </span>
+                    </button>
                   </li>
                 ))}
               </ul>
               {onOpenInsights ? (
-                <button type="button" className="rail-action" onClick={onOpenInsights}>
+                <button type="button" className="rail-action" onClick={() => onOpenInsights()}>
                   查看全部片段
                 </button>
               ) : null}

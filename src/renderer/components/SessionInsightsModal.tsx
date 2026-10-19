@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CircleCheck, CircleDashed, ClipboardCopy, FileCode2, ListChecks, Loader2, X } from 'lucide-react';
-import type { SessionInsights, SessionTodo } from '../../shared/types';
-import { folderName } from '../session-utils';
+import {
+  CircleCheck,
+  CircleDashed,
+  ClipboardCopy,
+  FileCode2,
+  GitBranch,
+  ListChecks,
+  Loader2,
+  X,
+} from 'lucide-react';
+import type { SessionGitInfo, SessionInsights, SessionTodo } from '../../shared/types';
+import { folderName, formatClock, formatDuration } from '../session-utils';
 import { useEscape } from '../hooks/useEscape';
 import { useToast } from '../toast';
 import { EmptyState } from './EmptyState';
@@ -10,6 +19,10 @@ import { SkeletonStack } from './Skeleton';
 interface SessionInsightsModalProps {
   sessionId: string;
   title: string;
+  /** 工作目录（用于显示 git 分支/未提交数；缺省则不显示）。 */
+  cwd?: string;
+  /** 从右栏点某个文件进来时，直接定位到它。 */
+  initialPath?: string;
   onClose: () => void;
 }
 
@@ -77,10 +90,17 @@ export function buildInsightsMarkdown(title: string, insights: SessionInsights):
  * 计划与改动：从会话记录里提取的 TodoWrite 末次快照 + Edit/Write 改动清单。
  * 口径：内容来自**会话记录里的工具调用意图**，不等于工作区当前内容。
  */
-export function SessionInsightsModal({ sessionId, title, onClose }: SessionInsightsModalProps) {
+export function SessionInsightsModal({
+  sessionId,
+  title,
+  cwd,
+  initialPath,
+  onClose,
+}: SessionInsightsModalProps) {
   useEscape(true, onClose);
   const toast = useToast();
   const [insights, setInsights] = useState<SessionInsights | null>(null);
+  const [git, setGit] = useState<SessionGitInfo | null>(null);
   const [failed, setFailed] = useState(false);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
 
@@ -93,7 +113,10 @@ export function SessionInsightsModal({ sessionId, title, onClose }: SessionInsig
       .then((value) => {
         if (cancelled) return;
         setInsights(value);
-        setSelectedPath(value.changes[0]?.path ?? null);
+        const wanted = initialPath
+          ? value.changes.find((change) => change.path === initialPath)?.path
+          : undefined;
+        setSelectedPath(wanted ?? value.changes[0]?.path ?? null);
       })
       .catch(() => {
         if (!cancelled) setFailed(true);
@@ -101,7 +124,27 @@ export function SessionInsightsModal({ sessionId, title, onClose }: SessionInsig
     return () => {
       cancelled = true;
     };
-  }, [sessionId]);
+  }, [sessionId, initialPath]);
+
+  // git 摘要（非仓库返回 null，整段不渲染）。
+  useEffect(() => {
+    if (!cwd) {
+      setGit(null);
+      return;
+    }
+    let cancelled = false;
+    window.codeagentdesk
+      .getSessionGit(cwd)
+      .then((value) => {
+        if (!cancelled) setGit(value);
+      })
+      .catch(() => {
+        if (!cancelled) setGit(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [cwd]);
 
   const plan = insights?.plan ?? null;
   const planDone = useMemo(
@@ -156,6 +199,31 @@ export function SessionInsightsModal({ sessionId, title, onClose }: SessionInsig
               <div className="insights-scope">
                 以下内容来自<strong>会话记录里的工具调用</strong>，是当时写入的片段，不代表工作区现在的样子。
                 {insights.skipped > 0 ? `（${insights.skipped} 行记录无法解析，已跳过）` : ''}
+              </div>
+
+              <div className="insights-stats">
+                <span>
+                  <b>{insights.stats.turns}</b> 轮对话
+                </span>
+                <span>
+                  <b>{insights.stats.toolCalls}</b> 次工具调用
+                </span>
+                <span className={insights.stats.errors > 0 ? 'danger' : ''}>
+                  <b>{insights.stats.errors}</b> 次失败
+                </span>
+                <span>
+                  活跃 <b>{formatDuration(insights.stats.activeMs)}</b>
+                </span>
+                <span>
+                  {formatClock(insights.stats.startedAt)} 开始
+                </span>
+                {git ? (
+                  <span className="insights-git" title={git.branch}>
+                    <GitBranch size={11} />
+                    {git.branch}
+                    {git.dirty > 0 ? ` · ${git.dirty} 未提交` : ' · 干净'}
+                  </span>
+                ) : null}
               </div>
 
               {plan ? (

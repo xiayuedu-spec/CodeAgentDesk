@@ -89,6 +89,25 @@ export function formatRelativeTime(value: string | undefined): string {
   return `${Math.floor(hours / 24)} 天前`;
 }
 
+/** 时长（毫秒）→ 人话：45 分钟 / 2 小时 14 分。 */
+export function formatDuration(ms: number): string {
+  if (!ms || ms <= 0) return '—';
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 1) return '不到 1 分钟';
+  if (minutes < 60) return `${minutes} 分钟`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest > 0 ? `${hours} 小时 ${rest} 分` : `${hours} 小时`;
+}
+
+/** ISO 时间 → HH:mm（用于"几点开始"这类短标签）。 */
+export function formatClock(iso: string | undefined): string {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
 export function renderTime(iso: string | undefined): ReactNode {
   const text = formatRelativeTime(iso);
   return text ? <span className="session-time">{text}</span> : null;

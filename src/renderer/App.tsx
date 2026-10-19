@@ -36,7 +36,6 @@ import { useDashboardStats } from './hooks/useDashboardStats';
 import { useDismiss } from './hooks/useDismiss';
 import { useEscape } from './hooks/useEscape';
 import { useSessionAgentStatuses } from './hooks/useAgentStatus';
-import { useSessionRail } from './hooks/useSessionRail';
 import { usePomodoro } from './hooks/usePomodoro';
 import { useToast } from './toast';
 import {
@@ -208,10 +207,13 @@ export default function App() {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [backupOpen, setBackupOpen] = useState(false);
   const [usageStatsOpen, setUsageStatsOpen] = useState(false);
-  /** 计划与改动弹窗（null 关闭；否则为会话 id + 标题）。 */
-  const [insightsTarget, setInsightsTarget] = useState<{ sessionId: string; title: string } | null>(
-    null,
-  );
+  /** 计划与改动弹窗（null 关闭；path 用于从右栏点某个文件直接定位）。 */
+  const [insightsTarget, setInsightsTarget] = useState<{
+    sessionId: string;
+    title: string;
+    cwd?: string;
+    path?: string;
+  } | null>(null);
   const [updateReady, setUpdateReady] = useState(false);
   const [homeOpen, setHomeOpen] = useState(false);
   const dashboard = useDashboardStats();
@@ -826,15 +828,25 @@ export default function App() {
   }
 
   /** 打开「计划与改动」：需要会话已落盘（否则后端找不到 JSONL）。 */
-  function openInsights(target: { sessionId?: string; title?: string }): void {
+  function openInsights(target: {
+    sessionId?: string;
+    title?: string;
+    cwd?: string;
+    path?: string;
+  }): void {
     if (!target.sessionId) {
       toast.info('这个会话还没有记录文件，先发一条消息再看');
       return;
     }
+    // 从右键菜单进来时没有 cwd/title：从运行中会话或历史记录里补。
+    const record = records.find((item) => item.sessionId === target.sessionId);
+    const live = sessions.find((item) => item.sessionId === target.sessionId);
     bumpUsage('insights.opened');
     setInsightsTarget({
       sessionId: target.sessionId,
-      title: target.title?.trim() || target.sessionId.slice(0, 8),
+      title: target.title?.trim() || record?.summary?.trim() || target.sessionId.slice(0, 8),
+      cwd: target.cwd ?? live?.cwd ?? record?.cwd,
+      path: target.path,
     });
   }
 
@@ -1274,15 +1286,6 @@ export default function App() {
     }
   }, [approvals, toast]);
 
-  // 右栏数据：洞察（计划/改动/痕迹）+ 工作区 git 摘要；会话运行中每 15s 自助刷新。
-  // 窗口隐藏时停止轮询（回到前台会立刻补一次）。
-  const rail = useSessionRail(
-    activeSession?.sessionId,
-    activeSession?.cwd,
-    !pageHidden &&
-      infoOpen &&
-      (activeSession?.status === 'running' || activeSession?.status === 'starting'),
-  );
   const pomodoro = usePomodoro((claudeInfo?.config.pomodoroMinutes ?? 25) * 60_000);
   const taskProgress = useTaskProgress();
   useEscape(Boolean(confirmDeleteOne), () => setConfirmDeleteOne(null));
@@ -1730,10 +1733,19 @@ export default function App() {
               ) : activeSession ? (
                 <InfoPanel
                   session={activeSession}
-                  insights={rail.insights}
-                  git={rail.git}
+                  running={
+                    !pageHidden &&
+                    infoOpen &&
+                    (activeSession.status === 'running' || activeSession.status === 'starting')
+                  }
                   onResizeStart={startInfoResize}
-                  onOpenInsights={() => openInsights({ sessionId: activeSession.sessionId })}
+                  onOpenInsights={(path) =>
+                    openInsights({
+                      sessionId: activeSession.sessionId,
+                      cwd: activeSession.cwd,
+                      path,
+                    })
+                  }
                   onContinuePlan={(prompt) => handleContinuePlan(activeSession, prompt)}
                 />
               ) : (
@@ -1920,6 +1932,8 @@ export default function App() {
           <LazySessionInsights
             sessionId={insightsTarget.sessionId}
             title={insightsTarget.title}
+            cwd={insightsTarget.cwd}
+            initialPath={insightsTarget.path}
             onClose={() => setInsightsTarget(null)}
           />
         </Suspense>
