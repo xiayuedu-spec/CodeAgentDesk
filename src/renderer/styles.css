@@ -364,6 +364,9 @@ button, input {
   place-items: center;
   width: 28px;
   height: 28px;
+  /* 清零浏览器默认 button padding：内容盒被压窄时图标会看起来偏心 */
+  padding: 0;
+  line-height: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-inset);
@@ -7001,11 +7004,16 @@ textarea:focus-visible {
   min-width: 0;
 }
 .diff-stage-toggle {
-  display: grid;
-  place-items: center;
+  /* 用 flex 而不是 grid：button 自带 padding（1px 6px）会把内容盒压成几像素，
+     图标看起来就偏了；这里显式清零并让 svg 走块级居中。 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
   width: 18px;
   height: 18px;
+  padding: 0;
+  line-height: 0;
   border: 1px solid var(--border);
   border-radius: 50%;
   background: transparent;
@@ -7023,13 +7031,32 @@ textarea:focus-visible {
   border-color: var(--accent-dim);
   color: var(--accent);
 }
+.diff-stage-toggle svg {
+  display: block;
+}
 .diff-commit {
+  /* 两行：计数一行、输入一行。计数器宽度会随数字变化，单行布局会让输入框左右跳。 */
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  flex-direction: column;
+  gap: 7px;
+  padding: 9px 12px 10px;
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-raised) 60%, transparent);
+}
+.diff-commit-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.diff-commit-hint {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+.diff-commit-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
 }
 .diff-staged-count {
   flex: none;
@@ -7063,7 +7090,8 @@ textarea:focus-visible {
   flex: none;
   width: auto;
   margin-top: 0;
-  padding: 8px 18px;
+  padding: 0 20px;
+  align-self: stretch;
 }
 /* 数字列右对齐：+3 与 +120 位数不同时，右侧的 -M 会错位 */
 .diff-file-nums i,
@@ -7095,4 +7123,12 @@ code,
 /* 差异视图可切回"美观优先"的字体（Cascadia，中文会略串列） */
 .diff-code.plain {
   font-family: var(--mono);
+}
+
+/* 纯图标按钮里的 svg 一律走块级，避免行内基线带来的几像素偏移 */
+.icon-button svg,
+.diff-stage-toggle svg,
+.tab-close svg,
+.search-clear svg {
+  display: block;
 }

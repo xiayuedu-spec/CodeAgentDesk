@@ -267,29 +267,34 @@ export function GitDiffModal({ cwd, title, onClose }: GitDiffModalProps) {
 
         {diff && diff.totals.files > 0 ? (
           <div className="diff-commit">
-            <span className={`diff-staged-count${diff.staged.length > 0 ? ' on' : ''}`}>
-              已暂存 {diff.staged.length}
-            </span>
-            <textarea
-              className="diff-commit-input"
-              rows={2}
-              value={message}
-              placeholder="提交信息（只提交已暂存的文件）"
-              aria-label="提交信息"
-              onChange={(event) => setMessage(event.target.value)}
-            />
-            <button
-              type="button"
-              className="rail-action primary diff-commit-btn"
-              disabled={busy || !message.trim() || diff.staged.length === 0}
-              title={
-                diff.staged.length === 0 ? '先暂存要提交的文件' : '提交已暂存的改动'
-              }
-              onClick={() => void commit()}
-            >
-              {busy ? <Loader2 size={12} className="spin" /> : null}
-              提交
-            </button>
+            <div className="diff-commit-head">
+              <span className={`diff-staged-count${diff.staged.length > 0 ? ' on' : ''}`}>
+                已暂存 {diff.staged.length} 个文件
+              </span>
+              <span className="diff-commit-hint">只提交已暂存的改动</span>
+            </div>
+            <div className="diff-commit-row">
+              <textarea
+                className="diff-commit-input"
+                rows={2}
+                value={message}
+                placeholder="提交信息…"
+                aria-label="提交信息"
+                onChange={(event) => setMessage(event.target.value)}
+              />
+              <button
+                type="button"
+                className="rail-action primary diff-commit-btn"
+                disabled={busy || !message.trim() || diff.staged.length === 0}
+                title={
+                  diff.staged.length === 0 ? '先暂存要提交的文件' : '提交已暂存的改动'
+                }
+                onClick={() => void commit()}
+              >
+                {busy ? <Loader2 size={12} className="spin" /> : null}
+                提交
+              </button>
+            </div>
           </div>
         ) : null}
       </div>
