@@ -30,6 +30,8 @@ import type {
   SearchResult,
   SessionUsage,
   SessionOpResult,
+  KnowledgeCard,
+  KnowledgeCardInput,
   KnowledgeExportResult,
   KnowledgeGlobalResult,
   BackupResult,
@@ -131,6 +133,9 @@ const CHANNELS = {
   sessionInsights: 'session:insights',
   sessionGit: 'session:git',
   sessionDiff: 'session:diff',
+  knowledgeCardsList: 'knowledge:cards-list',
+  knowledgeCardSave: 'knowledge:card-save',
+  knowledgeCardDelete: 'knowledge:card-delete',
   sessionStage: 'session:stage',
   sessionCommit: 'session:commit',
 } as const;
@@ -279,6 +284,12 @@ const api: CodeAgentDeskApi = {
   importBackup: () => ipcRenderer.invoke(CHANNELS.backupImport) as Promise<BackupResult>,
   incrementUsageStat: (key) =>
     ipcRenderer.invoke(CHANNELS.usageStatIncrement, key) as Promise<void>,
+  listKnowledgeCards: (cwd) =>
+    ipcRenderer.invoke(CHANNELS.knowledgeCardsList, cwd) as Promise<KnowledgeCard[]>,
+  saveKnowledgeCard: (cwd, card) =>
+    ipcRenderer.invoke(CHANNELS.knowledgeCardSave, { cwd, card }) as Promise<KnowledgeCard>,
+  deleteKnowledgeCard: (cwd, slug) =>
+    ipcRenderer.invoke(CHANNELS.knowledgeCardDelete, { cwd, slug }) as Promise<{ ok: boolean }>,
   getUsageStats: () => ipcRenderer.invoke(CHANNELS.usageStatList) as Promise<UsageStats>,
 };
 

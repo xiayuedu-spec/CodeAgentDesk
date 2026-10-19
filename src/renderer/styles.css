@@ -7132,3 +7132,173 @@ code,
 .search-clear svg {
   display: block;
 }
+/* ================================================================
+   知识卡片（docs/knowledge）：一卡一文件 + 自动索引，跟着 git 走
+   ================================================================ */
+.cards-panel {
+  width: 960px;
+  max-width: 95vw;
+}
+.cards-body {
+  display: flex;
+  overflow: hidden;
+  padding: 0;
+}
+.cards-loading {
+  padding: 24px;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+.cards-split {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+.cards-list {
+  padding: 8px 6px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+.cards-empty {
+  padding-top: 12px;
+}
+.cards-group-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px 4px;
+  color: var(--text-faint);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+.cards-group-label span {
+  font-variant-numeric: tabular-nums;
+}
+.cards-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cards-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-micro) ease, border-color var(--motion-micro) ease;
+}
+.cards-item:hover {
+  background: color-mix(in srgb, var(--bg-inset) 70%, transparent);
+}
+.cards-item.active {
+  border-color: var(--accent-dim);
+  background: var(--accent-soft);
+}
+.cards-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+.cards-dot.verified {
+  background: var(--accent);
+}
+.cards-item-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: 12px;
+}
+.cards-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  overflow-y: auto;
+  min-height: 0;
+}
+.cards-hint {
+  padding: 12px 2px;
+  color: var(--text-faint);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.cards-hint code {
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--bg-inset);
+  font-family: var(--mono-code);
+  font-size: 11px;
+}
+.cards-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.cards-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.cards-label {
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.cards-input,
+.cards-textarea {
+  width: 100%;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: 0;
+  background: var(--bg-inset);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+.cards-textarea.mono {
+  font-family: var(--mono-code);
+  font-size: 11px;
+}
+.cards-input:focus,
+.cards-textarea:focus {
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.cards-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+}
+.cards-actions .rail-action {
+  width: auto;
+  margin-top: 0;
+  padding: 7px 14px;
+}
+.cards-actions .rail-action.danger {
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.cards-path {
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-faint);
+  font-family: var(--mono-code);
+  font-size: 11px;
+}

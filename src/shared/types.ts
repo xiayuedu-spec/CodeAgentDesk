@@ -193,6 +193,40 @@ export interface GitOpResult {
   message?: string;
 }
 
+/** 知识卡片类型：踩坑 / 决策 / 流程 / 模块说明。 */
+export type KnowledgeCardType = 'pitfall' | 'decision' | 'flow' | 'module';
+
+/** 一张知识卡片（落在仓库 docs/knowledge/<slug>.md）。 */
+export interface KnowledgeCard {
+  slug: string;
+  title: string;
+  type: KnowledgeCardType;
+  /** draft = 待确认；verified = 已有人验证过。 */
+  status: 'draft' | 'verified';
+  createdAt: string;
+  updatedAt: string;
+  /** 来源会话（可选，便于回溯原始对话）。 */
+  sessionId?: string;
+  /** 涉及的源码文件（用于判断卡片是否过期）。 */
+  files: string[];
+  phenomenon: string;
+  conclusion: string;
+  evidence: string;
+}
+
+/** 保存卡片时的入参（slug 有值表示更新已有卡片）。 */
+export interface KnowledgeCardInput {
+  slug?: string;
+  title: string;
+  type: KnowledgeCardType;
+  status: 'draft' | 'verified';
+  sessionId?: string;
+  files?: string[];
+  phenomenon?: string;
+  conclusion?: string;
+  evidence?: string;
+}
+
 /** 工作区真实 diff（`git diff HEAD` + 未跟踪文件），与会话记录里的"改动意图"区分开。 */
 export type DiffLineKind = 'add' | 'del' | 'ctx';
 
@@ -612,4 +646,7 @@ export interface CodeAgentDeskApi {
   importBackup(): Promise<BackupResult>;
   incrementUsageStat(key: string): Promise<void>;
   getUsageStats(): Promise<UsageStats>;
+  listKnowledgeCards(cwd: string): Promise<KnowledgeCard[]>;
+  saveKnowledgeCard(cwd: string, card: KnowledgeCardInput): Promise<KnowledgeCard>;
+  deleteKnowledgeCard(cwd: string, slug: string): Promise<{ ok: boolean }>;
 }

@@ -138,6 +138,16 @@ Token 统计默认关闭后，右栏从"用量展示"改成**当前会话的仪�
 - **测试**：`git-write.test.ts` 是**真跑 git 的集成测试**（临时仓库 + 环境变量设身份），覆盖暂存/取消/全部暂存/非仓库/空信息/真实提交/无暂存内容/超长信息。
 
 
+### 4.18 知识卡片（`knowledge-cards.ts` + `KnowledgeCardsModal`）
+与 4.x 的 AI 概览（`PROJECT_KNOWLEDGE.md` 一整篇）互补：这里是**可检索、可验证、可过期**的条目。
+
+- **形态**：一张卡片一个文件，放在仓库 `docs/knowledge/<slug>.md`，front-matter（title/type/status/created/updated/session/files）+ 三个固定小节（现象 / 结论 / 证据）。同目录 `README.md` 是**自动生成**的索引（按类型分组、带 ✅/📝 标记），人和 Claude 都从索引进入。
+- **为什么一卡一文件**：PR review 变成"加一个文件"，diff 干净；grep 友好；新增/修改互不冲突（一篇大 Markdown 每人都改同一处必然冲突）。
+- **类型**：pitfall（踩坑）/ decision（决策）/ flow（流程）/ module（模块说明）—— 正好对应新人入职要看的四类。
+- **可信度**：`draft`（待确认）/ `verified`（有人验证过）。没有这层，AI 生成的知识会腐烂成"没人敢信的猜测集"。
+- **过期**：卡片记录 `files`（涉及源码），将来可比对文件 mtime/是否存在来标"可能过期"（**本期未实现**，字段已留）。
+- **跟随仓库**：卡片是提交进 git 的文件，同事拉代码就拿到，不需要服务器。IPC：`knowledge:cards-list` / `knowledge:card-save` / `knowledge:card-delete`。
+
 ## 5. 渲染层模式
 
 - **容器-展示**：`App.tsx` 持有状态/effects/handlers，向下传 `data`/`actions` 分组 props（SidebarBody/StatusBar/TabBar/ContextMenus 等）。

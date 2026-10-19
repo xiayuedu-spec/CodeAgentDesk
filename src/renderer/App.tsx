@@ -90,6 +90,11 @@ const LazyBackup = lazy(() =>
 const LazyUsageStats = lazy(() =>
   import('./components/UsageStatsModal').then((module) => ({ default: module.UsageStatsModal })),
 );
+const LazyKnowledgeCards = lazy(() =>
+  import('./components/KnowledgeCardsModal').then((module) => ({
+    default: module.KnowledgeCardsModal,
+  })),
+);
 const LazyGitDiff = lazy(() =>
   import('./components/GitDiffModal').then((module) => ({ default: module.GitDiffModal })),
 );
@@ -196,6 +201,8 @@ export default function App() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const [confirmDeleteOne, setConfirmDeleteOne] = useState<string | null>(null);
+  /** 知识卡片弹窗（null 关闭；cwd 决定读写哪个仓库的 docs/knowledge）。 */
+  const [cardsTarget, setCardsTarget] = useState<{ cwd: string; title?: string } | null>(null);
   /** 工作区改动审查弹窗（null 关闭；cwd 决定看哪个仓库）。 */
   const [diffTarget, setDiffTarget] = useState<{ cwd: string; title?: string } | null>(null);
   /** 计划与改动弹窗（null 关闭；path 用于从右栏点某个文件直接定位）。 */
@@ -821,6 +828,16 @@ export default function App() {
   async function handleCancelTask(): Promise<void> {
     const result = await window.codeagentdesk.cancelTask();
     toast.info(result.ok ? '已请求取消任务' : '当前没有可取消的任务');
+  }
+
+  /** 打开知识卡片（本会话 cwd 的 docs/knowledge）。 */
+  function openCards(target: { cwd?: string; title?: string }): void {
+    if (!target.cwd) {
+      toast.info('这个会话还没有工作目录');
+      return;
+    }
+    bumpUsage('cards.opened');
+    setCardsTarget({ cwd: target.cwd, title: target.title });
   }
 
   /** 打开工作区改动审查（本会话 cwd 的 git diff）。 */
@@ -1684,6 +1701,12 @@ export default function App() {
           onOpenHome={() => setHomeOpen(true)}
           onOpenBackup={() => setBackupOpen(true)}
           onOpenUsageStats={() => setUsageStatsOpen(true)}
+          onOpenCards={() =>
+            openCards({
+              cwd: activeSession?.cwd ?? (claudeInfo ? claudeInfo.resolvedClaudeDir : undefined),
+              title: activeSession ? formatSessionTitle(activeSession) : undefined,
+            })
+          }
           onCheckUpdate={() => {
             void window.codeagentdesk.checkForUpdates().then((status) => {
               if (status.kind === 'up-to-date') toast.info('已是最新版本');
@@ -1812,6 +1835,16 @@ export default function App() {
       {usageStatsOpen ? (
         <Suspense fallback={null}>
           <LazyUsageStats onClose={() => setUsageStatsOpen(false)} />
+        </Suspense>
+      ) : null}
+
+      {cardsTarget ? (
+        <Suspense fallback={null}>
+          <LazyKnowledgeCards
+            cwd={cardsTarget.cwd}
+            title={cardsTarget.title}
+            onClose={() => setCardsTarget(null)}
+          />
         </Suspense>
       ) : null}
 

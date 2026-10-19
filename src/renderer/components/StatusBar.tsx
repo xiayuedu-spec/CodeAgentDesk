@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   AlertTriangle,
   BarChart3,
+  BookMarked,
   BookOpen,
   Check,
   Download,
@@ -38,6 +39,7 @@ interface StatusBarProps {
   onToggleTokenStats: () => void;
   onOpenBackup: () => void;
   onOpenUsageStats: () => void;
+  onOpenCards: () => void;
   onCheckUpdate: () => void;
   onInstallUpdate: () => void;
   updateReady: boolean;
@@ -78,6 +80,7 @@ export function StatusBar({
   onToggleTokenStats,
   onOpenBackup,
   onOpenUsageStats,
+  onOpenCards,
   onCheckUpdate,
   onInstallUpdate,
   updateReady,
@@ -121,7 +124,8 @@ export function StatusBar({
     separator?: boolean;
   }[] = [
     { key: 'usage', label: '用量趋势', icon: <TrendingUp size={13} />, run: onOpenUsageTrend },
-    { key: 'knowledge', label: '项目知识库', icon: <BookOpen size={13} />, run: onOpenKnowledge },
+    { key: 'knowledge', label: '项目知识库（AI 概览）', icon: <BookOpen size={13} />, run: onOpenKnowledge },
+    { key: 'cards', label: '知识卡片（可检索/可验证）', icon: <BookMarked size={13} />, run: onOpenCards },
     { key: 'efficiency', label: '效率洞察', icon: <Gauge size={13} />, run: onOpenEfficiency },
     { key: 'dashboard', label: '今日概览', icon: <LayoutDashboard size={13} />, run: onOpenDashboard },
     { key: 'timeline', label: '工作时间线', icon: <History size={13} />, run: onOpenTimeline },

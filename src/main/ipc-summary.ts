@@ -6,10 +6,16 @@ import type {
   KnowledgeGlobalResult,
   SummaryGetResult,
   SummaryHistoryResult,
+  KnowledgeCardInput,
   TaskProgressEvent,
 } from '../shared/types';
 import { readConfig, resolveClaudeHome } from './config';
 import { ensureGlobalKnowledge, exportKnowledgeToFile, generateProjectKnowledge } from './knowledge';
+import {
+  deleteCard,
+  listCards,
+  saveCard,
+} from './knowledge-cards';
 import {
   getKnowledgeText,
   listKnowledge,
@@ -58,6 +64,20 @@ function reportProgressDone(task: TaskProgressEvent['task']): void {
 
 /** 总结与知识库域 IPC：日报/周报/月报生成与存取、知识库生成/导出/存取。 */
 export function registerSummaryIpc({ metaStore }: SummaryIpcDeps): void {
+  // 知识卡片（仓库内 docs/knowledge/）：列表 / 保存 / 删除，保存后自动重建索引。
+  ipcMain.handle(IpcChannel.knowledgeCardsList, (_event, cwd: string) => listCards(cwd));
+  ipcMain.handle(
+    IpcChannel.knowledgeCardSave,
+    (_event, payload: { cwd: string; card: KnowledgeCardInput }) =>
+      saveCard(payload.cwd, payload.card),
+  );
+  ipcMain.handle(
+    IpcChannel.knowledgeCardDelete,
+    (_event, payload: { cwd: string; slug: string }): { ok: boolean } => ({
+      ok: deleteCard(payload.cwd, payload.slug),
+    }),
+  );
+
   // 取消正在跑的 claude 长任务（周报/知识库/日报等），渲染层进度面板的「取消」按钮调用。
   ipcMain.handle(IpcChannel.taskCancel, (): { ok: boolean } => ({ ok: cancelRunningClaude() }));
 
