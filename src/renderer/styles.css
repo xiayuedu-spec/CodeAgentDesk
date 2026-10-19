@@ -40,6 +40,12 @@
   --warn: #d9a441;
   --danger: #e05d5d;
   --mono: "Cascadia Mono", Consolas, "Courier New", monospace;
+  /* 代码/差异块专用：中文要占**正好两格**才不会串列。
+     Cascadia Mono 的 ASCII 是 0.586em、中文回落到雅黑是 1em（1.71 格），
+     所以中文后面紧跟的列会整体左移；Sarasa / Noto CJK / MS Gothic / 宋体
+     都是 0.5em + 1em = 严格 2:1。前两个没装时退回后两个（字形朴素但对得齐）。 */
+  --mono-code: "Sarasa Mono SC", "Sarasa Term SC", "Noto Sans Mono CJK SC",
+    "Microsoft YaHei Mono", "MS Gothic", "SimSun", var(--mono), monospace;
   --sans: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -1798,9 +1804,12 @@ button:focus-visible, input:focus-visible {
   border-top: 1px solid var(--border);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font-family: var(--mono);
+  font-family: var(--mono-code);
   font-size: 11px;
   line-height: 1.6;
+  font-variant-ligatures: none;
+  font-feature-settings: 'calt' 0, 'liga' 0, 'dlig' 0;
+  tab-size: 4;
 }
 
 :root[data-theme='green'] {
@@ -6030,11 +6039,14 @@ textarea:focus-visible {
   border-radius: var(--radius-sm);
   background: var(--bg-inset);
   color: var(--text-muted);
-  font-family: var(--mono);
+  font-family: var(--mono-code);
   font-size: 11px;
   line-height: 1.55;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  font-variant-ligatures: none;
+  font-feature-settings: 'calt' 0, 'liga' 0, 'dlig' 0;
+  tab-size: 4;
 }
 .insights-code.old {
   border-left: 2px solid var(--danger);
@@ -6908,16 +6920,22 @@ textarea:focus-visible {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg-inset);
-  font-family: var(--mono);
+  font-family: var(--mono-code);
   font-size: 11px;
   line-height: 1.55;
   overflow-x: auto;
+  font-variant-ligatures: none;
+  font-feature-settings: 'calt' 0, 'liga' 0, 'dlig' 0;
+  tab-size: 4;
 }
 .diff-line {
   display: flex;
   gap: 6px;
   padding: 0 8px;
   white-space: pre;
+  /* 长行横向滚动时，add/del 的背景也要跟着延伸（否则滚到右边背景就断了） */
+  min-width: max-content;
+  width: 100%;
 }
 .diff-line.add {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
@@ -7046,4 +7064,35 @@ textarea:focus-visible {
   width: auto;
   margin-top: 0;
   padding: 8px 18px;
+}
+/* 数字列右对齐：+3 与 +120 位数不同时，右侧的 -M 会错位 */
+.diff-file-nums i,
+.insights-file-nums i,
+.rail-file-nums i,
+.diff-totals b {
+  display: inline-block;
+  min-width: 3.6ch;
+  text-align: right;
+}
+/* 差异行号：等宽 + 右对齐（4 位行号也要对齐） */
+.diff-gutter {
+  width: 4ch;
+  min-width: 4ch;
+}
+/* 代码类文本一律关连字 + 固定 tab 宽度：
+   连字（=> != === 等）会合成单字形，中文又按回退字体排，两者都会让列错位。 */
+pre,
+code,
+.tool-output,
+.chat-text,
+.diff-code,
+.insights-code {
+  font-variant-ligatures: none;
+  font-feature-settings: 'calt' 0, 'liga' 0, 'dlig' 0;
+  tab-size: 4;
+}
+
+/* 差异视图可切回"美观优先"的字体（Cascadia，中文会略串列） */
+.diff-code.plain {
+  font-family: var(--mono);
 }

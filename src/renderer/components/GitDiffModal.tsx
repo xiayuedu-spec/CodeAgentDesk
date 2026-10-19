@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Check, FileCode2, GitBranch, Loader2, Plus, RefreshCw, X } from 'lucide-react';
+import { Check, FileCode2, GitBranch, Loader2, Plus, RefreshCw, Type, X } from 'lucide-react';
 import type { DiffFile, DiffFileStatus, WorktreeDiff } from '../../shared/types';
 import { useEscape } from '../hooks/useEscape';
 import { useToast } from '../toast';
@@ -20,6 +20,9 @@ const STATUS_LABEL: Record<DiffFileStatus, string> = {
   untracked: 'U',
 };
 
+/** 字体偏好存本地（不进军配置，纯粹是查看体验）。 */
+const FONT_KEY = 'cadesk:diff-font';
+
 /** 文件列表里最多显示几个（超出提示去缩小范围）。 */
 const FILES_PREVIEW = 200;
 
@@ -38,6 +41,10 @@ export function GitDiffModal({ cwd, title, onClose }: GitDiffModalProps) {
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [message, setMessage] = useState('');
+  // 差异字体：默认"对齐优先"（中文正好两格的等宽字体），可切回 Cascadia。
+  const [plainFont, setPlainFont] = useState(
+    () => window.localStorage.getItem(FONT_KEY) === 'plain',
+  );
   const [busy, setBusy] = useState(false);
   const toast = useToast();
 
@@ -141,6 +148,19 @@ export function GitDiffModal({ cwd, title, onClose }: GitDiffModalProps) {
             <button
               type="button"
               className="icon-button"
+              title={plainFont ? '切换为「对齐优先」字体' : '切换为「美观优先」字体（Cascadia）'}
+              aria-label="切换差异字体"
+              onClick={() => {
+                const next = !plainFont;
+                setPlainFont(next);
+                window.localStorage.setItem(FONT_KEY, next ? 'plain' : 'aligned');
+              }}
+            >
+              <Type size={14} />
+            </button>
+            <button
+              type="button"
+              className="icon-button"
               title="重新读取"
               aria-label="重新读取工作区改动"
               disabled={loading}
@@ -223,7 +243,7 @@ export function GitDiffModal({ cwd, title, onClose }: GitDiffModalProps) {
                     {current.hunks.map((hunk, hunkIndex) => (
                       <div key={hunkIndex} className="diff-hunk">
                         <div className="diff-hunk-head">{hunk.header}</div>
-                        <pre className="diff-code">
+                        <pre className={`diff-code${plainFont ? ' plain' : ''}`}>
                           {hunk.lines.map((line, lineIndex) => (
                             <span key={lineIndex} className={`diff-line ${line.kind}`}>
                               <span className="diff-gutter">
