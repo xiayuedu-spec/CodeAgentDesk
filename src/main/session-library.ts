@@ -21,6 +21,8 @@ const MAX_TEXT_LENGTH = 4000;
 
 /** 活跃时长判定：相邻事件间隔不超过该值时视为连续活跃（避免把挂机时间计入）。 */
 const ACTIVE_GAP_MS = 5 * 60_000;
+/** 活跃时长的扫描上限（与 session-insights 的 MAX_INSIGHT_LINES 对齐，保证两处口径一致）。 */
+const MAX_ACTIVE_LINES = 60_000;
 
 /** 逐行扫描 JSONL（带行数上限与静默吞错），供各解析函数复用。 */
 export function scanJsonlLines(
@@ -783,11 +785,14 @@ export async function readSessionInfo(
 /**
  * 估算会话的活跃时长（毫秒）：按事件 timestamp 顺序累计相邻间隔 ≤ 5 分钟的时长，
  * 把挂机/长时间搁置排除在"投入时间"之外。无时间戳或全部间隔超限时返回 0。
+ *
+ * 扫描上限与 `session-insights` 的活跃时长口径保持一致（同一个会话在效率洞察和右栏
+ * 必须显示同一个数）；只读 timestamp，单次顺序扫描，长会话也就几十毫秒。
  */
 export async function readSessionActiveMs(filePath: string): Promise<number> {
   let activeMs = 0;
   let prevTs: number | null = null;
-  await scanJsonlLines(filePath, MAX_SCAN_LINES, (line) => {
+  await scanJsonlLines(filePath, MAX_ACTIVE_LINES, (line) => {
     try {
       const event = JSON.parse(line) as { timestamp?: unknown };
       if (typeof event.timestamp !== 'string') return;

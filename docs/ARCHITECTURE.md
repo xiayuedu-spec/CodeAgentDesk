@@ -105,11 +105,15 @@ main ──webContents.send(broadcast)──> renderer（sessionData/exited/chan
 边界（写进界面提示）：每片段每侧保留 1200 字符、每文件 8 个片段、最多 60 个文件，超出只计数；**口径是"会话记录里的工具调用意图"，不等于工作区当前内容**。IPC：`session:insights`。
 
 ### 4.13 工作区 git 摘要（`git-info.ts`）
-`git -C <cwd> status --porcelain=v1 --branch -uno` 一次调用取「分支 + 未提交数 + ahead/behind」，4s 超时，按 cwd 缓存 20s（右栏切换会话会频繁请求）。非仓库 / 没装 git / 超时统一返回 `null`，界面直接不显示该行。IPC：`session:git`。
+`git -C <cwd> status --porcelain=v1 --branch -uno` 一次调用取「分支 + 未提交数 + ahead/behind」，4s 超时，按 cwd 缓存 **10s**（必须小于右栏 15s 的轮询间隔，否则每次轮询都吃上一条缓存，未提交数看起来永不更新）。非仓库 / 没装 git / 超时统一返回 `null`，界面直接不显示该行。IPC：`session:git`。
 
 ### 4.14 右栏仪表（`components/InfoPanel.tsx` + `hooks/useSessionRail.ts`）
 Token 统计默认关闭后，右栏从"用量展示"改成**当前会话的仪表**：状态 + 活跃时长 → 计划进度（可「继续未完成的 N 项」一键注入提示）→ 本次改动（文件 +N/-M）→ 痕迹（轮次/工具调用/失败/开始时间）→ git 分支与未提交数 → 会话 ID/目录。
-数据由 `useSessionRail` 拉取：会话洞察 + git，会话 `running` 时每 15s 刷新（主进程按 mtime/git 缓存，未变化时几乎零成本）；窗口隐藏或面板折叠时停止轮询。**续做提示是单行文本 + 一次回车写进 pty**，不用 bracketed paste，避免不同 TUI 版本把转义序列当字面量。
+数据由 `useSessionRail` 拉取，**洞察与 git 在同一个 15s 轮询里刷新**（git 的未提交数会随会话推进变化，不能只在 cwd 变化时取一次）；轮询条件是会话 running + 面板展开 + 窗口可见，否则停。数据**按 sessionId / cwd 缓存在渲染层**：切回看过的会话立刻有内容（不会闪"读取中"），换会话时也不会把上一个会话的数字短暂显示在新会话上；单次读取失败保留旧值、不清空。
+
+**活跃时长口径统一**：`readSessionActiveMs`（效率洞察）与 `session-insights` 的 `stats.activeMs`（右栏）都用「相邻事件 ≤5 分钟累加」且扫描上限同为 6 万行，同一个会话在两处必须显示同一个数。
+
+**续做提示是单行文本 + 一次回车写进 pty**，不用 bracketed paste，避免不同 TUI 版本把转义序列当字面量。
 
 ## 5. 渲染层模式
 

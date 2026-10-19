@@ -1,8 +1,11 @@
 import { execFile } from 'node:child_process';
 import type { SessionGitInfo } from '../shared/types';
 
-/** 缓存：同一工作目录 20 秒内不重复调 git（右栏会随会话切换频繁刷新）。 */
-const CACHE_TTL_MS = 20_000;
+/**
+ * 缓存 TTL 必须**小于**渲染层右栏的轮询间隔（15s），否则每次轮询都会吃到上一条缓存，
+ * 未提交数看起来永远不更新。取 10s：同一秒内的重复点击去重，轮询则每次都能拿到新值。
+ */
+const CACHE_TTL_MS = 10_000;
 const cache = new Map<string, { at: number; info: SessionGitInfo | null }>();
 /** git 是外部进程，必须有超时（大仓库 status 偶尔会慢）。 */
 const GIT_TIMEOUT_MS = 4000;
