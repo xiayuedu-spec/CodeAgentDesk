@@ -187,6 +187,12 @@ export interface SessionInsights {
   skipped: number;
 }
 
+/** git 写操作（暂存/提交）的结果。 */
+export interface GitOpResult {
+  ok: boolean;
+  message?: string;
+}
+
 /** 工作区真实 diff（`git diff HEAD` + 未跟踪文件），与会话记录里的"改动意图"区分开。 */
 export type DiffLineKind = 'add' | 'del' | 'ctx';
 
@@ -207,6 +213,8 @@ export type DiffFileStatus = 'modified' | 'added' | 'deleted' | 'renamed' | 'unt
 export interface DiffFile {
   path: string;
   status: DiffFileStatus;
+  /** 是否已进入暂存区（index）。 */
+  staged?: boolean;
   added: number;
   removed: number;
   hunks: DiffHunk[];
@@ -220,6 +228,8 @@ export interface WorktreeDiff {
   cwd: string;
   branch: string | null;
   files: DiffFile[];
+  /** 已暂存的文件路径。 */
+  staged: string[];
   totals: { files: number; added: number; removed: number };
   /** 文件数超出上限。 */
   truncated: boolean;
@@ -571,6 +581,8 @@ export interface CodeAgentDeskApi {
   getSessionInsights(sessionId: string): Promise<SessionInsights>;
   getSessionGit(cwd: string): Promise<SessionGitInfo | null>;
   getWorktreeDiff(cwd: string): Promise<WorktreeDiff>;
+  stageFiles(cwd: string, paths: string[], staged: boolean): Promise<GitOpResult>;
+  commitChanges(cwd: string, message: string): Promise<GitOpResult>;
   getUiState(): Promise<UiState>;
   saveUiState(state: UiState): Promise<void>;
   minimizeWindow(): Promise<void>;

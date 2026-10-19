@@ -20,6 +20,7 @@ import type {
   SessionDataEvent,
   SessionDetailResult,
   SessionErrorEvent,
+  GitOpResult,
   SessionGitInfo,
   WorktreeDiff,
   SessionInsights,
@@ -130,6 +131,8 @@ const CHANNELS = {
   sessionInsights: 'session:insights',
   sessionGit: 'session:git',
   sessionDiff: 'session:diff',
+  sessionStage: 'session:stage',
+  sessionCommit: 'session:commit',
 } as const;
 
 function subscribe<T>(channel: string, callback: (payload: T) => void): () => void {
@@ -233,6 +236,10 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.sessionGit, cwd) as Promise<SessionGitInfo | null>,
   getWorktreeDiff: (cwd) =>
     ipcRenderer.invoke(CHANNELS.sessionDiff, cwd) as Promise<WorktreeDiff>,
+  stageFiles: (cwd, paths, staged) =>
+    ipcRenderer.invoke(CHANNELS.sessionStage, { cwd, paths, staged }) as Promise<GitOpResult>,
+  commitChanges: (cwd, message) =>
+    ipcRenderer.invoke(CHANNELS.sessionCommit, { cwd, message }) as Promise<GitOpResult>,
   getUiState: () => ipcRenderer.invoke(CHANNELS.uiGetState) as Promise<UiState>,
   saveUiState: (state) => ipcRenderer.invoke(CHANNELS.uiSaveState, state) as Promise<void>,
   minimizeWindow: () => ipcRenderer.invoke(CHANNELS.windowMinimize) as Promise<void>,

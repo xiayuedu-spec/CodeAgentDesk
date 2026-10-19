@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FileCode2, GitBranch, RefreshCw, X } from 'lucide-react';
+import { Check, FileCode2, GitBranch, Loader2, Plus, RefreshCw, X } from 'lucide-react';
 import type { DiffFile, DiffFileStatus, WorktreeDiff } from '../../shared/types';
 import { useEscape } from '../hooks/useEscape';
+import { useToast } from '../toast';
 import { EmptyState } from './EmptyState';
 import { SkeletonStack } from './Skeleton';
 
@@ -36,6 +37,9 @@ export function GitDiffModal({ cwd, title, onClose }: GitDiffModalProps) {
   const [failed, setFailed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   const load = useCallback(() => {
     let cancelled = false;
@@ -65,6 +69,43 @@ export function GitDiffModal({ cwd, title, onClose }: GitDiffModalProps) {
 
   useEffect(() => load(), [load]);
 
+  /** 暂存或取消暂存：成功后重新读 diff（文件状态、计数都变了）。 */
+  const toggleStage = useCallback(
+    async (paths: string[], staged: boolean) => {
+      if (busy) return;
+      setBusy(true);
+      try {
+        const result = await window.codeagentdesk.stageFiles(cwd, paths, staged);
+        if (!result.ok) {
+          toast.error(result.message ?? '暂存失败');
+          return;
+        }
+        load();
+      } finally {
+        setBusy(false);
+      }
+    },
+    [busy, cwd, load, toast],
+  );
+
+  const commit = useCallback(async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const result = await window.codeagentdesk.commitChanges(cwd, message);
+      if (!result.ok) {
+        // 失败时保留输入（可能是 user.name 没配、pre-commit hook 挂了）。
+        toast.error(result.message ?? '提交失败');
+        return;
+      }
+      toast.success(result.message ? `已提交：${result.message}` : '已提交');
+      setMessage('');
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, cwd, load, message, toast]);
+
   const files = diff?.files.slice(0, FILES_PREVIEW) ?? [];
   const current: DiffFile | null = files.find((file) => file.path === selected) ?? null;
 
@@ -84,6 +125,18 @@ export function GitDiffModal({ cwd, title, onClose }: GitDiffModalProps) {
                 <b className="rail-add">+{diff.totals.added}</b>
                 <b className="rail-del">-{diff.totals.removed}</b>
               </span>
+            ) : null}
+            {diff && diff.files.some((file) => !file.staged) ? (
+              <button
+                type="button"
+                className="diff-stage-all"
+                title="暂存全部改动"
+                disabled={busy}
+                onClick={() => void toggleStage([], true)}
+              >
+                <Plus size={12} />
+                全部暂存
+              </button>
             ) : null}
             <button
               type="button"
@@ -120,7 +173,17 @@ export function GitDiffModal({ cwd, title, onClose }: GitDiffModalProps) {
             <div className="diff-split">
               <ul className="diff-files">
                 {files.map((file) => (
-                  <li key={file.path}>
+                  <li key={file.path} className="diff-file-row">
+                    <button
+                      type="button"
+                      className={`diff-stage-toggle${file.staged ? ' staged' : ''}`}
+                      title={file.staged ? '取消暂存' : '暂存这个文件'}
+                      aria-label={file.staged ? '取消暂存' : '暂存这个文件'}
+                      disabled={busy}
+                      onClick={() => void toggleStage([file.path], !file.staged)}
+                    >
+                      {file.staged ? <Check size={11} /> : <Plus size={11} />}
+                    </button>
                     <button
                       type="button"
                       className={`diff-file${file.path === selected ? ' active' : ''}`}
@@ -181,6 +244,34 @@ export function GitDiffModal({ cwd, title, onClose }: GitDiffModalProps) {
             </div>
           )}
         </div>
+
+        {diff && diff.totals.files > 0 ? (
+          <div className="diff-commit">
+            <span className={`diff-staged-count${diff.staged.length > 0 ? ' on' : ''}`}>
+              已暂存 {diff.staged.length}
+            </span>
+            <textarea
+              className="diff-commit-input"
+              rows={2}
+              value={message}
+              placeholder="提交信息（只提交已暂存的文件）"
+              aria-label="提交信息"
+              onChange={(event) => setMessage(event.target.value)}
+            />
+            <button
+              type="button"
+              className="rail-action primary diff-commit-btn"
+              disabled={busy || !message.trim() || diff.staged.length === 0}
+              title={
+                diff.staged.length === 0 ? '先暂存要提交的文件' : '提交已暂存的改动'
+              }
+              onClick={() => void commit()}
+            >
+              {busy ? <Loader2 size={12} className="spin" /> : null}
+              提交
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

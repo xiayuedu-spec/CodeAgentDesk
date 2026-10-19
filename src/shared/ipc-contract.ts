@@ -72,6 +72,8 @@ export const IpcChannel = {
   sessionInsights: 'session:insights',
   sessionGit: 'session:git',
   sessionDiff: 'session:diff',
+  sessionStage: 'session:stage',
+  sessionCommit: 'session:commit',
   updateCheck: 'update:check',
   updateInstall: 'update:install',
   updateStatus: 'update:status',

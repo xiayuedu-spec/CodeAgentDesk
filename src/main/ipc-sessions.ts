@@ -14,6 +14,7 @@ import type {
   ResumeSessionResult,
   SearchResult,
   SessionDetailResult,
+  GitOpResult,
   SessionGitInfo,
   WorktreeDiff,
   SessionInsights,
@@ -36,6 +37,7 @@ import { buildMarkdown } from './export';
 import { emptyInsights, readSessionInsights } from './session-insights';
 import { readSessionGit } from './git-info';
 import { readWorktreeDiff } from './git-diff';
+import { commitChanges, stageFiles } from './git-write';
 import { recordRecentDir } from './recent-dirs';
 import { summarizeSession } from './summarize';
 import type { SessionMetaStore } from './session-meta-store';
@@ -356,6 +358,18 @@ export function registerSessionsIpc({ sessions, watcher, metaStore }: SessionsIp
   ipcMain.handle(
     IpcChannel.sessionDiff,
     (_event, cwd: string): Promise<WorktreeDiff> => readWorktreeDiff(cwd),
+  );
+
+  ipcMain.handle(
+    IpcChannel.sessionStage,
+    (_event, payload: { cwd: string; paths: string[]; staged: boolean }): Promise<GitOpResult> =>
+      stageFiles(payload.cwd, payload.paths ?? [], payload.staged),
+  );
+
+  ipcMain.handle(
+    IpcChannel.sessionCommit,
+    (_event, payload: { cwd: string; message: string }): Promise<GitOpResult> =>
+      commitChanges(payload.cwd, payload.message),
   );
 
   ipcMain.handle(

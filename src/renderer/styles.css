@@ -6954,3 +6954,96 @@ textarea:focus-visible {
 .diff-line.del .diff-text {
   color: var(--text);
 }
+/* 暂存 / 提交：diff 弹窗内的写操作（只提交已暂存，不带你没看过的文件） */
+.diff-stage-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color var(--motion-micro) ease, border-color var(--motion-micro) ease;
+}
+.diff-stage-all:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.diff-file-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.diff-file-row .diff-file {
+  flex: 1;
+  min-width: 0;
+}
+.diff-stage-toggle {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color var(--motion-micro) ease, border-color var(--motion-micro) ease,
+    background var(--motion-micro) ease;
+}
+.diff-stage-toggle:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+}
+.diff-stage-toggle.staged {
+  background: var(--accent-soft);
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+.diff-commit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-raised) 60%, transparent);
+}
+.diff-staged-count {
+  flex: none;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.diff-staged-count.on {
+  color: var(--accent);
+  font-weight: 600;
+}
+.diff-commit-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: 0;
+  background: var(--bg-inset);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.diff-commit-input:focus {
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.diff-commit-btn {
+  flex: none;
+  width: auto;
+  margin-top: 0;
+  padding: 8px 18px;
+}

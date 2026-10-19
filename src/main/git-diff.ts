@@ -192,6 +192,7 @@ export async function readWorktreeDiff(cwd: string): Promise<WorktreeDiff> {
     cwd,
     branch: null,
     files: [],
+    staged: [],
     totals: { files: 0, added: 0, removed: 0 },
     truncated: false,
   };
@@ -208,6 +209,15 @@ export async function readWorktreeDiff(cwd: string): Promise<WorktreeDiff> {
   const tracked = new Set(files.map((file) => file.path));
   const statuses = statusOut ? parseStatusZ(statusOut) : [];
 
+  // 已暂存 = index 列不是空格、也不是未跟踪（`??`）。
+  const staged = statuses
+    .filter((entry) => entry.code[0] !== ' ' && entry.code[0] !== '?')
+    .map((entry) => entry.path);
+  const stagedSet = new Set(staged);
+  for (const file of files) {
+    if (stagedSet.has(file.path)) file.staged = true;
+  }
+
   for (const entry of statuses) {
     if (entry.code !== '??') continue;
     if (tracked.has(entry.path)) continue;
@@ -220,6 +230,7 @@ export async function readWorktreeDiff(cwd: string): Promise<WorktreeDiff> {
     cwd,
     branch: info?.branch ?? null,
     files: limited,
+    staged,
     totals: {
       files: files.length,
       added: files.reduce((sum, file) => sum + file.added, 0),
