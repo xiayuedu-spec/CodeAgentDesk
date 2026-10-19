@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp' } }));
 vi.mock('../summarize', () => ({ runClaude: async () => '[]' }));
 vi.mock('../config', () => ({
-  readConfig: () => ({ autoKnowledge: true }),
+  readConfig: () => ({}),
   resolveClaudeHome: () => '/tmp/claude',
 }));
 vi.mock('../session-library', () => ({
@@ -11,9 +11,7 @@ vi.mock('../session-library', () => ({
   findSessionFile: async () => null,
 }));
 
-const { buildKnowledgePrompt, isSimilarTitle, normalizeTitle, parseKnowledgeCards } = await import(
-  '../auto-knowledge'
-);
+const { buildKnowledgePrompt, isSimilarTitle, normalizeTitle, parseKnowledgeCards } = await import('../session-knowledge');
 
 describe('buildKnowledgePrompt', () => {
   it('带上已有卡片标题，避免重复', () => {

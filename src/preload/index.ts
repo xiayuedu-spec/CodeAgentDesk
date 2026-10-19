@@ -62,7 +62,6 @@ const CHANNELS = {
   configSetPomodoroMinutes: 'config:set-pomodoro-minutes',
   configSetTerminalFont: 'config:set-terminal-font',
   configSetShowTokenStats: 'config:set-show-token-stats',
-  configSetAutoKnowledge: 'config:set-auto-knowledge',
   configPickClaudeDir: 'config:pick-claude-dir',
   sessionsList: 'sessions:list',
   sessionsChanged: 'sessions:changed',
@@ -137,7 +136,7 @@ const CHANNELS = {
   knowledgeCardsList: 'knowledge:cards-list',
   knowledgeCardSave: 'knowledge:card-save',
   knowledgeCardDelete: 'knowledge:card-delete',
-  autoKnowledge: 'knowledge:auto',
+  knowledgeExtractCards: 'knowledge:extract-cards',
   sessionStage: 'session:stage',
   sessionCommit: 'session:commit',
 } as const;
@@ -164,8 +163,6 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.configSetPomodoroMinutes, minutes) as Promise<ClaudeConfigInfo>,
   setTerminalFont: (payload) =>
     ipcRenderer.invoke(CHANNELS.configSetTerminalFont, payload) as Promise<ClaudeConfigInfo>,
-  setAutoKnowledge: (enabled) =>
-    ipcRenderer.invoke(CHANNELS.configSetAutoKnowledge, enabled) as Promise<ClaudeConfigInfo>,
   setShowTokenStats: (enabled) =>
     ipcRenderer.invoke(CHANNELS.configSetShowTokenStats, enabled) as Promise<ClaudeConfigInfo>,
   pickClaudeDir: () =>
@@ -279,8 +276,6 @@ const api: CodeAgentDeskApi = {
   onSessionError: (callback) => subscribe<SessionErrorEvent>(CHANNELS.sessionError, callback),
   onSessionsChanged: (callback) => subscribe<void>(CHANNELS.sessionsChanged, callback),
   onTaskProgress: (callback) => subscribe<TaskProgressEvent>(CHANNELS.taskProgress, callback),
-  onAutoKnowledge: (callback) =>
-    subscribe<{ count: number; titles: string[] }>(CHANNELS.autoKnowledge, callback),
   cancelTask: () => ipcRenderer.invoke(CHANNELS.taskCancel) as Promise<{ ok: boolean }>,
   checkForUpdates: () =>
     ipcRenderer.invoke(CHANNELS.updateCheck) as Promise<UpdateStatus>,
@@ -296,6 +291,13 @@ const api: CodeAgentDeskApi = {
     ipcRenderer.invoke(CHANNELS.knowledgeCardSave, { cwd, card }) as Promise<KnowledgeCard>,
   deleteKnowledgeCard: (cwd, slug) =>
     ipcRenderer.invoke(CHANNELS.knowledgeCardDelete, { cwd, slug }) as Promise<{ ok: boolean }>,
+  extractSessionCards: (sessionId, cwd) =>
+    ipcRenderer.invoke(CHANNELS.knowledgeExtractCards, { sessionId, cwd }) as Promise<{
+      ok: boolean;
+      count: number;
+      titles: string[];
+      message?: string;
+    }>,
   getUsageStats: () => ipcRenderer.invoke(CHANNELS.usageStatList) as Promise<UsageStats>,
 };
 

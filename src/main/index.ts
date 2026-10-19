@@ -9,7 +9,6 @@ import type {
   SessionExitedEvent,
 } from '../shared/types';
 import { registerIpcHandlers } from './ipc';
-import { generateCardsFromSession } from './auto-knowledge';
 import { readConfig, resolveClaudeHome } from './config';
 import { GroupStore } from './group-store';
 import { SessionManager } from './session-manager';
@@ -74,18 +73,6 @@ if (!hasSingleInstanceLock) {
         broadcast(IpcChannel.sessionData, { id, data } satisfies SessionDataEvent),
       onExit: (id, exitCode, sessionId, cwd, expected, durationMs) => {
         broadcast(IpcChannel.sessionExited, { id, exitCode } satisfies SessionExitedEvent);
-        // 会话结束后自动沉淀知识草稿（draft，等人工核验）；失败静默，不打扰用户。
-        if (sessionId && cwd) {
-          void generateCardsFromSession(sessionId, cwd)
-            .then((result) => {
-              if (result.cards.length === 0) return;
-              broadcast(IpcChannel.autoKnowledge, {
-                count: result.cards.length,
-                titles: result.cards.map((card) => card.title),
-              });
-            })
-            .catch(() => undefined);
-        }
         const sessionName =
           metaStore.get(sessionId ?? '')?.customName ?? (cwd ? path.basename(cwd) : '会话');
         // 仅"意外异常退出"发系统通知；主动关闭（关标签/归档/退出应用）与正常结束（/exit）不打扰。

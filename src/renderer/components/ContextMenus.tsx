@@ -3,6 +3,7 @@ import {
   ArchiveRestore,
   BookOpen,
   Copy,
+  BookMarked,
   FolderOpen,
   GitBranch,
   Link2,
@@ -55,6 +56,7 @@ interface ContextMenusActions {
   openDetailById: (sessionId: string) => void;
   openInsights: (sessionId: string) => void;
   openDiff: (cwd: string) => void;
+  extractCards: (sessionId: string, cwd: string) => void;
   restoreArchived: (sessionId: string, cwd: string) => void;
   copySessionText: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
@@ -148,6 +150,7 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
     openDetailById,
   openInsights,
   openDiff,
+  extractCards,
     restoreArchived,
     copySessionText,
     onDeleteSession,
@@ -288,6 +291,20 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
               <GitBranch size={14} />
             </span>
             审查工作区改动
+          </button>
+          <button
+            type="button"
+            disabled={!menu.cwd}
+            title="用 claude 分析这次会话，提取踩坑/决策成知识卡片草稿（会花一次模型调用）"
+            onClick={() => {
+              if (menu.cwd) extractCards(menu.sessionId, menu.cwd);
+              closeMenu();
+            }}
+          >
+            <span className="context-menu-icon">
+              <BookMarked size={14} />
+            </span>
+            生成知识卡片
           </button>
           {menu.archived ? (
             <button

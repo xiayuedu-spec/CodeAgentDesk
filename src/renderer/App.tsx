@@ -244,20 +244,6 @@ export default function App() {
   } = useOverlays(bumpUsage);
 
   // 自动更新：订阅状态 + 启动静默检查（打包环境生效，开发模式返回 dev 不提示）。
-  // 自动沉淀完成 → 提示用户去核验（不自动打开面板，避免打断）。
-  useEffect(() => {
-    return window.codeagentdesk.onAutoKnowledge(({ count, titles }) => {
-      const first = titles[0] ? `「${titles[0]}」` : '';
-      toast.success(`已自动沉淀 ${count} 张知识草稿${first ? `：${first}` : ''}`, {
-        label: '去核验',
-        run: () => {
-          const target = sessions.find((session) => session.id === activeId) ?? null;
-          if (target?.cwd) openCards({ cwd: target.cwd, title: formatSessionTitle(target) });
-        },
-      });
-    });
-  }, [activeId, sessions, toast]);
-
   useEffect(() => {
     const unsubscribe = window.codeagentdesk.onUpdateStatus((status) => {
       if (status.kind === 'available') {
@@ -831,12 +817,6 @@ export default function App() {
     await refreshClaudeInfo();
   }
 
-  async function handleSetAutoKnowledge(enabled: boolean): Promise<void> {
-    await window.codeagentdesk.setAutoKnowledge(enabled);
-    await refreshClaudeInfo();
-    toast.success(enabled ? '已开启自动沉淀知识' : '已关闭自动沉淀知识');
-  }
-
   async function handleSetShowTokenStats(enabled: boolean): Promise<void> {
     await window.codeagentdesk.setShowTokenStats(enabled);
     await refreshClaudeInfo();
@@ -848,6 +828,28 @@ export default function App() {
   async function handleCancelTask(): Promise<void> {
     const result = await window.codeagentdesk.cancelTask();
     toast.info(result.ok ? '已请求取消任务' : '当前没有可取消的任务');
+  }
+
+  /** 从会话按需提取知识草稿（右键触发，会花一次模型调用）。 */
+  async function handleExtractCards(sessionId: string, cwd: string): Promise<void> {
+    if (!cwd) {
+      toast.info('这个会话还没有工作目录');
+      return;
+    }
+    bumpUsage('cards.extract');
+    const result = await window.codeagentdesk.extractSessionCards(sessionId, cwd);
+    if (!result.ok) {
+      toast.error(result.message ?? '提取失败');
+      return;
+    }
+    if (result.count === 0) {
+      toast.info('这次会话没有值得沉淀的内容');
+      return;
+    }
+    toast.success(`已生成 ${result.count} 张知识草稿`, {
+      label: '去核验',
+      run: () => openCards({ cwd }),
+    });
   }
 
   /** 打开知识卡片（本会话 cwd 的 docs/knowledge）。 */
@@ -1487,7 +1489,6 @@ export default function App() {
     },
     handleSetAgentStatusStyle: (style: AgentStatusStyle) => void handleSetAgentStatusStyle(style),
     handleSetShowTokenStats: (enabled: boolean) => void handleSetShowTokenStats(enabled),
-    handleSetAutoKnowledge: (enabled: boolean) => void handleSetAutoKnowledge(enabled),
     handleSetPomodoroMinutes: (minutes: number) => void handleSetPomodoroMinutes(minutes),
     handleSetTerminalFont: (payload: { size?: number; family?: string }) => {
       void window.codeagentdesk.setTerminalFont(payload).then(refreshClaudeInfo);
@@ -1524,6 +1525,7 @@ export default function App() {
     openDetailById: (sessionId: string) => void openDetailById(sessionId),
     openInsights: (sessionId: string) => openInsights({ sessionId }),
     openDiff: (cwd: string) => openDiff({ cwd }),
+    extractCards: (sessionId: string, cwd: string) => void handleExtractCards(sessionId, cwd),
     restoreArchived: (sessionId: string, cwd: string) => void restoreArchived(sessionId, cwd),
     copySessionText: (sessionId: string) => void copySessionText(sessionId),
     onDeleteSession: (sessionId: string) => setConfirmDeleteOne(sessionId),

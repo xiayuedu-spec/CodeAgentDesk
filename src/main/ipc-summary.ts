@@ -22,6 +22,7 @@ import {
   saveKnowledge,
   type KnowledgeItem,
 } from './knowledge-store';
+import { extractCardsFromSession } from './session-knowledge';
 import { summarizeDayText, summarizeMonthText, summarizeWeekReflection, summarizeWeekText, cancelRunningClaude } from './summarize';
 import { computeEfficiencyInsights } from './ipc-usage';
 import { getSummaryText, listSummaries, saveSummary, type SummaryKind } from './summary-store';
@@ -34,7 +35,7 @@ export interface SummaryIpcDeps {
 }
 
 /** 上报长任务阶段进度（渲染层显示阶段进度面板）。 */
-function reportProgress(
+export function reportProgress(
   task: TaskProgressEvent['task'],
   title: string,
   stage: string,
@@ -51,7 +52,7 @@ function reportProgress(
   } satisfies TaskProgressEvent);
 }
 
-function reportProgressDone(task: TaskProgressEvent['task']): void {
+export function reportProgressDone(task: TaskProgressEvent['task']): void {
   broadcast(IpcChannel.taskProgress, {
     task,
     title: '',
@@ -65,6 +66,39 @@ function reportProgressDone(task: TaskProgressEvent['task']): void {
 /** 总结与知识库域 IPC：日报/周报/月报生成与存取、知识库生成/导出/存取。 */
 export function registerSummaryIpc({ metaStore }: SummaryIpcDeps): void {
   // 知识卡片（仓库内 docs/knowledge/）：列表 / 保存 / 删除，保存后自动重建索引。
+  // 从会话按需提取知识草稿（右键触发；复用「知识」这条长任务通道，进度面板里可取消）。
+  ipcMain.handle(
+    IpcChannel.knowledgeExtractCards,
+    async (
+      _event,
+      payload: { sessionId: string; cwd: string },
+    ): Promise<{ ok: boolean; count: number; titles: string[]; message?: string }> => {
+      const { sessionId, cwd } = payload;
+      if (!sessionId || !cwd) return { ok: false, count: 0, titles: [], message: '缺少会话或目录' };
+      reportProgress('knowledge', '生成知识卡片', '分析会话记录', 1, 2);
+      try {
+        const result = await extractCardsFromSession(sessionId, cwd);
+        reportProgress('knowledge', '生成知识卡片', '写入草稿卡片', 2, 2);
+        return {
+          ok: true,
+          count: result.cards.length,
+          titles: result.cards.map((card) => card.title),
+          message:
+            result.cards.length === 0 ? '这次会话没有值得沉淀的内容（太短或没有结论）' : undefined,
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          count: 0,
+          titles: [],
+          message: error instanceof Error ? error.message : String(error),
+        };
+      } finally {
+        reportProgressDone('knowledge');
+      }
+    },
+  );
+
   ipcMain.handle(IpcChannel.knowledgeCardsList, (_event, cwd: string) => listCards(cwd));
   ipcMain.handle(
     IpcChannel.knowledgeCardSave,

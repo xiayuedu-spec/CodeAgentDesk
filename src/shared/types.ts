@@ -58,8 +58,6 @@ export interface AppConfig {
   terminalFontFamily?: string;
   /** 是否显示 Token 统计（每小时用量/实时用量/限额预警）。默认关闭。 */
   showTokenStats?: boolean;
-  /** 会话结束后自动沉淀知识草稿（默认开启）。 */
-  autoKnowledge?: boolean;
   agentStatusStyle?: AgentStatusStyle;
   /** 彩蛋：是否已解锁隐藏主题（霓虹）。 */
   funUnlockedNeon?: boolean;
@@ -571,7 +569,6 @@ export interface CodeAgentDeskApi {
   setPomodoroMinutes(minutes: number): Promise<ClaudeConfigInfo>;
   setTerminalFont(payload: { size?: number; family?: string }): Promise<ClaudeConfigInfo>;
   setShowTokenStats(enabled: boolean): Promise<ClaudeConfigInfo>;
-  setAutoKnowledge(enabled: boolean): Promise<ClaudeConfigInfo>;
   pickClaudeDir(): Promise<PickClaudeDirResult>;
   listSessions(): Promise<SessionRecord[]>;
   listGroups(): Promise<GroupRecord[]>;
@@ -641,8 +638,6 @@ export interface CodeAgentDeskApi {
   onSessionError(callback: (event: SessionErrorEvent) => void): () => void;
   onSessionsChanged(callback: () => void): () => void;
   onTaskProgress(callback: (event: TaskProgressEvent) => void): () => void;
-  /** 自动沉淀完成（会话结束后台分析产出草稿卡片）。 */
-  onAutoKnowledge(callback: (event: { count: number; titles: string[] }) => void): () => void;
   cancelTask(): Promise<{ ok: boolean }>;
   checkForUpdates(): Promise<UpdateStatus>;
   installUpdate(): Promise<void>;
@@ -654,4 +649,9 @@ export interface CodeAgentDeskApi {
   listKnowledgeCards(cwd: string): Promise<KnowledgeCard[]>;
   saveKnowledgeCard(cwd: string, card: KnowledgeCardInput): Promise<KnowledgeCard>;
   deleteKnowledgeCard(cwd: string, slug: string): Promise<{ ok: boolean }>;
+  /** 从某个会话按需提取知识草稿（右键触发）。 */
+  extractSessionCards(
+    sessionId: string,
+    cwd: string,
+  ): Promise<{ ok: boolean; count: number; titles: string[]; message?: string }>;
 }

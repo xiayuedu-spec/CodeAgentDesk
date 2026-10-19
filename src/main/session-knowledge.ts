@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { app } from 'electron';
 import type { KnowledgeCard, KnowledgeCardInput, KnowledgeCardType } from '../shared/types';
 import { listCards, saveCard } from './knowledge-cards';
 import { readSessionDetail } from './session-library';
@@ -9,8 +8,11 @@ import { findSessionFile } from './session-library';
 import { runClaude } from './summarize';
 
 /**
- * 自动知识沉淀：会话结束后用 claude 无头模式从会话记录里提取"值得复用"的条目，
- * 落成 **draft** 卡片，等人工点「已确认」。自动生成 + 人工核验，避免错误知识扩散。
+ * 会话知识沉淀：**由用户从会话右键主动触发**，用 claude 无头模式从会话记录里
+ * 提取"值得复用"的条目，落成 **draft** 卡片，等人工点「已确认」。
+ *
+ * 为什么不做成会话结束自动跑：`/exit` 往往是你主动收工的时刻，后台再花一次
+ * 模型调用既突兀又难预期；按需触发把成本交还给用户，且可以立即看到结果。
  */
 
 /** 会话至少这么多轮（或出现失败）才值得分析。 */
@@ -19,35 +21,8 @@ const MIN_TURNS = 4;
 const MAX_TRANSCRIPT_CHARS = 14_000;
 /** 单次最多产出几张卡片。 */
 const MAX_CARDS = 3;
-/** 每个会话最多详细分析一次。 */
-const ANALYZED_FILE = 'knowledge-auto.json';
-const ANALYZED_MAX = 800;
 
 const TYPES: KnowledgeCardType[] = ['pitfall', 'decision', 'flow', 'module'];
-
-/** 已分析过的会话（按 sessionId），避免重复花 token。 */
-function readAnalyzed(): Record<string, number> {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(app.getPath('userData'), ANALYZED_FILE), 'utf8'));
-  } catch {
-    return {};
-  }
-}
-
-function markAnalyzed(sessionId: string): void {
-  const data = readAnalyzed();
-  data[sessionId] = Date.now();
-  const entries = Object.entries(data).sort((a, b) => b[1] - a[1]).slice(0, ANALYZED_MAX);
-  try {
-    fs.writeFileSync(
-      path.join(app.getPath('userData'), ANALYZED_FILE),
-      JSON.stringify(Object.fromEntries(entries)),
-      'utf8',
-    );
-  } catch {
-    // 写不了就算了，最多下次多分析一次。
-  }
-}
 
 /** 标题归一化，用于判断"是不是已经有这张卡了"。 */
 export function normalizeTitle(title: string): string {
@@ -154,14 +129,12 @@ export interface AutoKnowledgeResult {
  * 分析一个会话，产出草稿卡片。
  * 门槛：轮次够（或有失败）才分析；同一会话只分析一次；产出的卡片全部是 draft。
  */
-export async function generateCardsFromSession(
+export async function extractCardsFromSession(
   sessionId: string,
   cwd: string,
 ): Promise<AutoKnowledgeResult> {
   const skip: AutoKnowledgeResult = { sessionId, cards: [] };
   if (!sessionId || !cwd) return skip;
-  if (readConfig().autoKnowledge === false) return skip;
-  if (readAnalyzed()[sessionId]) return skip;
 
   const file = await findSessionFile(resolveClaudeHome(readConfig()), sessionId);
   if (!file) return skip;
@@ -177,10 +150,7 @@ export async function generateCardsFromSession(
   const hasFailure = entries.some(
     (entry) => entry.role === 'tool' && /error|失败|报错|exception/i.test(entry.toolOutput ?? ''),
   );
-  if (turns < MIN_TURNS && !hasFailure) {
-    markAnalyzed(sessionId);
-    return skip;
-  }
+  if (turns < MIN_TURNS && !hasFailure) return skip;
 
   const existing = listCards(cwd);
   const prompt = buildKnowledgePrompt(
@@ -218,6 +188,5 @@ export async function generateCardsFromSession(
     }
   }
 
-  markAnalyzed(sessionId);
   return { sessionId, cards: saved };
 }
