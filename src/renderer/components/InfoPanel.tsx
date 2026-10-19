@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import {
   ArrowRight,
@@ -7,6 +8,7 @@ import {
   GitBranch,
   Loader2,
   ListChecks,
+  Send,
 } from 'lucide-react';
 import type { SessionGitInfo, SessionInsights, SessionTodo } from '../../shared/types';
 import { statusLabel, type SessionView } from '../session-utils';
@@ -81,6 +83,12 @@ export function InfoPanel({
   onOpenInsights,
   onContinuePlan,
 }: InfoPanelProps) {
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+  // 换会话时收起预览，避免把上一个会话的提示发给新会话。
+  useEffect(() => {
+    setPendingPrompt(null);
+  }, [session.id]);
+
   const plan = insights?.plan ?? null;
   const planDone = plan ? plan.todos.filter((todo) => todo.status === 'completed').length : 0;
   const planTotal = plan?.todos.length ?? 0;
@@ -134,17 +142,50 @@ export function InfoPanel({
                 <div className="rail-hint">另有 {planTotal - previewTodos.length} 项在完整视图里</div>
               ) : null}
               {remaining > 0 && onContinuePlan ? (
-                <button
-                  type="button"
-                  className="rail-action primary"
-                  onClick={() => {
-                    const prompt = buildContinuePrompt({ todos: plan.todos, updates: plan.updates });
-                    if (prompt) onContinuePlan(prompt);
-                  }}
-                >
-                  <ArrowRight size={12} />
-                  继续未完成的 {remaining} 项
-                </button>
+                pendingPrompt === null ? (
+                  <button
+                    type="button"
+                    className="rail-action primary"
+                    onClick={() => {
+                      const prompt = buildContinuePrompt({
+                        todos: plan.todos,
+                        updates: plan.updates,
+                      });
+                      if (prompt) setPendingPrompt(prompt);
+                    }}
+                  >
+                    <ArrowRight size={12} />
+                    继续未完成的 {remaining} 项
+                  </button>
+                ) : (
+                  // 先预览再发送：往终端写整句提示是不可撤销操作，给一次看清的机会。
+                  <div className="rail-preview" aria-label="续做提示预览">
+                    <pre className="rail-preview-text">{pendingPrompt}</pre>
+                    <div className="rail-preview-hint">
+                      将以单行发送到终端，并自动回车
+                    </div>
+                    <div className="rail-preview-actions">
+                      <button
+                        type="button"
+                        className="rail-action primary"
+                        onClick={() => {
+                          onContinuePlan(pendingPrompt);
+                          setPendingPrompt(null);
+                        }}
+                      >
+                        <Send size={12} />
+                        发送
+                      </button>
+                      <button
+                        type="button"
+                        className="rail-action"
+                        onClick={() => setPendingPrompt(null)}
+                      >
+                        取消
+                      </button>
+                    </div>
+                  </div>
+                )
               ) : null}
             </>
           ) : (

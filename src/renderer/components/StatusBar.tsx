@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  AlertTriangle,
   BarChart3,
   BookOpen,
   Check,
@@ -43,6 +44,9 @@ interface StatusBarProps {
   agentStatus: AgentStatus;
   agentStatusStyle: AgentStatusStyle;
   agentAlert?: boolean;
+  /** 正在等用户输入/审批的会话（收件箱）。 */
+  approvals: { id: string; title: string; cwd: string }[];
+  onOpenApproval: (id: string) => void;
   pomodoroRunning: boolean;
   pomodoroText: string;
   pomodoroProgress: number;
@@ -80,6 +84,8 @@ export function StatusBar({
   agentStatus,
   agentStatusStyle,
   agentAlert = false,
+  approvals,
+  onOpenApproval,
   pomodoroRunning,
   pomodoroText,
   pomodoroProgress,
@@ -88,6 +94,12 @@ export function StatusBar({
 }: StatusBarProps) {
   const [versionClicks, setVersionClicks] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [approvalOpen, setApprovalOpen] = useState(false);
+  useDismiss(approvalOpen, () => setApprovalOpen(false));
+  // 所有会话都不再等待时自动收起收件箱，避免留一个空面板。
+  useEffect(() => {
+    if (approvals.length === 0 && approvalOpen) setApprovalOpen(false);
+  }, [approvals.length, approvalOpen]);
   useDismiss(moreOpen, () => setMoreOpen(false));
 
   const handleVersionClick = (): void => {
@@ -135,6 +147,47 @@ export function StatusBar({
         style={agentStatusStyle}
         className={`agent-status${agentAlert ? ' alert' : ''}`}
       />
+      {approvals.length > 0 ? (
+        <div className="approval-wrap">
+          <button
+            type="button"
+            className={`status-day approval-pill${approvalOpen ? ' active' : ''}`}
+            data-tip={`${approvals.length} 个会话在等你确认`}
+            onClick={(event) => {
+              event.stopPropagation();
+              setApprovalOpen((open) => !open);
+            }}
+          >
+            <AlertTriangle size={12} />
+            {approvals.length}
+          </button>
+          {approvalOpen ? (
+            <div
+              className="approval-popover"
+              role="dialog"
+              aria-label="等待确认的会话"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="approval-head">在等你确认 · {approvals.length}</div>
+              {approvals.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="approval-row"
+                  title={item.cwd}
+                  onClick={() => {
+                    setApprovalOpen(false);
+                    onOpenApproval(item.id);
+                  }}
+                >
+                  <span className="approval-title">{item.title}</span>
+                  <span className="approval-cwd">{item.cwd}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <span>{sessionCount} 会话</span>
       <span>{archivedCount} 归档</span>
       <button type="button" className="status-day" data-tip="返回首页" onClick={onOpenHome}>

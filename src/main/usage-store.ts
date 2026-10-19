@@ -25,6 +25,7 @@ const KNOWN_KEYS = new Set([
   'detail.opened',
   'insights.opened',
   'plan.continue',
+  'approval.jump',
   'export.md',
   'session.pin',
   'archive.delete',

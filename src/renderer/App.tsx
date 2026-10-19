@@ -19,6 +19,7 @@ import type {
 } from '../shared/types';
 import {
   folderName,
+  formatSessionTitle,
   type ContextMenuState,
   type GroupMenuState,
   type GroupSection,
@@ -1244,6 +1245,35 @@ export default function App() {
   const activeSession = sessions.find((session) => session.id === activeId) ?? null;
   const sessionStatuses = useSessionAgentStatuses();
   const activeAgentStatus = activeId ? (sessionStatuses[activeId] ?? 'idle') : 'idle';
+  // 待审批收件箱：哪些会话正在等用户确认（agent 状态机判定）。
+  // useMemo 保持引用稳定，下面的"新进入等待"提示才不会每次渲染都重跑。
+  const approvals = useMemo(
+    () =>
+      sessions
+        .filter((session) => sessionStatuses[session.id] === 'approval')
+        .map((session) => ({
+          id: session.id,
+          title: formatSessionTitle(session),
+          cwd: session.cwd,
+        })),
+    [sessions, sessionStatuses],
+  );
+
+  // 会话刚进入「等待确认」时提示一次（同一段等待只提醒一次，避免刷屏）。
+  const alertedApprovals = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const current = new Set(approvals.map((item) => item.id));
+    for (const item of approvals) {
+      if (!alertedApprovals.current.has(item.id)) {
+        alertedApprovals.current.add(item.id);
+        toast.info(`「${item.title}」在等你确认`);
+      }
+    }
+    for (const id of [...alertedApprovals.current]) {
+      if (!current.has(id)) alertedApprovals.current.delete(id);
+    }
+  }, [approvals, toast]);
+
   // 右栏数据：洞察（计划/改动/痕迹）+ 工作区 git 摘要；会话运行中每 15s 自助刷新。
   // 窗口隐藏时停止轮询（回到前台会立刻补一次）。
   const rail = useSessionRail(
@@ -1768,6 +1798,12 @@ export default function App() {
           agentStatus={activeAgentStatus}
           agentStatusStyle={claudeInfo?.config.agentStatusStyle ?? 'emoji'}
           agentAlert={activeAgentStatus === 'approval'}
+          approvals={approvals}
+          onOpenApproval={(id) => {
+            bumpUsage('approval.jump');
+            setActiveId(id);
+            setHomeOpen(false);
+          }}
           pomodoroRunning={pomodoro.running}
           pomodoroText={pomodoro.remainingText}
           pomodoroProgress={pomodoro.progress}

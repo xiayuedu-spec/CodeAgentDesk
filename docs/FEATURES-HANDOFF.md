@@ -210,6 +210,7 @@
 | 界面 | `SessionInsightsModal`（lazy，独立 chunk 约 7KB）：顶部计划卡（进度条 + 勾选/转圈/待办 + 快照次数）、下方左文件清单右片段对照（旧块 `-` 红边、新块 `+` 强调色边）；头部「复制改动摘要」导出 Markdown（`buildInsightsMarkdown`，可直接贴进 PR 描述） |
 | 入口 | 信息面板底部「计划与改动」按钮 / 详情页工具栏 `ListChecks` / 会话右键菜单（归档会话也能看）。埋点 key `insights.opened` 需同步 `usage-store.ts` 白名单与 `UsageStatsModal` 标签表 |
 | 右栏仪表 | `components/InfoPanel.tsx` + `hooks/useSessionRail.ts`。Token 统计默认关闭后，右栏改成「会话仪表」：状态/活跃时长 → 计划进度 → 本次改动 → 痕迹（轮次/工具调用/失败/开始时间，与 insights 同一次扫描产出）→ git 分支 → 会话 ID/目录。**「继续未完成的 N 项」**把未完成 todos 拼成**单行**提示 + 一次回车写进 pty（不用 bracketed paste，避免 TUI 把转义序列当字面量）。git 走 `git-info.ts`：一次 `git status --porcelain=v1 --branch -uno` 取分支 + 脏文件 + ahead/behind，4s 超时、按 cwd 缓存 **10s**（必须小于 15s 轮询间隔，否则数字永远不更新），非仓库返回 `null`（该行不显示）。**洞察与 git 共用一个 15s 轮询**（running + 面板展开 + 窗口可见时才跑）；数据按 sessionId/cwd 缓存在渲染层，切回看过的会话不闪「读取中」，换会话也不会串号 |
+| 待审批收件箱 | `StatusBar` + `App` 的 `approvals`（`useMemo` 保持引用稳定，避免「新进入等待」提示每次渲染重跑）。状态栏 `⚠ N` 胶囊 → 浮层列出等待中的会话 → 点击 `setActiveId` 直达；全部处理完自动收起。新进入等待时弹一次 toast（`useRef<Set<ptyId>>` 去重，离开等待即移除）。判定源是 `useSessionAgentStatuses` 的 `approval` 状态，不需要任何新 IPC |
 
 **坑位**：新增埋点 key 一定要加进 `usage-store.ts` 的 `KNOWN_KEYS`，否则 `incrementUsage` 静默丢弃（白名单校验）；`window.codeagentdesk.getSessionInsights` 需要会话已落盘（未绑定 sessionId 的会话要提前拦掉并提示）；**往 pty 写续做提示必须是单行 + `\r`**，多行文本在 Ink 类 TUI 里可能提前提交；**主进程缓存 TTL 必须小于渲染层轮询间隔**，否则"缓存命中"会伪装成"数据不刷新"。
 
