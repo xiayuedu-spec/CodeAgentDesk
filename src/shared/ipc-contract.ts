@@ -71,6 +71,7 @@ export const IpcChannel = {
   taskCancel: 'task:cancel',
   sessionInsights: 'session:insights',
   sessionGit: 'session:git',
+  sessionDiff: 'session:diff',
   updateCheck: 'update:check',
   updateInstall: 'update:install',
   updateStatus: 'update:status',

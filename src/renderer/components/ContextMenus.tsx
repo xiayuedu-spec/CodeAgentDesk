@@ -4,6 +4,7 @@ import {
   BookOpen,
   Copy,
   FolderOpen,
+  GitBranch,
   Link2,
   ListChecks,
   Pencil,
@@ -53,6 +54,7 @@ interface ContextMenusActions {
   openHistory: (record: SessionRecord) => void;
   openDetailById: (sessionId: string) => void;
   openInsights: (sessionId: string) => void;
+  openDiff: (cwd: string) => void;
   restoreArchived: (sessionId: string, cwd: string) => void;
   copySessionText: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
@@ -145,6 +147,7 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
     openHistory,
     openDetailById,
   openInsights,
+  openDiff,
     restoreArchived,
     copySessionText,
     onDeleteSession,
@@ -271,6 +274,20 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
               <ListChecks size={14} />
             </span>
             计划与改动
+          </button>
+          <button
+            type="button"
+            disabled={!menu.cwd}
+            title="工作区真实的 git diff（不是会话记录里的意图）"
+            onClick={() => {
+              if (menu.cwd) openDiff(menu.cwd);
+              closeMenu();
+            }}
+          >
+            <span className="context-menu-icon">
+              <GitBranch size={14} />
+            </span>
+            审查工作区改动
           </button>
           {menu.archived ? (
             <button

@@ -6748,3 +6748,209 @@ textarea:focus-visible {
   font-family: var(--mono);
   color: var(--text-muted);
 }
+/* ================================================================
+   工作区改动审查（git diff）：与「计划与改动」区分——
+   那个是会话记录里的意图，这个是磁盘上真的变了什么
+   ================================================================ */
+.diff-panel {
+  width: 980px;
+  max-width: 96vw;
+}
+.diff-session {
+  margin-left: 6px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-faint);
+  font-weight: 400;
+}
+.diff-branch {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+}
+.diff-totals {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-right: 4px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.diff-body {
+  display: flex;
+  overflow: hidden;
+  padding: 0;
+}
+.diff-split {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+.diff-files {
+  margin: 0;
+  padding: 8px 6px;
+  list-style: none;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+.diff-file {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-micro) ease, border-color var(--motion-micro) ease;
+}
+.diff-file:hover {
+  background: color-mix(in srgb, var(--bg-inset) 70%, transparent);
+}
+.diff-file.active {
+  border-color: var(--accent-dim);
+  background: var(--accent-soft);
+}
+.diff-status {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+}
+.diff-status.modified {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--warn);
+}
+.diff-status.added,
+.diff-status.untracked {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+.diff-status.deleted {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+.diff-status.renamed {
+  background: var(--bg-inset);
+  color: var(--text-muted);
+}
+.diff-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: 12px;
+}
+.diff-file-nums {
+  display: inline-flex;
+  gap: 5px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.diff-more {
+  padding: 6px 8px;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+.diff-hunks {
+  padding: 10px 12px;
+  overflow: auto;
+  min-height: 0;
+}
+.diff-path {
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.diff-note {
+  margin-bottom: 8px;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+  color: var(--text-faint);
+  font-size: 11px;
+}
+.diff-hunk + .diff-hunk {
+  margin-top: 10px;
+}
+.diff-hunk-head {
+  margin-bottom: 3px;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.diff-code {
+  margin: 0;
+  padding: 6px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.55;
+  overflow-x: auto;
+}
+.diff-line {
+  display: flex;
+  gap: 6px;
+  padding: 0 8px;
+  white-space: pre;
+}
+.diff-line.add {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.diff-line.del {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.diff-gutter {
+  flex: none;
+  width: 34px;
+  text-align: right;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+.diff-sign {
+  flex: none;
+  width: 10px;
+  color: var(--text-faint);
+  user-select: none;
+}
+.diff-line.add .diff-sign {
+  color: var(--accent);
+}
+.diff-line.del .diff-sign {
+  color: var(--danger);
+}
+.diff-text {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-muted);
+}
+.diff-line.add .diff-text,
+.diff-line.del .diff-text {
+  color: var(--text);
+}

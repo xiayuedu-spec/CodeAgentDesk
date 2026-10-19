@@ -28,6 +28,8 @@ interface InfoPanelProps {
   onOpenInsights?: (path?: string) => void;
   /** 把未完成计划拼成续做提示注入会话。 */
   onContinuePlan?: (prompt: string) => void;
+  /** 打开工作区改动审查（git diff）。 */
+  onOpenDiff?: () => void;
 }
 
 /** 计划里最多直接展示几条（其余折叠进弹窗）。 */
@@ -51,6 +53,7 @@ export function InfoPanel({
   onResizeStart,
   onOpenInsights,
   onContinuePlan,
+  onOpenDiff,
 }: InfoPanelProps) {
   // 数据在面板内部取：15s 轮询只重渲染这一棵小树，不再把整个 App 叫醒。
   const { insights, git } = useSessionRail(session.sessionId, session.cwd, running);
@@ -249,6 +252,11 @@ export function InfoPanel({
               {git.ahead > 0 ? ` · 领先 ${git.ahead}` : ''}
               {git.behind > 0 ? ` · 落后 ${git.behind}` : ''}
             </div>
+            {onOpenDiff ? (
+              <button type="button" className="rail-action" onClick={onOpenDiff}>
+                {git.dirty > 0 ? '审查改动（diff）' : '查看工作区 diff'}
+              </button>
+            ) : null}
           </section>
         ) : null}
 

@@ -90,6 +90,9 @@ const LazyBackup = lazy(() =>
 const LazyUsageStats = lazy(() =>
   import('./components/UsageStatsModal').then((module) => ({ default: module.UsageStatsModal })),
 );
+const LazyGitDiff = lazy(() =>
+  import('./components/GitDiffModal').then((module) => ({ default: module.GitDiffModal })),
+);
 const LazySessionInsights = lazy(() =>
   import('./components/SessionInsightsModal').then((module) => ({
     default: module.SessionInsightsModal,
@@ -193,6 +196,8 @@ export default function App() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const [confirmDeleteOne, setConfirmDeleteOne] = useState<string | null>(null);
+  /** 工作区改动审查弹窗（null 关闭；cwd 决定看哪个仓库）。 */
+  const [diffTarget, setDiffTarget] = useState<{ cwd: string; title?: string } | null>(null);
   /** 计划与改动弹窗（null 关闭；path 用于从右栏点某个文件直接定位）。 */
   const [insightsTarget, setInsightsTarget] = useState<{
     sessionId: string;
@@ -816,6 +821,16 @@ export default function App() {
   async function handleCancelTask(): Promise<void> {
     const result = await window.codeagentdesk.cancelTask();
     toast.info(result.ok ? '已请求取消任务' : '当前没有可取消的任务');
+  }
+
+  /** 打开工作区改动审查（本会话 cwd 的 git diff）。 */
+  function openDiff(target: { cwd?: string; title?: string }): void {
+    if (!target.cwd) {
+      toast.info('这个会话还没有工作目录');
+      return;
+    }
+    bumpUsage('diff.opened');
+    setDiffTarget({ cwd: target.cwd, title: target.title });
   }
 
   /** 打开「计划与改动」：需要会话已落盘（否则后端找不到 JSONL）。 */
@@ -1470,6 +1485,7 @@ export default function App() {
     openHistory: (record: SessionRecord) => void openHistory(record),
     openDetailById: (sessionId: string) => void openDetailById(sessionId),
     openInsights: (sessionId: string) => openInsights({ sessionId }),
+    openDiff: (cwd: string) => openDiff({ cwd }),
     restoreArchived: (sessionId: string, cwd: string) => void restoreArchived(sessionId, cwd),
     copySessionText: (sessionId: string) => void copySessionText(sessionId),
     onDeleteSession: (sessionId: string) => setConfirmDeleteOne(sessionId),
@@ -1613,6 +1629,12 @@ export default function App() {
                     })
                   }
                   onContinuePlan={(prompt) => handleContinuePlan(activeSession, prompt)}
+                  onOpenDiff={() =>
+                    openDiff({
+                      cwd: activeSession.cwd,
+                      title: formatSessionTitle(activeSession),
+                    })
+                  }
                 />
               ) : (
                 <Welcome
@@ -1790,6 +1812,16 @@ export default function App() {
       {usageStatsOpen ? (
         <Suspense fallback={null}>
           <LazyUsageStats onClose={() => setUsageStatsOpen(false)} />
+        </Suspense>
+      ) : null}
+
+      {diffTarget ? (
+        <Suspense fallback={null}>
+          <LazyGitDiff
+            cwd={diffTarget.cwd}
+            title={diffTarget.title}
+            onClose={() => setDiffTarget(null)}
+          />
         </Suspense>
       ) : null}
 

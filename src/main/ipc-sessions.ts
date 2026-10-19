@@ -15,6 +15,7 @@ import type {
   SearchResult,
   SessionDetailResult,
   SessionGitInfo,
+  WorktreeDiff,
   SessionInsights,
   SessionOpResult,
   SessionRecord,
@@ -34,6 +35,7 @@ import {
 import { buildMarkdown } from './export';
 import { emptyInsights, readSessionInsights } from './session-insights';
 import { readSessionGit } from './git-info';
+import { readWorktreeDiff } from './git-diff';
 import { recordRecentDir } from './recent-dirs';
 import { summarizeSession } from './summarize';
 import type { SessionMetaStore } from './session-meta-store';
@@ -349,6 +351,11 @@ export function registerSessionsIpc({ sessions, watcher, metaStore }: SessionsIp
       if (!filePath) return emptyInsights(sessionId);
       return readSessionInsights(filePath, sessionId);
     },
+  );
+
+  ipcMain.handle(
+    IpcChannel.sessionDiff,
+    (_event, cwd: string): Promise<WorktreeDiff> => readWorktreeDiff(cwd),
   );
 
   ipcMain.handle(
