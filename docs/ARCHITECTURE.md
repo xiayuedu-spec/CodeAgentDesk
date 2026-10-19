@@ -104,6 +104,8 @@ main ──webContents.send(broadcast)──> renderer（sessionData/exited/chan
 
 边界（写进界面提示）：每片段每侧保留 1200 字符、每文件 8 个片段、最多 60 个文件，超出只计数；**口径是"会话记录里的工具调用意图"，不等于工作区当前内容**。IPC：`session:insights`。
 
+**内存预算**：主进程三处解析缓存都按「条数 × 单条最坏体积」定过上限——`detailCache` 20 条（单条最坏约 20MB）、`readableLinesCache` 20 条（搜索用原始行，单条可达数 MB）、`insightsCache` 20 条（单条最坏约 1.1MB）。另外 `pushAssistantDetail` 存进 `toolUses` 的 `toolInput` **必须按 `MAX_TEXT_LENGTH` 截断**：一次 Write 的 input 可能是整个文件，且会被复制进对应的 tool_result 条目长期驻留。
+
 ### 4.13 工作区 git 摘要（`git-info.ts`）
 `git -C <cwd> status --porcelain=v1 --branch -uno` 一次调用取「分支 + 未提交数 + ahead/behind」，4s 超时，按 cwd 缓存 **10s**（必须小于右栏 15s 的轮询间隔，否则每次轮询都吃上一条缓存，未提交数看起来永不更新）。非仓库 / 没装 git / 超时统一返回 `null`，界面直接不显示该行。IPC：`session:git`。
 

@@ -10,7 +10,8 @@ import {
   X,
 } from 'lucide-react';
 import type { SessionGitInfo, SessionInsights, SessionTodo } from '../../shared/types';
-import { folderName, formatClock, formatDuration } from '../session-utils';
+import { folderName } from '../session-utils';
+import { buildInsightsMarkdown, formatClock, formatDuration, shortenPath } from '../insights-utils';
 import { useEscape } from '../hooks/useEscape';
 import { useToast } from '../toast';
 import { EmptyState } from './EmptyState';
@@ -36,54 +37,6 @@ function statusIcon(status: SessionTodo['status']) {
   if (status === 'completed') return <CircleCheck size={13} className="insight-todo-done" />;
   if (status === 'in_progress') return <Loader2 size={13} className="spin insight-todo-active" />;
   return <CircleDashed size={13} className="insight-todo-pending" />;
-}
-
-/**
- * 路径中段省略：保留首段（盘符/根）与末尾两段。
- * 比 CSS `direction: rtl` 截断可靠——后者会让路径首尾的斜杠被 bidi 重排。
- */
-export function shortenPath(value: string, keepTail = 2): string {
-  const parts = value.split(/[\\/]+/).filter(Boolean);
-  if (parts.length <= keepTail + 1) return value;
-  return `${parts[0]}\\…\\${parts.slice(-keepTail).join('\\')}`;
-}
-
-/** 把洞察导出成可粘贴的 Markdown 摘要（交接 / 写 PR 描述用）。 */
-export function buildInsightsMarkdown(title: string, insights: SessionInsights): string {
-  const lines: string[] = [`## ${title}`, ''];
-  const { totals, plan } = insights;
-  lines.push(
-    `改动：${totals.files} 个文件，+${totals.added} -${totals.removed}（${totals.edits} 次编辑）`,
-    '',
-  );
-  if (plan) {
-    const done = plan.todos.filter((todo) => todo.status === 'completed').length;
-    lines.push(`### 计划（${done}/${plan.todos.length} 完成，快照 ${plan.updates} 次）`, '');
-    for (const todo of plan.todos) {
-      const mark = todo.status === 'completed' ? 'x' : ' ';
-      const suffix = todo.status === 'in_progress' ? ' **（进行中）**' : '';
-      lines.push(`- [${mark}] ${todo.content}${suffix}`);
-    }
-    lines.push('');
-  }
-  if (insights.changes.length > 0) {
-    lines.push('### 改动文件', '');
-    for (const change of insights.changes) {
-      lines.push(
-        `#### ${change.path}（+${change.added} -${change.removed}，${change.edits} 次${
-          change.written ? '，整文件写入' : ''
-        }）`,
-        '',
-      );
-      for (const hunk of change.hunks) {
-        lines.push('```diff');
-        for (const line of hunk.oldText ? hunk.oldText.split('\n') : []) lines.push(`-${line}`);
-        for (const line of hunk.newText ? hunk.newText.split('\n') : []) lines.push(`+${line}`);
-        lines.push('```', '');
-      }
-    }
-  }
-  return lines.join('\n').trimEnd();
 }
 
 /**

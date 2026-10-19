@@ -131,7 +131,12 @@ interface DetailCacheEntry {
   entries: SessionDetailEntry[];
 }
 const detailCache = new Map<string, DetailCacheEntry>();
-const DETAIL_CACHE_MAX = 80;
+/**
+ * 详情缓存条数。单条最坏 ≈ 2000 条记录 × (4KB 文本 + 4KB 工具输入 + 4KB 输出) ≈ 20MB，
+ * 但真实会话通常几十到几百 KB。取 20（一个用户不会同时在读几十个会话的详情），
+ * 按条数而不是字节是因为体积方差大、按字节统计还要额外遍历。
+ */
+const DETAIL_CACHE_MAX = 20;
 
 function cacheDetail(
   filePath: string,
@@ -193,7 +198,12 @@ function pushAssistantDetail(
     if (item.type === 'text' && typeof item.text === 'string') {
       entries.push({ role: 'assistant', text: item.text.slice(0, MAX_TEXT_LENGTH) });
     } else if (item.type === 'tool_use' && typeof item.id === 'string' && typeof item.name === 'string') {
-      toolUses.set(item.id, { name: item.name, input: JSON.stringify(item.input ?? {}) });
+      // 必须截断：一次 Write 的 input 可能是整个文件（几十上百 KB），
+      // 而它还会被复制进对应的 tool_result 条目、并随缓存常驻内存。
+      toolUses.set(item.id, {
+        name: item.name,
+        input: JSON.stringify(item.input ?? {}).slice(0, MAX_TEXT_LENGTH),
+      });
     }
   }
 }
@@ -292,7 +302,11 @@ interface ReadableLinesEntry {
   lines: SearchContextLine[];
 }
 const readableLinesCache = new Map<string, ReadableLinesEntry>();
-const READABLE_LINES_CACHE_MAX = 120;
+/**
+ * 可读行缓存条数（搜索用，每条最多 5000 行原始 JSONL，单条可能几 MB）。
+ * 搜索是"当前关键词扫一遍匹配文件"，20 条足够覆盖一次搜索的复用。
+ */
+const READABLE_LINES_CACHE_MAX = 20;
 
 async function readReadableLines(filePath: string): Promise<SearchContextLine[]> {
   let stat: fs.Stats | null = null;

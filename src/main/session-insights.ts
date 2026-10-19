@@ -32,7 +32,11 @@ interface InsightCacheEntry {
 }
 
 const insightsCache = new Map<string, InsightCacheEntry>();
-const INSIGHTS_CACHE_MAX = 60;
+/**
+ * 洞察缓存条数。单条上限 ≈ 60 文件 × 8 片段 × 2×1200 字符 ≈ 1.1MB（真实通常几十 KB），
+ * 20 条 ≈ 22MB 最坏；右栏 15s 轮询 + 弹窗复用同一份缓存，不需要更多。
+ */
+const INSIGHTS_CACHE_MAX = 20;
 
 interface ParsedEvent {
   type?: string;

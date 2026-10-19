@@ -70,7 +70,7 @@ npm run dev        # 开发：tsc 编译 main + vite + electron
 ```bash
 npm run verify      # = typecheck + test + build
 npm run typecheck   # tsc 双工程（main + renderer）
-npm run test        # vitest（37 用例，src/main/__tests__）
+npm run test        # vitest（59 用例，src/main/__tests__ + src/renderer/__tests__）
 npm run test:watch  # 监听模式
 npm run build       # tsc main + vite build
 ```

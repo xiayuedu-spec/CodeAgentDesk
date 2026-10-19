@@ -12,7 +12,7 @@ npm run dev
 # 质量门禁（每轮改动必须全过；verify = typecheck + test + build）
 npm run verify
 npm run typecheck   # tsc 双工程（main + renderer）
-npm run test        # vitest（37 用例，src/main/__tests__）
+npm run test        # vitest（59 用例，main 解析层 + renderer 纯函数）
 npm run test:watch  # 监听模式（写解析器/纯逻辑时用）
 npm run build       # tsc main + vite build
 
@@ -145,9 +145,10 @@ src/
 
 ## 7. 测试现状
 
-- Vitest（`npm run test`）：37 用例 —— buildMarkdown 导出、JSONL 解析/搜索/用量、parseSummary 与长任务取消语义、会话洞察（计划快照 / 改动聚合 / 行级 diff / 截断与缓存）。
+- Vitest（`npm run test`）：59 用例 —— 主进程：buildMarkdown 导出、JSONL 解析/搜索/用量、parseSummary 与长任务取消语义、会话洞察（计划快照 / 改动聚合 / 行级 diff / 截断与缓存 / 痕迹统计）；渲染层纯函数（`src/renderer/__tests__/`）：续做提示拼装、路径中段省略、时长/时间格式化、洞察 Markdown 导出。
+- **渲染层纯逻辑一律抽到 `renderer/insights-utils.ts` 这类无 React 依赖的模块再测**——别在 `.tsx` 里定义后指望 node 环境去测组件。
 - 主进程测试用 `vi.mock('electron')`；测试文件在 `src/**/__tests__/`，已从构建 tsconfig 排除（`vitest.config.mts`）。
-- 可补：用量聚合、活跃时长、MBTI/宠物树等纯函数（`renderer/mbti.ts` 建议补用例）。
+- 可补：MBTI/宠物树等纯函数（`renderer/mbti.ts` 建议补用例）。
 - **暂未接入 ESLint**：本仓库 TS 7 + ESLint 10 的 typescript-eslint 兼容性尚未确认，先用 tsc 严格模式 + CI 门禁顶着；接入时建议只开 react-hooks 与正确性规则，不做风格规则。
 
 ## 8. 建议下一步（按 ROI，详见 docs/BACKLOG.md）

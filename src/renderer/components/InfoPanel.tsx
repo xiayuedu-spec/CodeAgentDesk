@@ -11,7 +11,12 @@ import {
   Send,
 } from 'lucide-react';
 import type { SessionTodo } from '../../shared/types';
-import { formatClock, formatDuration, statusLabel, type SessionView } from '../session-utils';
+import { statusLabel, type SessionView } from '../session-utils';
+import {
+  buildContinuePrompt,
+  formatClock,
+  formatDuration,
+} from '../insights-utils';
 import { useSessionRail } from '../hooks/useSessionRail';
 
 interface InfoPanelProps {
@@ -34,25 +39,6 @@ function planIcon(status: SessionTodo['status']) {
   if (status === 'completed') return <CircleCheck size={12} className="rail-todo-done" />;
   if (status === 'in_progress') return <Loader2 size={12} className="spin rail-todo-active" />;
   return <CircleDashed size={12} className="rail-todo-pending" />;
-}
-
-/** 未完成计划 → 单行续做提示（单行是为了能安全地注入终端并按一次回车提交）。 */
-export function buildContinuePrompt(plan: {
-  todos: SessionTodo[];
-  updates: number;
-}): string | null {
-  const remaining = plan.todos.filter((todo) => todo.status !== 'completed');
-  if (remaining.length === 0) return null;
-  const done = plan.todos.length - remaining.length;
-  const active = remaining.find((todo) => todo.status === 'in_progress');
-  const items = remaining.map((todo, index) => `${index + 1}）${todo.content}`).join('；');
-  const lead = active
-    ? `先把「${active.content}」做完`
-    : `按顺序继续`;
-  return `继续上次未完成的计划（已完成 ${done}/${plan.todos.length}）。剩余待办：${items}。${lead}，每完成一项就用 TodoWrite 更新进度。`.slice(
-    0,
-    1500,
-  );
 }
 
 /**
