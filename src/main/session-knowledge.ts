@@ -20,9 +20,16 @@ const MIN_TURNS = 4;
 /** 送进模型的会话文本上限。 */
 const MAX_TRANSCRIPT_CHARS = 14_000;
 /** 单次最多产出几张卡片。 */
-const MAX_CARDS = 3;
+const MAX_CARDS = 4;
 
-const TYPES: KnowledgeCardType[] = ['pitfall', 'decision', 'flow', 'module'];
+const TYPES: KnowledgeCardType[] = [
+  'spec',
+  'change',
+  'pitfall',
+  'decision',
+  'flow',
+  'module',
+];
 
 /** 标题归一化，用于判断"是不是已经有这张卡了"。 */
 export function normalizeTitle(title: string): string {
@@ -47,18 +54,24 @@ export function buildKnowledgePrompt(transcript: string, existingTitles: string[
     : '（暂无）';
   return [
     '你在为团队积累项目知识。下面是某个开发者与 Claude Code 的一次会话记录。',
-    '请提取值得沉淀、且**别人以后会复用**的知识条目（0-3 条）：',
+    '请提取值得沉淀、且**别人以后会复用**的条目（0-4 条），按会话性质选择类型：',
+    '- spec（规格）：需求/接口的既定行为——参数与返回值、字段含义、边界条件、错误处理、验收标准',
+    '- change（变更）：这次改了什么（文件/接口/行为）、为什么改、影响谁、迁移或回归时要注意什么',
     '- pitfall（踩坑）：报错/异常 → 根因 → 改法',
     '- decision（决策）：选了什么方案、为什么、放弃了什么',
-    '- flow（流程）：怎么跑起来/怎么发布/怎么排查',
+    '- flow（流程）：怎么跑起来 / 怎么发布 / 怎么排查',
     '- module（模块）：这个模块负责什么、关键文件在哪',
-    '跳过：闲聊、纯进度汇报、没有结论的尝试、只对本次有效的临时操作。',
+    '',
+    '判断依据：会话以「实现某个需求」为主 → 重点产出 spec 与 change；',
+    '以「排查故障」为主 → 重点产出 pitfall；同时有需求与故障就分别写。',
+    '要求：只写有结论、可核对的内容；不要写进度汇报、闲聊和没有结论的尝试；',
+    '要引用具体文件路径与具体行为，不要泛泛而谈。',
     '',
     '已有卡片（不要重复这些主题）：',
     existing,
     '',
     '只输出 JSON 数组，不要任何解释或 Markdown 代码块：',
-    '[{"title":"一句话标题","type":"pitfall|decision|flow|module","phenomenon":"现象/报错原文","conclusion":"根因与改法","evidence":"文件:行 或 关键排查动作","files":["相对路径"]}]',
+    '[{"title":"一句话标题","type":"spec|change|pitfall|decision|flow|module","phenomenon":"背景/现象/变更原因","conclusion":"规格内容/变更内容与影响/结论","evidence":"文件:行 或 关键依据","files":["相对路径"]}]',
     '没有值得沉淀的内容就输出 []。files 只填会话中真实出现过、且相对于项目根目录的路径。',
     '',
     '--- 会话记录（截断）---',

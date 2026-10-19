@@ -25,6 +25,15 @@ describe('buildKnowledgePrompt', () => {
   it('没有已有卡片时给出占位', () => {
     expect(buildKnowledgePrompt('x', [])).toContain('（暂无）');
   });
+
+  it('提示词覆盖规格与变更两类（不只是踩坑）', () => {
+    const prompt = buildKnowledgePrompt('x', []);
+    expect(prompt).toContain('spec（规格）');
+    expect(prompt).toContain('change（变更）');
+    expect(prompt).toContain('验收标准');
+    expect(prompt).toContain('迁移或回归时要注意什么');
+    expect(prompt).toContain('以「实现某个需求」为主');
+  });
 });
 
 describe('parseKnowledgeCards', () => {
@@ -45,6 +54,13 @@ describe('parseKnowledgeCards', () => {
   it('容忍 ```json 围栏与前后废话', () => {
     const raw = '好的，结果如下：\n```json\n[{"title":"决策：hook 下沉"}]\n```\n以上。';
     expect(parseKnowledgeCards(raw)).toHaveLength(1);
+  });
+
+  it('接受 spec / change 类型', () => {
+    const cards = parseKnowledgeCards(
+      '[{"title":"上传接口规格","type":"spec","conclusion":"单文件 ≤ 10MB，超出返回 413"},{"title":"改了上传超时","type":"change","conclusion":"30s→60s，影响大文件"}]',
+    );
+    expect(cards.map((card) => card.type)).toEqual(['spec', 'change']);
   });
 
   it('未知类型回落 pitfall，缺 title 的条目丢弃', () => {

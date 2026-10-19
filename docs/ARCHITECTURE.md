@@ -143,7 +143,8 @@ Token 统计默认关闭后，右栏从"用量展示"改成**当前会话的仪�
 
 - **形态**：一张卡片一个文件，放在仓库 `docs/knowledge/<slug>.md`，front-matter（title/type/status/created/updated/session/files）+ 三个固定小节（现象 / 结论 / 证据）。同目录 `README.md` 是**自动生成**的索引（按类型分组、带 ✅/📝 标记），人和 Claude 都从索引进入。
 - **为什么一卡一文件**：PR review 变成"加一个文件"，diff 干净；grep 友好；新增/修改互不冲突（一篇大 Markdown 每人都改同一处必然冲突）。
-- **类型**：pitfall（踩坑）/ decision（决策）/ flow（流程）/ module（模块说明）—— 正好对应新人入职要看的四类。
+- **类型**（按会话性质选）：`spec`（规格：需求/接口的既定行为、边界与验收）/ `change`（变更：改了什么、为什么、影响面与迁移注意）/ `pitfall`（踩坑）/ `decision`（决策）/ `flow`（流程）/ `module`（模块说明）。索引与列表把 spec/change 排在最前——新人先要知道"做了什么、现在什么行为"，再去看坑。
+- **字段标题随类型变**：数据仍是 phenomenon/conclusion/evidence 三节，但界面按类型换用词（规格卡显示「需求背景 / 规格内容 / 依据」、变更卡显示「变更原因 / 变更内容与影响 / 依据」），避免所有卡片都读起来像故障报告。
 - **可信度**：`draft`（待确认）/ `verified`（有人验证过）。没有这层，AI 生成的知识会腐烂成"没人敢信的猜测集"。
 - **过期**：卡片记录 `files`（涉及源码），将来可比对文件 mtime/是否存在来标"可能过期"（**本期未实现**，字段已留）。
 - **跟随仓库**：卡片是提交进 git 的文件，同事拉代码就拿到，不需要服务器。IPC：`knowledge:cards-list` / `knowledge:card-save` / `knowledge:card-delete`。

@@ -194,7 +194,19 @@ export interface GitOpResult {
 }
 
 /** 知识卡片类型：踩坑 / 决策 / 流程 / 模块说明。 */
-export type KnowledgeCardType = 'pitfall' | 'decision' | 'flow' | 'module';
+export type KnowledgeCardType =
+  /** 规格：需求/接口的既定行为、边界与验收标准 */
+  | 'spec'
+  /** 变更：改了什么、为什么、影响面与迁移注意 */
+  | 'change'
+  /** 踩坑：报错 → 根因 → 改法 */
+  | 'pitfall'
+  /** 决策：选了什么方案、为什么 */
+  | 'decision'
+  /** 流程：怎么跑起来 / 发布 / 排查 */
+  | 'flow'
+  /** 模块：负责什么、关键位置 */
+  | 'module';
 
 /** 一张知识卡片（落在仓库 docs/knowledge/<slug>.md）。 */
 export interface KnowledgeCard {

@@ -13,9 +13,18 @@ const INDEX_FILE = 'README.md';
 /** 单卡片体积上限（防止把整篇日志塞进来）。 */
 const MAX_FIELD_CHARS = 8000;
 
-const TYPES: KnowledgeCardType[] = ['pitfall', 'decision', 'flow', 'module'];
+const TYPES: KnowledgeCardType[] = [
+  'spec',
+  'change',
+  'pitfall',
+  'decision',
+  'flow',
+  'module',
+];
 
 export const TYPE_LABEL: Record<KnowledgeCardType, string> = {
+  spec: '规格',
+  change: '变更',
   pitfall: '踩坑',
   decision: '决策',
   flow: '流程',

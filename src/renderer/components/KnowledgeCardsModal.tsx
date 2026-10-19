@@ -12,17 +12,57 @@ interface KnowledgeCardsModalProps {
 }
 
 const TYPES: { value: KnowledgeCardType; label: string }[] = [
+  { value: 'spec', label: '规格' },
+  { value: 'change', label: '变更' },
   { value: 'pitfall', label: '踩坑' },
   { value: 'decision', label: '决策' },
   { value: 'flow', label: '流程' },
   { value: 'module', label: '模块说明' },
 ];
 
-const TYPE_LABEL: Record<KnowledgeCardType, string> = {
-  pitfall: '踩坑',
-  decision: '决策',
-  flow: '流程',
-  module: '模块说明',
+const TYPE_LABEL = Object.fromEntries(TYPES.map((type) => [type.value, type.label])) as Record<
+  KnowledgeCardType,
+  string
+>;
+
+/**
+ * 三个字段的标题随类型变化：规格/变更读起来才不像"故障报告"。
+ * 数据模型不变（仍是 phenomenon/conclusion/evidence），只换界面用词。
+ */
+const SECTION_LABELS: Record<
+  KnowledgeCardType,
+  { phenomenon: string; conclusion: string; evidence: string }
+> = {
+  spec: {
+    phenomenon: '需求背景',
+    conclusion: '规格内容（行为/参数/边界/验收）',
+    evidence: '依据（文件:行 或 会话要点）',
+  },
+  change: {
+    phenomenon: '变更原因',
+    conclusion: '变更内容与影响（改了什么/影响谁/迁移注意）',
+    evidence: '依据（文件:行 或 提交）',
+  },
+  pitfall: {
+    phenomenon: '现象（看到什么）',
+    conclusion: '结论（根因 / 怎么解决）',
+    evidence: '证据（文件:行 / 会话 id）',
+  },
+  decision: {
+    phenomenon: '背景与约束',
+    conclusion: '决策与理由（放弃了什么）',
+    evidence: '依据',
+  },
+  flow: {
+    phenomenon: '适用场景',
+    conclusion: '步骤',
+    evidence: '依据',
+  },
+  module: {
+    phenomenon: '这个模块负责什么',
+    conclusion: '关键位置与容易误解的点',
+    evidence: '依据（文件:行）',
+  },
 };
 
 interface Draft {
@@ -267,7 +307,7 @@ export function KnowledgeCardsModal({ cwd, title, onClose }: KnowledgeCardsModal
                       </label>
                     </div>
                     <label className="cards-field">
-                      <span className="cards-label">现象（看到什么）</span>
+                      <span className="cards-label">{SECTION_LABELS[draft.type].phenomenon}</span>
                       <textarea
                         className="cards-textarea"
                         rows={2}
@@ -279,7 +319,7 @@ export function KnowledgeCardsModal({ cwd, title, onClose }: KnowledgeCardsModal
                       />
                     </label>
                     <label className="cards-field">
-                      <span className="cards-label">结论（怎么解决 / 为什么）</span>
+                      <span className="cards-label">{SECTION_LABELS[draft.type].conclusion}</span>
                       <textarea
                         className="cards-textarea"
                         rows={3}
@@ -291,7 +331,7 @@ export function KnowledgeCardsModal({ cwd, title, onClose }: KnowledgeCardsModal
                       />
                     </label>
                     <label className="cards-field">
-                      <span className="cards-label">证据（文件:行 / 会话 id）</span>
+                      <span className="cards-label">{SECTION_LABELS[draft.type].evidence}</span>
                       <textarea
                         className="cards-textarea"
                         rows={2}

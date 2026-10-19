@@ -91,6 +91,16 @@ describe('renderIndex', () => {
     expect(text.indexOf('## 踩坑')).toBeLessThan(text.indexOf('## 决策'));
   });
 
+  it('规格/变更排在踩坑之前（新人先看做了什么）', () => {
+    const text = renderIndex([
+      sample({ slug: 'p', title: '踩坑', type: 'pitfall' }),
+      sample({ slug: 's', title: '规格', type: 'spec' }),
+      sample({ slug: 'c', title: '变更', type: 'change' }),
+    ]);
+    expect(text.indexOf('## 规格')).toBeLessThan(text.indexOf('## 变更'));
+    expect(text.indexOf('## 变更')).toBeLessThan(text.indexOf('## 踩坑'));
+  });
+
   it('空列表也有说明', () => {
     expect(renderIndex([])).toContain('还没有卡片');
   });
