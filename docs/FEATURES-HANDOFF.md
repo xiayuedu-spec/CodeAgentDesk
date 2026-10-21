@@ -218,7 +218,7 @@
 | 布局分工 | 状态栏只放状态+环境，统计与首页/今日总结收进「更多」菜单顶部（`.status-more-info`）；右栏 `rail-head` 的 `›` 或双击 `.info-resizer` 收起（TabBar 按钮展开）；「痕迹」四宫格改成一行 `.rail-traces`；`.mode-switch` 去掉重复的「搜索」项变 2 列 |
 | 多选（历史会话 / 归档） | **统一交互、无常驻按钮**：`Ctrl/⌘ + 点击`任一行进入多选并选中该行；区块右键菜单也有入口（历史：「多选归档…」与「全部归档」并列；归档：「多选删除…」）。选择态才出现 `.bulk-bar`（全选 / N 已选 / 动作 / 完成）。复选框放在 `<li>` 里与行按钮并列（按钮嵌 input 非法），复用 `.archive-check`。归档逐个 `archiveSession`，失败不中断并给汇总 toast。切换视图（`mode`）会清空两边的多选状态，避免误操作上一个视图的勾选 |
 | 归档按原分组展示 | `archive()` 是 `{...meta}`，所以 `group` 归档后仍然保留；渲染层用 `useSessionLists` 的 `archivedGroupSections` / `archivedUngrouped` 推导区块（`archivedRows` 是实际渲染顺序，`archiveIndexByKey` 供键盘导航与行下标）。归档视图复用会话列表的 `.group-block/.group-header` 结构与 `collapsedGroups` 折叠状态；恢复（`metaStore.restore` 同样是 spread）后自然回到原分组 |
-| 右栏痕迹列出用户输入 | `session-insights` 扫描时收集用户输入（`prompts`，**最多 200 条**、单条截断 160 字）。**必须先剥包装块**：真实会话里 user 消息常以 `<system-reminder>` 开头（还有 ide_opened_file / command-name / local-command-* 等），不剥会把整条消息误判成非人写、并把纯提醒消息算成一轮对话——`stripUserWrappers()` 负责剥离，剥离后为空即不计轮次也不记输入。右栏只画最近 6 条，标题右侧 `全部 N` 打开详情并默认切「我的输入」；详情头部有 [全部]/[我的输入] 切换，过滤只作用于展示层（条目仍用原始索引，跳转不受影响） |
+| 右栏痕迹列出用户输入 | `session-insights` 收集用户输入（`prompts`，最多 200 条、单条截断 160 字，**先 `stripUserWrappers()` 剥 system-reminder 等包装块**，剥离后为空既不算轮次也不记输入）。右栏只画最近 6 条，标题右侧 `全部 N` 打开详情并默认切「我的输入」。**点击单条 = 先在终端缓冲区定位**（`terminal-jump.ts` 的注册表 + xterm `buffer.active` 逐行倒序匹配，命中后 `scrollToLine` + `select` 高亮 2.2s），同句多次出现时用 `fromEnd` 取对应那一次，长句折行有 24/12/8 字逐级短针兜底；**终端里找不到才退回详情**并 toast 提示。缓冲只有 10000 行，滚出去的旧输入只能去详情看 |
 
 **坑位（内存）**：解析缓存的上限要按「条数 × 单条最坏体积」估，别只看条数；任何从 JSONL 里提取并长期缓存的对象（尤其 `tool_use.input`）都必须截断——一次整文件 Write 的 input 能有几十上百 KB，还会被复制多份。渲染层同理（`useSessionRail` 的缓存上限 8 条）。
 

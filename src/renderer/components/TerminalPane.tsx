@@ -3,6 +3,7 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { findFileLinks } from '../file-links';
+import { registerTerminalJump } from '../terminal-jump';
 import {
   DEFAULT_TERMINAL_FONT_FAMILY,
   DEFAULT_TERMINAL_FONT_SIZE,
@@ -151,6 +152,51 @@ export function TerminalPane({
     };
     scheduleFit();
 
+    // 注册"跳到某句话"能力：右栏痕迹点击时优先在终端缓冲区里定位。
+    const disposeJump = registerTerminalJump(id, {
+      scrollToText: (text, fromEnd = 0) => {
+        const plain = text.replace(/\s+/g, ' ').trim().toLowerCase();
+        if (plain.length < 4) return false;
+        // 长句被终端折行后就匹配不上，所以逐级缩短针，先准后宽
+        const needles = [plain.slice(0, 24), plain.slice(0, 12), plain.slice(0, 8)].filter(
+          (needle, index, list) => needle.length >= 4 && list.indexOf(needle) === index,
+        );
+        const buffer = terminal.buffer.active;
+        for (const needle of needles) {
+          const matches: { row: number; column: number }[] = [];
+          for (let row = buffer.length - 1; row >= 0; row -= 1) {
+            const line = buffer.getLine(row);
+            if (!line) continue;
+            const rendered = line
+              .translateToString(true)
+              .replace(/\s+/g, ' ')
+              .trim()
+              .toLowerCase();
+            const column = rendered.indexOf(needle);
+            if (column >= 0) matches.push({ row, column });
+          }
+          if (matches.length === 0) continue;
+          // 同一句话出现多次时取对应那一次（从末尾数）
+          const hit = matches[Math.min(fromEnd, matches.length - 1)];
+          terminal.scrollToLine(Math.max(0, hit.row - 2));
+          try {
+            terminal.select(hit.column, hit.row, needle.length);
+            window.setTimeout(() => {
+              try {
+                terminal.clearSelection();
+              } catch {
+                // 终端可能已被销毁
+              }
+            }, 2200);
+          } catch {
+            // 选中失败不影响滚动
+          }
+          return true;
+        }
+        return false;
+      },
+    });
+
     // 终端里的 file:line 变成可点击链接（xterm 内置 link provider，无需 addon）。
     const linkDisposable = terminal.registerLinkProvider({
       provideLinks: (bufferLineNumber, callback) => {
@@ -211,6 +257,7 @@ export function TerminalPane({
 
     return () => {
       linkDisposable.dispose();
+      disposeJump();
       cancelAnimationFrame(frame);
       observer.disconnect();
       dataDisposable.dispose();

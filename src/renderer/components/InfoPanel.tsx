@@ -34,7 +34,7 @@ interface InfoPanelProps {
   /** 收起右栏（把宽度让给主区）。 */
   onCollapse?: () => void;
   /** 跳到会话详情里对应的那条用户输入。 */
-  onJumpToPrompt?: (text: string) => void;
+  onJumpToPrompt?: (text: string, fromEnd: number) => void;
   /** 打开详情并只看我的输入（看全部历史输入）。 */
   onOpenAllPrompts?: () => void;
 }
@@ -87,6 +87,7 @@ export function InfoPanel({
     : [];
   const stats = insights?.stats;
   const prompts = insights?.prompts ?? [];
+  const recentPrompts = prompts.slice(-6);
   const totals = insights?.totals;
 
   return (
@@ -262,16 +263,19 @@ export function InfoPanel({
           </div>
           {prompts.length > 0 ? (
             <ul className="rail-prompts">
-              {prompts.slice(-6).map((prompt, index) => {
-                // 绝对轮次：只留了最近 12 条，靠总数反推它的序号
-                const turn = (stats?.turns ?? prompts.length) - prompts.slice(-6).length + index + 1;
+              {recentPrompts.map((prompt, index) => {
+                // 绝对轮次：只保留了最近 200 条，靠总数反推它的序号
+                const turn = (stats?.turns ?? prompts.length) - recentPrompts.length + index + 1;
+                const absolute = prompts.length - recentPrompts.length + index;
+                // 同一句话出现多次时，终端里要定位到"对应那一次"（从末尾数）
+                const fromEnd = prompts.slice(absolute + 1).filter((p) => p.text === prompt.text).length;
                 return (
                   <li key={`${turn}-${prompt.text.slice(0, 12)}`}>
                     <button
                       type="button"
                       className="rail-prompt"
                       title={prompt.text}
-                      onClick={() => onJumpToPrompt?.(prompt.text)}
+                      onClick={() => onJumpToPrompt?.(prompt.text, fromEnd)}
                     >
                       <span className="rail-prompt-index">{turn}</span>
                       <span className="rail-prompt-text">{prompt.text}</span>

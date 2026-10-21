@@ -36,6 +36,7 @@ import { useEscape } from './hooks/useEscape';
 import { useSessionAgentStatuses } from './hooks/useAgentStatus';
 import { useOverlays } from './hooks/useOverlays';
 import { useSessionLists } from './hooks/useSessionLists';
+import { jumpTerminalToText } from './terminal-jump';
 import { usePomodoro } from './hooks/usePomodoro';
 import { useToast } from './toast';
 import {
@@ -1778,8 +1779,14 @@ export default function App() {
                     void openDetailById(activeSession.sessionId);
                     setDetailUserOnly(true);
                   }}
-                  onJumpToPrompt={(text) => {
-                    if (activeSession.sessionId) void openDetailById(activeSession.sessionId, text);
+                  onJumpToPrompt={(text, fromEnd) => {
+                    // 优先在终端缓冲区里定位（那就是"实际会话的位置"）；
+                    // 找不到（已滚出 buffer / 还没渲染）才退回详情页。
+                    if (jumpTerminalToText(activeId, text, fromEnd)) return;
+                    if (activeSession.sessionId) {
+                      toast.info('终端里已找不到这句，改在详情里定位');
+                      void openDetailById(activeSession.sessionId, text);
+                    }
                   }}
                 />
               ) : (
