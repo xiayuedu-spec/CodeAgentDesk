@@ -1801,8 +1801,13 @@ export default function App() {
                     void openDetailById(activeSession.sessionId);
                     setDetailUserOnly(true);
                   }}
-                  onJumpToPrompt={(text, fromEnd) => {
-                    // 优先在终端缓冲区里定位（那就是"实际会话的位置"）。
+                  onJumpToPrompt={(text, fromEnd, forceDetail) => {
+                    // Shift+点击：跳过终端，直接在详情里定位。
+                    if (forceDetail) {
+                      if (activeSession.sessionId) void openDetailById(activeSession.sessionId, text);
+                      return;
+                    }
+                    // 否则优先在终端缓冲区里定位（那就是"实际会话的位置"）。
                     const api = activeId ? terminalApisRef.current.get(activeId) : undefined;
                     if (!api) {
                       // 没有活终端（会话已结束/未运行）：只能看详情，别说成"终端里找不到"

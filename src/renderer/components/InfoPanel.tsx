@@ -34,7 +34,7 @@ interface InfoPanelProps {
   /** 收起右栏（把宽度让给主区）。 */
   onCollapse?: () => void;
   /** 跳到会话详情里对应的那条用户输入。 */
-  onJumpToPrompt?: (text: string, fromEnd: number) => void;
+  onJumpToPrompt?: (text: string, fromEnd: number, forceDetail?: boolean) => void;
   /** 打开详情并只看我的输入（看全部历史输入）。 */
   onOpenAllPrompts?: () => void;
 }
@@ -286,8 +286,10 @@ export function InfoPanel({
                     <button
                       type="button"
                       className="rail-prompt"
-                      title={prompt.text}
-                      onClick={() => onJumpToPrompt?.(prompt.text, fromEnd)}
+                      title={`${prompt.text}\n点击跳到终端 · Shift+点击在详情里看`}
+                      onClick={(event) =>
+                        onJumpToPrompt?.(prompt.text, fromEnd, event.shiftKey)
+                      }
                     >
                       <span className="rail-prompt-index">{turn}</span>
                       <span className="rail-prompt-text">{prompt.text}</span>

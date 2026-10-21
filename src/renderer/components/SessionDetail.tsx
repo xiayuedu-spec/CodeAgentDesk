@@ -154,6 +154,11 @@ export function SessionDetail({
             ) : null}
           </div>
         ) : null}
+        {detail.skippedLines && detail.skippedLines > 0 ? (
+          <div className="detail-skipped">
+            会话过长：中间有 {detail.skippedLines} 行未加载（已保留开头与最近的部分）
+          </div>
+        ) : null}
         {entries.length === 0 ? (
           <EmptyState
             icon={<MessageSquare size={36} strokeWidth={1.4} />}

@@ -14,7 +14,17 @@ import type {
 import type { SessionMetaStore } from './session-meta-store';
 
 const MAX_SCAN_LINES = 500;
-const MAX_DETAIL_LINES = 2000;
+/**
+ * 详情读取预算：**首尾双端**各取一半。
+ *
+ * 之前是"从头读 2000 行"，长会话里最新的一段根本进不了详情——而右栏痕迹拿的是
+ * insights（扫 60k 行）的最新输入，点它就会在详情里找不到。现在改为前 1000 + 后 1000，
+ * 总量不变，两端都能看到；中间被跳过的行数会透出给界面提示。
+ */
+const DETAIL_HEAD_LINES = 1000;
+const DETAIL_TAIL_LINES = 1000;
+/** 扫描上限（与 insights 的 MAX_INSIGHT_LINES 对齐，保证口径一致）。 */
+const MAX_DETAIL_SCAN = 60_000;
 const MAX_SEARCH_LINES = 5000;
 const MAX_HITS_PER_SESSION = 20;
 const MAX_TEXT_LENGTH = 4000;
@@ -76,29 +86,52 @@ export async function listSessions(
 
 export async function readChatEntries(filePath: string): Promise<ChatEntry[]> {
   const entries: ChatEntry[] = [];
-  await scanJsonlLines(filePath, MAX_DETAIL_LINES, (line) => {
+  await scanJsonlLines(filePath, MAX_DETAIL_SCAN, (line) => {
     const entry = parseChatLine(line);
     if (entry) entries.push(entry);
   });
   return entries;
 }
 
-export async function readSessionDetail(filePath: string): Promise<SessionDetailEntry[]> {
+export interface SessionDetailScan {
+  entries: SessionDetailEntry[];
+  /** 因超长被跳过的中间行数（0 表示完整）。 */
+  skippedLines: number;
+}
+
+/**
+ * 扫描会话详情（首尾双端）。
+ * 解析逻辑与缓存都在这层；`readSessionDetail` 是需要旧签名处的薄包装。
+ */
+export async function scanSessionDetail(filePath: string): Promise<SessionDetailScan> {
   // 解析缓存：同一文件未变化时复用（详情反复打开、详情内搜索都免重读）。
   let stat: fs.Stats | null = null;
   try {
     stat = fs.statSync(filePath);
   } catch {
-    return [];
+    return { entries: [], skippedLines: 0 };
   }
   const cached = detailCache.get(filePath);
   if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) {
-    return cached.entries;
+    return { entries: cached.entries, skippedLines: cached.skippedLines };
   }
+
+  const headLines: string[] = [];
+  const tailLines: string[] = [];
+  let total = 0;
+  await scanJsonlLines(filePath, MAX_DETAIL_SCAN, (line) => {
+    total += 1;
+    if (headLines.length < DETAIL_HEAD_LINES) {
+      headLines.push(line);
+      return;
+    }
+    tailLines.push(line);
+    if (tailLines.length > DETAIL_TAIL_LINES) tailLines.shift();
+  });
 
   const entries: SessionDetailEntry[] = [];
   const toolUses = new Map<string, { name: string; input: string }>();
-  await scanJsonlLines(filePath, MAX_DETAIL_LINES, (line) => {
+  const parseLine = (line: string): void => {
     try {
       const event = JSON.parse(line) as {
         type?: string;
@@ -119,9 +152,19 @@ export async function readSessionDetail(filePath: string): Promise<SessionDetail
     } catch {
       // Ignore malformed lines.
     }
-  });
-  cacheDetail(filePath, stat.mtimeMs, stat.size, entries);
-  return entries;
+  };
+  for (const line of headLines) parseLine(line);
+  for (const line of tailLines) parseLine(line);
+
+  const kept = headLines.length + tailLines.length;
+  const skippedLines = Math.max(0, total - kept);
+  cacheDetail(filePath, stat.mtimeMs, stat.size, entries, skippedLines);
+  return { entries, skippedLines };
+}
+
+/** 兼容旧签名：只要条目。 */
+export async function readSessionDetail(filePath: string): Promise<SessionDetailEntry[]> {
+  return (await scanSessionDetail(filePath)).entries;
 }
 
 /** 详情解析缓存（按 mtime+size 失效，容量上限防内存膨胀）。 */
@@ -129,6 +172,7 @@ interface DetailCacheEntry {
   mtimeMs: number;
   size: number;
   entries: SessionDetailEntry[];
+  skippedLines: number;
 }
 const detailCache = new Map<string, DetailCacheEntry>();
 /**
@@ -143,8 +187,9 @@ function cacheDetail(
   mtimeMs: number,
   size: number,
   entries: SessionDetailEntry[],
+  skippedLines: number,
 ): void {
-  detailCache.set(filePath, { mtimeMs, size, entries });
+  detailCache.set(filePath, { mtimeMs, size, entries, skippedLines });
   while (detailCache.size > DETAIL_CACHE_MAX) {
     const oldest = detailCache.keys().next().value;
     if (oldest === undefined) break;
@@ -426,7 +471,7 @@ export async function readSessionUsage(filePath: string): Promise<SessionUsage> 
 /** 全量重读（初始或增量回退用），带行数上限保护。 */
 async function readSessionUsageFull(filePath: string): Promise<SessionUsage> {
   const usageByMessage = new Map<string, UsageSnapshot>();
-  await scanJsonlLines(filePath, MAX_DETAIL_LINES, (line) => {
+  await scanJsonlLines(filePath, MAX_DETAIL_SCAN, (line) => {
     const parsed = parseUsageLine(line);
     if (parsed) usageByMessage.set(parsed.messageId, parsed.snapshot);
   });

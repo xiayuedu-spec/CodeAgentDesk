@@ -7,7 +7,12 @@ vi.mock('electron', () => ({
   app: { getPath: () => path.join(os.tmpdir(), 'codeagentdesk-test') },
 }));
 
-import { readChatEntries, readSessionDetail, readSessionInfo } from '../session-library';
+import {
+  readChatEntries,
+  readSessionDetail,
+  readSessionInfo,
+  scanSessionDetail,
+} from '../session-library';
 
 function writeTemp(content: string): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cad-'));
@@ -141,5 +146,46 @@ describe('解析缓存（避免重复读盘）', () => {
     const second = await readSessionDetail(file);
     expect(second).not.toBe(first);
     expect(second).toHaveLength(2);
+  });
+});
+
+describe('详情首尾双端读取', () => {
+  it('超过预算的会话保留开头与最近部分，并报告跳过的行数', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'detail-window-'));
+    const file = path.join(dir, 'long.jsonl');
+    const lines: string[] = [];
+    // 1500 轮对话（每轮 2 行）：超出 1000+1000 的预算
+    for (let index = 0; index < 1500; index += 1) {
+      lines.push(JSON.stringify({ type: 'user', message: { role: 'user', content: `第 ${index} 轮` } }));
+      lines.push(
+        JSON.stringify({
+          type: 'assistant',
+          message: { role: 'assistant', content: [{ type: 'text', text: `回复 ${index}` }] },
+        }),
+      );
+    }
+    fs.writeFileSync(file, lines.join('\n') + '\n', 'utf8');
+
+    const scan = await scanSessionDetail(file);
+    expect(scan.skippedLines).toBe(3000 - 2000);
+    // 开头还在
+    expect(scan.entries[0].text).toContain('第 0 轮');
+    // 最近的一段也在（这是修复前缺失的）
+    expect(scan.entries[scan.entries.length - 1].text).toContain('回复 1499');
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('短会话不报告跳过', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'detail-short-'));
+    const file = path.join(dir, 'short.jsonl');
+    fs.writeFileSync(
+      file,
+      JSON.stringify({ type: 'user', message: { role: 'user', content: '你好' } }) + '\n',
+      'utf8',
+    );
+    const scan = await scanSessionDetail(file);
+    expect(scan.skippedLines).toBe(0);
+    expect(scan.entries).toHaveLength(1);
+    fs.rmSync(dir, { recursive: true, force: true });
   });
 });

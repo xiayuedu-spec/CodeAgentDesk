@@ -29,6 +29,7 @@ import {
   listSessions,
   readChatEntries,
   readSessionDetail,
+  scanSessionDetail,
   readSessionInfo,
   readSessionUsage,
   searchSessions,
@@ -278,9 +279,15 @@ export function registerSessionsIpc({ sessions, watcher, metaStore }: SessionsIp
     async (_event, sessionId: string): Promise<SessionDetailResult> => {
       const filePath = await locateSessionFile(sessions, metaStore, sessionId);
       if (!filePath) return { sessionId, entries: [] };
-      const entries = await readSessionDetail(filePath);
+      const scan = await scanSessionDetail(filePath);
       const info = await readSessionInfo(filePath);
-      return { sessionId, title: info.title, cwd: info.cwd, entries };
+      return {
+        sessionId,
+        title: info.title,
+        cwd: info.cwd,
+        entries: scan.entries,
+        skippedLines: scan.skippedLines,
+      };
     },
   );
 

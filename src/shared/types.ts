@@ -124,6 +124,8 @@ export interface SessionDetailResult {
   title?: string;
   cwd?: string;
   entries: SessionDetailEntry[];
+  /** 会话过长时被跳过的中间行数（首尾双端读取，0 表示完整）。 */
+  skippedLines?: number;
 }
 
 /** 会话计划（Claude Code 的 TodoWrite 末次快照）。 */

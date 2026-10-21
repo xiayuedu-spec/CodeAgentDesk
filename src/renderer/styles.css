@@ -7569,3 +7569,14 @@ code,
   color: var(--accent);
   font-weight: 600;
 }
+
+/* 详情：会话过长时提示中间被跳过的行数 */
+.detail-skipped {
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+  color: var(--text-faint);
+  font-size: 11px;
+}
