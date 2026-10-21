@@ -90,6 +90,9 @@ const LazyBackup = lazy(() =>
 const LazyUsageStats = lazy(() =>
   import('./components/UsageStatsModal').then((module) => ({ default: module.UsageStatsModal })),
 );
+const LazyCodeSearch = lazy(() =>
+  import('./components/CodeSearchModal').then((module) => ({ default: module.CodeSearchModal })),
+);
 const LazyKnowledgeCards = lazy(() =>
   import('./components/KnowledgeCardsModal').then((module) => ({
     default: module.KnowledgeCardsModal,
@@ -201,6 +204,10 @@ export default function App() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const [confirmDeleteOne, setConfirmDeleteOne] = useState<string | null>(null);
+  /** 代码搜索弹窗（null 关闭；cwd 决定搜哪个项目）。 */
+  const [codeSearchTarget, setCodeSearchTarget] = useState<{ cwd: string; title?: string } | null>(
+    null,
+  );
   /** 知识卡片弹窗（null 关闭；cwd 决定读写哪个仓库的 docs/knowledge）。 */
   const [cardsTarget, setCardsTarget] = useState<{ cwd: string; title?: string } | null>(null);
   /** 工作区改动审查弹窗（null 关闭；cwd 决定看哪个仓库）。 */
@@ -347,6 +354,18 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [sessions, activeId]);
+
+  // 代码搜索：Ctrl+Shift+F（捕获阶段，避免被 xterm 吞掉）。
+  useEffect(() => {
+    const onCodeSearchKey = (event: KeyboardEvent) => {
+      if (!event.ctrlKey || !event.shiftKey || event.altKey || event.metaKey) return;
+      if (event.key.toLowerCase() !== 'f') return;
+      event.preventDefault();
+      openCodeSearch({});
+    };
+    window.addEventListener('keydown', onCodeSearchKey, true);
+    return () => window.removeEventListener('keydown', onCodeSearchKey, true);
+  }, [activeId, sessions]);
 
   // 终端缩放：Ctrl+= / Ctrl+- / Ctrl+0（捕获阶段，避免被 xterm 吞掉）。
   useEffect(() => {
@@ -828,6 +847,17 @@ export default function App() {
   async function handleCancelTask(): Promise<void> {
     const result = await window.codeagentdesk.cancelTask();
     toast.info(result.ok ? '已请求取消任务' : '当前没有可取消的任务');
+  }
+
+  /** 打开代码搜索（Ctrl+Shift+F）。 */
+  function openCodeSearch(target: { cwd?: string; title?: string }): void {
+    const cwd = target.cwd ?? activeSession?.cwd;
+    if (!cwd) {
+      toast.info('先打开一个会话，才知道要搜哪个项目');
+      return;
+    }
+    bumpUsage('codeSearch.opened');
+    setCodeSearchTarget({ cwd, title: target.title });
   }
 
   /** 从会话按需提取知识草稿（右键触发，会花一次模型调用）。 */
@@ -1402,6 +1432,7 @@ export default function App() {
           <Suspense fallback={<div className="terminal-loading" />}>
             <LazyTerminalPane
               id={session.id}
+              cwd={session.cwd}
               active={!terminalStackHidden && session.id === activeId}
               fontSize={claudeInfo?.config.terminalFontSize ?? DEFAULT_TERMINAL_FONT_SIZE}
               fontFamily={claudeInfo?.config.terminalFontFamily ?? DEFAULT_TERMINAL_FONT_FAMILY}
@@ -1858,6 +1889,16 @@ export default function App() {
       {usageStatsOpen ? (
         <Suspense fallback={null}>
           <LazyUsageStats onClose={() => setUsageStatsOpen(false)} />
+        </Suspense>
+      ) : null}
+
+      {codeSearchTarget ? (
+        <Suspense fallback={null}>
+          <LazyCodeSearch
+            cwd={codeSearchTarget.cwd}
+            title={codeSearchTarget.title}
+            onClose={() => setCodeSearchTarget(null)}
+          />
         </Suspense>
       ) : null}
 

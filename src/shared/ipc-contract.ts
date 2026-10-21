@@ -72,6 +72,8 @@ export const IpcChannel = {
   sessionInsights: 'session:insights',
   sessionGit: 'session:git',
   sessionDiff: 'session:diff',
+  codeSearch: 'code:search',
+  appOpenFile: 'app:open-file',
   knowledgeCardsList: 'knowledge:cards-list',
   knowledgeCardSave: 'knowledge:card-save',
   knowledgeCardDelete: 'knowledge:card-delete',

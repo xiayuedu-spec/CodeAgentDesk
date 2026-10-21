@@ -7302,3 +7302,115 @@ code,
   font-family: var(--mono-code);
   font-size: 11px;
 }
+/* ================================================================
+   代码搜索：搜项目文本（不是会话记录），命中行可点开编辑器
+   ================================================================ */
+.code-panel {
+  width: 900px;
+  max-width: 95vw;
+}
+.code-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-faint);
+}
+.code-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: 0;
+  background: var(--bg-inset);
+  color: var(--text);
+  font-size: 12px;
+}
+.code-search-input:focus {
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.code-body {
+  overflow: auto;
+  padding: 0;
+}
+.code-hint {
+  padding: 28px 16px;
+  color: var(--text-faint);
+  font-size: 12px;
+  text-align: center;
+}
+.code-summary {
+  padding: 8px 14px 4px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.code-results {
+  padding: 0 8px 12px;
+}
+.code-file {
+  margin-top: 6px;
+}
+.code-file-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-family: var(--mono-code);
+  font-size: 11px;
+}
+.code-file-head span {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--bg-inset);
+  color: var(--text-faint);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
+}
+.code-hit {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-micro) ease;
+}
+.code-hit:hover {
+  background: var(--bg-inset);
+}
+.code-hit-line {
+  flex: none;
+  min-width: 4ch;
+  text-align: right;
+  color: var(--text-faint);
+  font-family: var(--mono-code);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.code-hit-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+  color: var(--text-muted);
+  font-family: var(--mono-code);
+  font-size: 11px;
+}
+.code-hit:hover .code-hit-text {
+  color: var(--text);
+}

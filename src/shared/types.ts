@@ -193,6 +193,30 @@ export interface GitOpResult {
   message?: string;
 }
 
+/** 代码搜索命中行。 */
+export interface CodeSearchHit {
+  /** 相对 cwd 的路径（统一用 /）。 */
+  path: string;
+  line: number;
+  text: string;
+}
+
+export interface CodeSearchResult {
+  query: string;
+  hits: CodeSearchHit[];
+  fileCount: number;
+  scannedFiles: number;
+  truncated: boolean;
+  elapsedMs: number;
+}
+
+/** 在编辑器里打开的结果：via 表示实际用了哪条路。 */
+export interface OpenFileResult {
+  ok: boolean;
+  via: 'editor' | 'default' | 'folder';
+  message?: string;
+}
+
 /** 知识卡片类型：踩坑 / 决策 / 流程 / 模块说明。 */
 export type KnowledgeCardType =
   /** 规格：需求/接口的既定行为、边界与验收标准 */
@@ -658,6 +682,8 @@ export interface CodeAgentDeskApi {
   importBackup(): Promise<BackupResult>;
   incrementUsageStat(key: string): Promise<void>;
   getUsageStats(): Promise<UsageStats>;
+  searchCode(cwd: string, query: string): Promise<CodeSearchResult>;
+  openFile(filePath: string, line?: number, cwd?: string): Promise<OpenFileResult>;
   listKnowledgeCards(cwd: string): Promise<KnowledgeCard[]>;
   saveKnowledgeCard(cwd: string, card: KnowledgeCardInput): Promise<KnowledgeCard>;
   deleteKnowledgeCard(cwd: string, slug: string): Promise<{ ok: boolean }>;

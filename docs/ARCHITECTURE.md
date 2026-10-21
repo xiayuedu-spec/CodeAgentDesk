@@ -160,6 +160,14 @@ Token 统计默认关闭后，右栏从"用量展示"改成**当前会话的仪�
 - **落盘**：全部 `status: draft` 并记 `sessionId`，**绝不自动 verified**；结果通过 toast 提示（带「去核验」直达卡片面板）。
 - **失败**：模型超时/不可用 → 返回失败消息，不写任何卡片。
 
+### 4.20 代码搜索与文件深链接（`code-search.ts` / `open-file.ts`）
+补上"问题定位"最常用的两个动作：**搜到 → 跳过去**。这两件 agent 做起来不划算（花它的上下文/token）甚至做不到（它没法替你打开窗口）。
+
+- **代码搜索**（`Ctrl+Shift+F`）：Node 遍历项目，跳过 `node_modules/.git/dist/release/target` 等目录与二进制扩展名；单文件 >1MB 不读、最多扫 2 万文件、最多 200 条命中、单文件最多 8 条；匹配大小写不敏感，路径统一成 `/`。结果按文件分组，点命中行直接开编辑器。
+- **文件深链接**（`app:open-file`）：依次探测 `code -g` → `cursor -g` → `subl`（探测结果缓存一次），都没有则 `shell.openPath`（系统默认程序），再不行 `showItemInFolder`。返回 `via` 说明实际走了哪条路。
+- **终端链接**：用 xterm 内置的 `registerLinkProvider`（**不需要 addon**）把输出里的 `file:line` 变成可点击，按住 Ctrl/⌘ 点击即跳转；相对路径用会话 cwd 解析。识别逻辑抽成纯函数 `renderer/file-links.ts`，6 个单测覆盖 Windows 绝对路径、多路径同行、不误判版本号。
+- **搜索为什么不用 ripgrep**：用户机器不一定装了；Node 遍历对普通项目足够快，且能精确控制跳过规则与体积预算。
+
 ## 5. 渲染层模式
 
 - **容器-展示**：`App.tsx` 持有状态/effects/handlers，向下传 `data`/`actions` 分组 props（SidebarBody/StatusBar/TabBar/ContextMenus 等）。

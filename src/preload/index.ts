@@ -30,7 +30,9 @@ import type {
   SearchResult,
   SessionUsage,
   SessionOpResult,
+  CodeSearchResult,
   KnowledgeCard,
+  OpenFileResult,
   KnowledgeCardInput,
   KnowledgeExportResult,
   KnowledgeGlobalResult,
@@ -133,6 +135,8 @@ const CHANNELS = {
   sessionInsights: 'session:insights',
   sessionGit: 'session:git',
   sessionDiff: 'session:diff',
+  codeSearch: 'code:search',
+  appOpenFile: 'app:open-file',
   knowledgeCardsList: 'knowledge:cards-list',
   knowledgeCardSave: 'knowledge:card-save',
   knowledgeCardDelete: 'knowledge:card-delete',
@@ -285,6 +289,10 @@ const api: CodeAgentDeskApi = {
   importBackup: () => ipcRenderer.invoke(CHANNELS.backupImport) as Promise<BackupResult>,
   incrementUsageStat: (key) =>
     ipcRenderer.invoke(CHANNELS.usageStatIncrement, key) as Promise<void>,
+  searchCode: (cwd, query) =>
+    ipcRenderer.invoke(CHANNELS.codeSearch, { cwd, query }) as Promise<CodeSearchResult>,
+  openFile: (filePath, line, cwd) =>
+    ipcRenderer.invoke(CHANNELS.appOpenFile, { filePath, line, cwd }) as Promise<OpenFileResult>,
   listKnowledgeCards: (cwd) =>
     ipcRenderer.invoke(CHANNELS.knowledgeCardsList, cwd) as Promise<KnowledgeCard[]>,
   saveKnowledgeCard: (cwd, card) =>

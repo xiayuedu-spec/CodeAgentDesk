@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
+import { findFileLinks } from '../file-links';
 import {
   DEFAULT_TERMINAL_FONT_FAMILY,
   DEFAULT_TERMINAL_FONT_SIZE,
@@ -9,6 +10,8 @@ import {
 
 interface TerminalPaneProps {
   id: string;
+  /** 工作目录：用于把终端里的相对路径解析成可打开的文件。 */
+  cwd?: string;
   active: boolean;
   /** 终端字号（px）与字体族，来自设置（支持 Ctrl +/- 即时缩放）。 */
   fontSize?: number;
@@ -48,11 +51,14 @@ function terminalTheme(skin: string): TerminalPalette {
 
 export function TerminalPane({
   id,
+  cwd,
   active,
   fontSize = DEFAULT_TERMINAL_FONT_SIZE,
   fontFamily = DEFAULT_TERMINAL_FONT_FAMILY,
 }: TerminalPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const cwdRef = useRef(cwd);
+  cwdRef.current = cwd;
   const terminalRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
   const activeRef = useRef(active);
@@ -145,6 +151,36 @@ export function TerminalPane({
     };
     scheduleFit();
 
+    // 终端里的 file:line 变成可点击链接（xterm 内置 link provider，无需 addon）。
+    const linkDisposable = terminal.registerLinkProvider({
+      provideLinks: (bufferLineNumber, callback) => {
+        const line = terminal.buffer.active.getLine(bufferLineNumber - 1);
+        if (!line) {
+          callback(undefined);
+          return;
+        }
+        const text = line.translateToString(true);
+        const links = findFileLinks(text);
+        if (links.length === 0) {
+          callback(undefined);
+          return;
+        }
+        callback(
+          links.map((link) => ({
+            range: {
+              start: { x: link.start + 1, y: bufferLineNumber },
+              end: { x: link.end, y: bufferLineNumber },
+            },
+            text: link.text,
+            decorations: { pointerCursor: true, underline: true },
+            activate: () => {
+              void window.codeagentdesk.openFile(link.path, link.line, cwdRef.current);
+            },
+          })),
+        );
+      },
+    });
+
     const dataDisposable = terminal.onData((data) => {
       void window.codeagentdesk.writeSession(id, data);
     });
@@ -174,6 +210,7 @@ export function TerminalPane({
     observer.observe(container);
 
     return () => {
+      linkDisposable.dispose();
       cancelAnimationFrame(frame);
       observer.disconnect();
       dataDisposable.dispose();

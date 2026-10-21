@@ -18,6 +18,7 @@ Claude Code 统一窗口管理器（桌面端）。把散在终端里的 Claude 
 - **归档会话右键「恢复（放回历史会话）」**：只放回历史列表、不打开终端（点击归档行才是借出运行）
 - 全文搜索（命中带上下文预览，点击跳转详情定位）、会话详情、导出 Markdown、打开工作目录
 - **计划与改动**（会话洞察）：从会话记录里提取 TodoWrite 末次快照（进度条 + 完成率 + 快照次数）与 Edit/Write 改动清单（文件级 +N/-M、逐处片段对照），可一键复制 Markdown 摘要 —— 详情页工具栏 / 会话右键菜单可打开完整视图
+- **代码搜索 + 编辑器深链接**：`Ctrl+Shift+F` 搜项目代码（跳过依赖/产物，结果按文件分组），点命中行直接在编辑器打开到那一行；终端输出里的 `file:line` 也是可点链接
 - **知识卡片**：**规格、变更、踩坑、决策**等沉淀成卡片，放项目的 `docs/knowledge/`（**跟着 git 走，同事拉代码就能查**）；一卡一文件 + 自动索引，带「草稿/已确认」标记与涉及文件。**在会话右键「生成知识卡片」按需生成**——AI 只产草稿，你核验后才变「已确认」
 - **工作区改动审查 + 提交**：右栏 git 卡片 / 会话右键「审查工作区改动」→ 逐文件、逐 hunk 看**磁盘上真实的** `git diff`（工作区+暂存 vs 最后一次提交，含未跟踪文件），带分支、行数统计与重新读取；可直接**暂存**（按文件/全部）并**提交**（只提交已暂存，跑仓库自己的 hook，失败原样回显）
 - **右栏仪表**：选中会话时右侧显示「状态 + 活跃时长 / 计划进度（含**继续未完成的 N 项**一键注入）/ 本次改动 / 痕迹（轮次·工具调用·失败·开始时间）/ git 分支与未提交数」，运行中每 15 秒自助刷新
@@ -72,7 +73,7 @@ npm run dev        # 开发：tsc 编译 main + vite + electron
 ```bash
 npm run verify      # = typecheck + test + build
 npm run typecheck   # tsc 双工程（main + renderer）
-npm run test        # vitest（99 用例，src/main/__tests__ + src/renderer/__tests__）
+npm run test        # vitest（113 用例，src/main/__tests__ + src/renderer/__tests__）
 npm run test:watch  # 监听模式
 npm run build       # tsc main + vite build
 ```
@@ -89,7 +90,8 @@ npm run build       # tsc main + vite build
 | 快捷键 | 作用 |
 |---|---|
 | `Ctrl+P` | 命令面板（新建会话 / 最近目录 / 各视图入口） |
-| `Ctrl+K` | 全文搜索 |
+| `Ctrl+K` | 会话全文搜索 |
+| `Ctrl+Shift+F` | 代码搜索（项目内，结果可跳编辑器） |
 | `Ctrl+T` | 新建会话 |
 | `Ctrl+W` | 关闭当前会话标签 |
 | `Ctrl+1..9` | 切换运行中会话 |

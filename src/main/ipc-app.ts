@@ -16,6 +16,8 @@ import {
   readConfig,
   writeConfig,
 } from './config';
+import { searchCode } from './code-search';
+import { openFileInEditor } from './open-file';
 import { getMainWindow } from './window-manager';
 import { getRecentDirs } from './recent-dirs';
 import { readUiState, writeUiState } from './ui-state';
@@ -41,6 +43,18 @@ export function registerAppIpc({ onClaudeDirChanged }: AppIpcDeps): void {
     userDataPath: app.getPath('userData'),
     startedAt,
   }));
+
+  ipcMain.handle(
+    IpcChannel.codeSearch,
+    async (_event, payload: { cwd: string; query: string }) =>
+      searchCode(payload.cwd, payload.query),
+  );
+
+  ipcMain.handle(
+    IpcChannel.appOpenFile,
+    async (_event, payload: { filePath: string; line?: number; cwd?: string }) =>
+      openFileInEditor(payload.filePath, payload.line, payload.cwd),
+  );
 
   ipcMain.handle(IpcChannel.configGet, (): ClaudeConfigInfo => readClaudeConfigInfo());
 
