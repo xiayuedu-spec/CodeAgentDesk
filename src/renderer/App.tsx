@@ -196,7 +196,11 @@ export default function App() {
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [groupRenameId, setGroupRenameId] = useState<string | null>(null);
   const [groupMenu, setGroupMenu] = useState<GroupMenuState | null>(null);
-  const [sectionMenu, setSectionMenu] = useState<{ kind: 'history'; x: number; y: number } | null>(null);
+  const [sectionMenu, setSectionMenu] = useState<{
+    kind: 'history' | 'archive';
+    x: number;
+    y: number;
+  } | null>(null);
   const [moveMenu, setMoveMenu] = useState<MoveMenuState | null>(null);
   const [moveNewOpen, setMoveNewOpen] = useState(false);
   const [moveNewName, setMoveNewName] = useState('');
@@ -1436,6 +1440,16 @@ export default function App() {
   useEffect(() => {
     if (activeId) setHomeOpen(false);
   }, [activeId]);
+
+  // 切换视图（会话/归档/搜索）时清空多选：避免把上一个视图里勾过的行
+  // 带到新视图后误操作（选择模式还开着，但列表已经换了）。
+  useEffect(() => {
+    setHistorySelectMode(false);
+    setSelectedHistoryIds(new Set());
+    setArchiveSelectMode(false);
+    setSelectedArchiveIds(new Set());
+    setConfirmingDelete(false);
+  }, [mode]);
   // 派生列表（历史/归档/分组区块/导航序号…）已抽到 useSessionLists。
   const {
     historyRecords,
@@ -1552,7 +1566,8 @@ export default function App() {
     toggleGroupCollapse,
     toggleSectionCollapse,
     openGroupMenu,
-    openSectionMenu: (x: number, y: number) => setSectionMenu({ kind: 'history', x, y }),
+    openSectionMenu: (x: number, y: number, kind: 'history' | 'archive' = 'history') =>
+      setSectionMenu({ kind, x, y }),
     toggleArchiveSelect,
     toggleSelectAllArchived,
     handleDeleteArchived,
@@ -1633,6 +1648,7 @@ export default function App() {
     archiveGroupHistory: (groupId: string) => void handleArchiveGroupHistory(groupId),
     archiveAllHistory: () => void handleArchiveAllHistory(),
     enterHistorySelectMode: () => setHistorySelectMode(true),
+    enterArchiveSelectMode: () => setArchiveSelectMode(true),
     openCwd: (cwd: string) => void handleOpenCwd(cwd),
     setGroupColor: (id: string, color: string) => void handleSetGroupColor(id, color),
     setMoveNewOpen,

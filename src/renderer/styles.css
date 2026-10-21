@@ -3200,12 +3200,6 @@ button:active, .tab:active, .session-row:active {
 
 
 /* ---- 归档会话多选删除 ---- */
-.archive-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 10px 6px;
-}
 .archive-toolbar-btn {
   display: inline-flex;
   align-items: center;
@@ -6533,28 +6527,6 @@ textarea:focus-visible {
   background: color-mix(in srgb, var(--accent-soft) 70%, var(--accent) 12%);
   border-color: var(--accent-dim);
 }
-.rail-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px 10px;
-  margin-top: 8px;
-}
-.rail-stats > div {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-.rail-stats strong {
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.rail-stats span {
-  color: var(--text-faint);
-  font-size: 11px;
-}
 .rail-branch {
   min-width: 0;
   overflow: hidden;
@@ -7427,11 +7399,6 @@ code,
 }
 
 /* 右栏收起按钮（也能双击分隔条收起） */
-.rail-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 .rail-collapse {
   display: grid;
   place-items: center;
@@ -7454,10 +7421,6 @@ code,
 .rail-collapse svg {
   display: block;
 }
-.info-resizer {
-  cursor: col-resize;
-}
-
 /* 痕迹：四宫格 → 一行（省 44px，高度让给主区） */
 .rail-traces {
   display: flex;
@@ -7479,23 +7442,23 @@ code,
 /* ================================================================
    历史会话多选归档：选择模式 + 复选框 + 批量工具条
    ================================================================ */
-.history-bulk {
+.bulk-bar {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 2px 10px 6px;
 }
-.history-bulk .archive-toolbar-btn.primary {
+.bulk-bar .archive-toolbar-btn.primary {
   border-color: var(--accent-dim);
   background: var(--accent-soft);
   color: var(--accent);
 }
-.history-bulk .archive-toolbar-btn.primary:hover:not(:disabled) {
+.bulk-bar .archive-toolbar-btn.primary:hover:not(:disabled) {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
 }
-.history-bulk .archive-toolbar-btn:disabled {
+.bulk-bar .archive-toolbar-btn:disabled {
   opacity: .45;
   cursor: default;
 }
@@ -7515,4 +7478,10 @@ code,
 /* 选择模式：复选框已经表达"这一行"，状态点就多余了 */
 .session-group.selecting .session-item .session-dot {
   display: none;
+}
+
+/* 非按钮的区块标题（归档视图用它承载右键菜单） */
+.section-plain {
+  cursor: default;
+  user-select: none;
 }

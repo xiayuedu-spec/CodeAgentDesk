@@ -70,7 +70,7 @@ interface SidebarBodyActions {
   toggleGroupCollapse: (key: string) => void;
   toggleSectionCollapse: (key: 'current' | 'history') => void;
   openGroupMenu: (id: string, name: string, x: number, y: number) => void;
-  openSectionMenu: (x: number, y: number) => void;
+  openSectionMenu: (x: number, y: number, kind?: 'history' | 'archive') => void;
   toggleArchiveSelect: (sessionId: string) => void;
   toggleSelectAllArchived: () => void;
   handleDeleteArchived: () => void;
@@ -488,7 +488,7 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
                     <span className="group-count">{ungroupedHistory.length}</span>
                   </button>
                   {historySelectMode && !collapsedSections.has('history') ? (
-                    <div className="history-bulk">
+                    <div className="bulk-bar">
                       <button
                         type="button"
                         className="archive-toolbar-btn"
@@ -544,12 +544,20 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
             </div>
           ) : (
             <>
-              <div className="archive-toolbar">
-                {!archiveSelectMode ? (
-                  <button type="button" className="archive-toolbar-btn" onClick={toggleSelectMode}>
-                    选择
-                  </button>
-                ) : (
+              <div
+                className="group-label section-plain"
+                title="右键可多选删除"
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  openSectionMenu(event.clientX, event.clientY, 'archive');
+                }}
+              >
+                归档
+                <span className="group-count">{archivedRecords.length}</span>
+              </div>
+              {archiveSelectMode ? (
+                <div className="bulk-bar">
                   <>
                     <button
                       type="button"
@@ -582,8 +590,8 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
                       完成
                     </button>
                   </>
-                )}
-              </div>
+                </div>
+              ) : null}
               <SessionList
                 items={archivedRecords}
                 firstIndex={0}
@@ -613,12 +621,17 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
                             : ''
                         }${navClass(k)}`}
                         data-nav-index={k}
-                        onClick={() => {
+                        onClick={(event) => {
                           if (archiveSelectMode) {
                             toggleArchiveSelect(record.sessionId);
-                          } else {
-                            void openArchivedSession(record);
+                            return;
                           }
+                          if (event.ctrlKey || event.metaKey) {
+                            toggleSelectMode();
+                            toggleArchiveSelect(record.sessionId);
+                            return;
+                          }
+                          void openArchivedSession(record);
                         }}
                         onContextMenu={(event) => {
                           event.preventDefault();

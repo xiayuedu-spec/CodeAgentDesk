@@ -22,7 +22,7 @@ const TYPES: KnowledgeCardType[] = [
   'module',
 ];
 
-export const TYPE_LABEL: Record<KnowledgeCardType, string> = {
+const TYPE_LABEL: Record<KnowledgeCardType, string> = {
   spec: '规格',
   change: '变更',
   pitfall: '踩坑',
@@ -235,7 +235,3 @@ export function deleteCard(cwd: string, slug: string): boolean {
   return true;
 }
 
-/** 卡片目录路径（界面显示 / 打开目录用）。 */
-export function cardDirPath(cwd: string): string {
-  return cardDir(cwd);
-}

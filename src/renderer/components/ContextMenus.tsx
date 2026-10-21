@@ -34,7 +34,7 @@ interface ContextMenusData {
   menu: ContextMenuState | null;
   menuSession: MenuSession;
   groupMenu: GroupMenuState | null;
-  sectionMenu: { kind: 'history'; x: number; y: number } | null;
+  sectionMenu: { kind: 'history' | 'archive'; x: number; y: number } | null;
   moveMenu: MoveMenuState | null;
   groups: GroupRecord[];
   moveNewOpen: boolean;
@@ -69,6 +69,7 @@ interface ContextMenusActions {
   archiveAllHistory: () => void;
   /** 进入历史会话多选模式（区块右键入口，避免常驻按钮）。 */
   enterHistorySelectMode: () => void;
+  enterArchiveSelectMode: () => void;
   setMoveNewOpen: (open: boolean) => void;
   setMoveNewName: (name: string) => void;
   createGroupAndMove: () => void;
@@ -164,6 +165,7 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
     archiveGroupHistory,
     archiveAllHistory,
   enterHistorySelectMode,
+  enterArchiveSelectMode,
     closeSectionMenu,
     setMoveNewOpen,
     setMoveNewName,
@@ -448,34 +450,53 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
 
       {sectionMenu ? (
         <ClampedMenu x={sectionMenu.x} y={sectionMenu.y} className="context-menu">
-          <button
-            type="button"
-            role="menuitem"
-            disabled={historyCountAll === 0}
-            onClick={() => {
-              void archiveAllHistory();
-              closeSectionMenu();
-            }}
-          >
-            <span className="context-menu-icon">
-              <Archive size={14} />
-            </span>
-            全部归档（{historyCountAll} 个历史会话）
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            disabled={historyCountAll === 0}
-            onClick={() => {
-              enterHistorySelectMode();
-              closeSectionMenu();
-            }}
-          >
-            <span className="context-menu-icon">
-              <ListChecks size={14} />
-            </span>
-            多选归档…
-          </button>
+          {sectionMenu.kind === 'history' ? (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={historyCountAll === 0}
+                onClick={() => {
+                  void archiveAllHistory();
+                  closeSectionMenu();
+                }}
+              >
+                <span className="context-menu-icon">
+                  <Archive size={14} />
+                </span>
+                全部归档（{historyCountAll} 个历史会话）
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={historyCountAll === 0}
+                onClick={() => {
+                  enterHistorySelectMode();
+                  closeSectionMenu();
+                }}
+              >
+                <span className="context-menu-icon">
+                  <ListChecks size={14} />
+                </span>
+                多选归档…
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              role="menuitem"
+              disabled={records.filter((record) => record.archived).length === 0}
+              onClick={() => {
+                enterArchiveSelectMode();
+                closeSectionMenu();
+              }}
+            >
+              <span className="context-menu-icon">
+                <ListChecks size={14} />
+              </span>
+              多选删除…
+            </button>
+          )}
         </ClampedMenu>
       ) : null}
 
