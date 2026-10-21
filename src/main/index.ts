@@ -18,6 +18,24 @@ import { startUsageWarning } from './usage-warning';
 import { setupAutoUpdater } from './updater';
 import { broadcast, createMainWindow } from './window-manager';
 
+/**
+ * 便携版（electron-builder portable 目标）：把数据放在 exe 旁边的 data/ 目录，
+ * 做到真正的"绿色免安装"——不往 %APPDATA% 写东西，拷走整个文件夹即可迁移。
+ * 安装版/开发版没有 PORTABLE_EXECUTABLE_DIR，行为完全不变。
+ *
+ * 必须在任何 getPath('userData') 之前设置（各种 store 都在 whenReady 里创建）。
+ */
+const portableDir = process.env.PORTABLE_EXECUTABLE_DIR;
+if (portableDir) {
+  try {
+    const dataDir = path.join(portableDir, 'data');
+    fs.mkdirSync(dataDir, { recursive: true });
+    app.setPath('userData', dataDir);
+  } catch {
+    // 目录不可写就退回默认 APPDATA，不影响启动。
+  }
+}
+
 // Windows 通知/任务栏分组需要显式设置 AppUserModelID（与 electron-builder appId 一致）。
 app.setAppUserModelId('com.codeagentdesk.app');
 

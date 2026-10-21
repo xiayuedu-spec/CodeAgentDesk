@@ -24,8 +24,13 @@ files:
   - '!node_modules/node-pty/prebuilds/win32-arm64/**'
   - '!node_modules/node-pty/third_party/conpty/*/win10-arm64/**'
 win:
-  target: nsis
+  target:
+    - nsis
+    - portable
   icon: build/icon.png
+# 免安装版：单个 exe，双击即用（数据写在 exe 同级的 data/ 目录）
+portable:
+  artifactName: '${productName}-Portable-${version}.${ext}'
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
