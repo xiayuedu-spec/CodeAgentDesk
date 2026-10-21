@@ -177,12 +177,20 @@ export interface SessionStats {
 }
 
 /** 会话洞察：计划进度 + 改动清单 + 行为痕迹（口径见界面提示：来自会话记录，非工作区实际内容）。 */
+/** 会话里的一条用户输入（用于右栏痕迹与跳转）。 */
+export interface SessionPrompt {
+  text: string;
+  at?: string;
+}
+
 export interface SessionInsights {
   sessionId: string;
   plan: SessionPlan | null;
   changes: SessionFileChange[];
   totals: { files: number; added: number; removed: number; edits: number };
   stats: SessionStats;
+  /** 最近若干条用户输入（最新的在最后）。 */
+  prompts: SessionPrompt[];
   /** 解析时跳过的行数（损坏行 / 超出行数上限）。 */
   skipped: number;
 }

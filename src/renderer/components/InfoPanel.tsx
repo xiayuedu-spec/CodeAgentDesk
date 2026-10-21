@@ -33,6 +33,8 @@ interface InfoPanelProps {
   onOpenDiff?: () => void;
   /** 收起右栏（把宽度让给主区）。 */
   onCollapse?: () => void;
+  /** 跳到会话详情里对应的那条用户输入。 */
+  onJumpToPrompt?: (text: string) => void;
 }
 
 /** 计划里最多直接展示几条（其余折叠进弹窗）。 */
@@ -58,6 +60,7 @@ export function InfoPanel({
   onContinuePlan,
   onOpenDiff,
   onCollapse,
+  onJumpToPrompt,
 }: InfoPanelProps) {
   // 数据在面板内部取：15s 轮询只重渲染这一棵小树，不再把整个 App 叫醒。
   const { insights, git } = useSessionRail(session.sessionId, session.cwd, running);
@@ -80,6 +83,7 @@ export function InfoPanel({
       ].slice(0, PLAN_PREVIEW)
     : [];
   const stats = insights?.stats;
+  const prompts = insights?.prompts ?? [];
   const totals = insights?.totals;
 
   return (
@@ -236,17 +240,40 @@ export function InfoPanel({
         </section>
 
         <section className="rail-card">
-          <div className="rail-title">痕迹</div>
-          <div className="rail-traces">
-            <span>{stats?.turns ?? '—'} 轮</span>
-            <i>·</i>
-            <span>{stats?.toolCalls ?? '—'} 调用</span>
-            <i>·</i>
-            <span className={stats && stats.errors > 0 ? 'rail-del' : undefined}>
-              {stats?.errors ?? '—'} 失败
+          <div className="rail-title">
+            痕迹
+            <span className="rail-title-meta">
+              {stats?.turns ?? '—'} 轮 · {stats?.toolCalls ?? '—'} 调用
+              {stats && stats.errors > 0 ? ` · ${stats.errors} 失败` : ''}
             </span>
-            <i>·</i>
+          </div>
+          {prompts.length > 0 ? (
+            <ul className="rail-prompts">
+              {prompts.slice(-6).map((prompt, index) => {
+                // 绝对轮次：只留了最近 12 条，靠总数反推它的序号
+                const turn = (stats?.turns ?? prompts.length) - prompts.slice(-6).length + index + 1;
+                return (
+                  <li key={`${turn}-${prompt.text.slice(0, 12)}`}>
+                    <button
+                      type="button"
+                      className="rail-prompt"
+                      title={prompt.text}
+                      onClick={() => onJumpToPrompt?.(prompt.text)}
+                    >
+                      <span className="rail-prompt-index">{turn}</span>
+                      <span className="rail-prompt-text">{prompt.text}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className="rail-empty">{insights ? '还没读到用户输入' : '读取中…'}</div>
+          )}
+          <div className="rail-traces">
             <span>{formatClock(stats?.startedAt)} 开始</span>
+            <i>·</i>
+            <span>{stats ? formatDuration(stats.activeMs) : '—'} 活跃</span>
           </div>
         </section>
 

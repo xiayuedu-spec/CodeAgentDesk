@@ -199,6 +199,37 @@ describe('readSessionInsights 计划与改动提取', () => {
   });
 });
 describe('会话痕迹统计', () => {
+  it('收集用户输入用于右栏痕迹（跳过斜杠命令与纯 tool_result）', async () => {
+    const file = writeSession([
+      { type: 'user', message: { role: 'user', content: [{ type: 'text', text: '帮我改一下\n列对齐' }] } },
+      {
+        type: 'user',
+        message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'x', content: 'ok' }] },
+      },
+      { type: 'user', message: { role: 'user', content: '/goal 继续' } },
+      { type: 'user', message: { role: 'user', content: '第二句直接是字符串' } },
+    ]);
+    const insights = await readSessionInsights(file, 's1');
+    expect(insights.prompts.map((prompt) => prompt.text)).toEqual([
+      '帮我改一下 列对齐',
+      '第二句直接是字符串',
+    ]);
+  });
+
+  it('用户输入只保留最近 12 条，且单条截断', async () => {
+    const lines = Array.from({ length: 15 }, (_, index) => ({
+      type: 'user',
+      message: { role: 'user', content: `第 ${index + 1} 条` },
+    }));
+    lines.push({ type: 'user', message: { role: 'user', content: 'x'.repeat(400) } });
+    const file = writeSession(lines);
+    const insights = await readSessionInsights(file, 's1');
+    expect(insights.prompts).toHaveLength(12);
+    expect(insights.prompts[insights.prompts.length - 1].text.length).toBe(160);
+    // 最后一条在末尾（最新的压在最末）
+    expect(insights.prompts[0].text).toBe('第 5 条');
+  });
+
   it('轮次只算带文本的 user 消息，纯 tool_result 不算', async () => {
     const file = writeSession([
       { type: 'user', message: { role: 'user', content: [{ type: 'text', text: '帮我改一下' }] } },

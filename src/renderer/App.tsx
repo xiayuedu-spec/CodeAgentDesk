@@ -1768,6 +1768,9 @@ export default function App() {
                     })
                   }
                   onCollapse={() => setInfoOpen(false)}
+                  onJumpToPrompt={(text) => {
+                    if (activeSession.sessionId) void openDetailById(activeSession.sessionId, text);
+                  }}
                 />
               ) : (
                 <Welcome

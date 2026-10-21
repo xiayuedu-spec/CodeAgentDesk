@@ -4,6 +4,7 @@ import type {
   SessionFileChange,
   SessionInsights,
   SessionPlan,
+  SessionPrompt,
   SessionStats,
   SessionTodo,
 } from '../shared/types';
@@ -17,6 +18,8 @@ const MAX_HUNK_CHARS = 1200;
 const MAX_HUNKS_PER_FILE = 8;
 /** 最多列出的文件数（超出合并为"其他"计数）。 */
 const MAX_FILES = 60;
+/** 右栏痕迹保留的最近用户输入条数。 */
+const MAX_PROMPTS = 12;
 /** 活跃时长判定：相邻事件间隔不超过该值才计入（与效率洞察同口径）。 */
 const ACTIVE_GAP_MS = 5 * 60_000;
 
@@ -254,6 +257,14 @@ export async function readSessionInsights(
   let calls = 0;
   // 会话痕迹：同一次扫描顺带累计，避免为了"轮次/工具调用/失败数"再读一遍文件。
   const stats: SessionStats = { turns: 0, toolCalls: 0, errors: 0, activeMs: 0 };
+  const prompts: SessionPrompt[] = [];
+  const pushPrompt = (text: string, at?: string): void => {
+    const single = text.replace(/\s+/g, ' ').trim();
+    // 跳过斜杠命令与本地命令包装（不是人写的输入）
+    if (!single || single.startsWith('<') || single.startsWith('/')) return;
+    prompts.push({ text: single.slice(0, 160), at });
+    while (prompts.length > MAX_PROMPTS) prompts.shift();
+  };
   let previousAt = 0;
 
   await scanJsonlLines(filePath, MAX_INSIGHT_LINES, (line) => {
@@ -282,10 +293,14 @@ export async function readSessionInsights(
     const isUserEvent = event.type === 'user' || event.message?.role === 'user';
     if (!Array.isArray(content)) {
       // 少数记录把 content 写成裸字符串：能算一轮真实对话。
-      if (typeof content === 'string' && content.trim() && isUserEvent) stats.turns += 1;
+      if (typeof content === 'string' && content.trim() && isUserEvent) {
+        stats.turns += 1;
+        pushPrompt(content, event.timestamp);
+      }
       return;
     }
     let hasHumanText = false;
+    let humanText = '';
     for (const block of content) {
       const item = asRecord(block);
       if (!item) continue;
@@ -294,7 +309,13 @@ export async function readSessionInsights(
         if (item.is_error === true) stats.errors += 1;
         continue;
       }
-      if (item.type === 'text' && asText(item.text)) hasHumanText = true;
+      if (item.type === 'text' && isUserEvent) {
+        const text = asText(item.text);
+        if (text) {
+          hasHumanText = true;
+          humanText += (humanText ? ' ' : '') + text;
+        }
+      }
       if (item.type !== 'tool_use') continue;
 
       stats.toolCalls += 1;
@@ -312,7 +333,10 @@ export async function readSessionInsights(
       if (CHANGE_TOOLS.has(name)) applyChangeTool(changes, name, input);
     }
     // 纯 tool_result 的 user 消息不算一轮对话。
-    if (hasHumanText && isUserEvent) stats.turns += 1;
+    if (hasHumanText && isUserEvent) {
+      stats.turns += 1;
+      pushPrompt(humanText, event.timestamp);
+    }
   });
 
   const list = [...changes.values()].sort(
@@ -330,6 +354,7 @@ export async function readSessionInsights(
     changes: list.slice(0, MAX_FILES),
     totals,
     stats,
+    prompts,
     skipped,
   };
 
@@ -350,6 +375,7 @@ export function emptyInsights(sessionId: string): SessionInsights {
     changes: [],
     totals: { files: 0, added: 0, removed: 0, edits: 0 },
     stats: { turns: 0, toolCalls: 0, errors: 0, activeMs: 0 },
+    prompts: [],
     skipped: 0,
   };
 }

@@ -7485,3 +7485,46 @@ code,
   cursor: default;
   user-select: none;
 }
+/* 痕迹：用户输入列表（点击跳到详情对应位置） */
+.rail-prompts {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.rail-prompt {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  padding: 3px 5px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-micro) ease;
+}
+.rail-prompt:hover {
+  background: var(--bg-inset);
+}
+.rail-prompt-index {
+  flex: none;
+  min-width: 1.6ch;
+  color: var(--text-faint);
+  font-family: var(--mono-code);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.rail-prompt-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.rail-prompt:hover .rail-prompt-text {
+  color: var(--text);
+}

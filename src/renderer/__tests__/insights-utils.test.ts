@@ -19,6 +19,7 @@ function insights(overrides: Partial<SessionInsights> = {}): SessionInsights {
     changes: [],
     totals: { files: 0, added: 0, removed: 0, edits: 0 },
     stats: { turns: 0, toolCalls: 0, errors: 0, activeMs: 0 },
+    prompts: [],
     skipped: 0,
     ...overrides,
   };
