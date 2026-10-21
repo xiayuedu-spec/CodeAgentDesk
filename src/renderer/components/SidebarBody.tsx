@@ -47,6 +47,9 @@ interface SidebarBodyData {
   selectedArchiveIds: Set<string>;
   confirmingDelete: boolean;
   archiveSelectMode: boolean;
+  historySelectMode: boolean;
+  selectedHistoryIds: Set<string>;
+  archivingSelection: boolean;
 }
 
 interface SidebarBodyActions {
@@ -73,6 +76,10 @@ interface SidebarBodyActions {
   handleDeleteArchived: () => void;
   setConfirmingDelete: (confirming: boolean) => void;
   toggleSelectMode: () => void;
+  toggleHistorySelectMode: () => void;
+  toggleHistorySelect: (sessionId: string) => void;
+  toggleSelectAllHistory: () => void;
+  handleArchiveSelectedHistory: () => void;
 }
 
 export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions: SidebarBodyActions }) {
@@ -100,6 +107,9 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
     selectedArchiveIds,
     confirmingDelete,
     archiveSelectMode,
+    historySelectMode,
+    selectedHistoryIds,
+    archivingSelection,
   } = data;
   const {
     setMode,
@@ -125,6 +135,10 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
     handleDeleteArchived,
     setConfirmingDelete,
     toggleSelectMode,
+    toggleHistorySelectMode,
+    toggleHistorySelect,
+    toggleSelectAllHistory,
+    handleArchiveSelectedHistory,
   } = actions;
 
   const renderRunningRow = (session: SessionView, rowIndex: number): ReactNode => (
@@ -198,8 +212,19 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
     </li>
   );
 
-  const renderHistoryRow = (record: SessionRecord, rowIndex: number): ReactNode => (
-    <li key={record.sessionId}>
+  const renderHistoryRow = (record: SessionRecord, rowIndex: number): ReactNode => {
+    const checked = selectedHistoryIds.has(record.sessionId);
+    return (
+    <li key={record.sessionId} className={`session-item${checked ? ' checked' : ''}`}>
+      {historySelectMode ? (
+        <input
+          type="checkbox"
+          className="archive-check"
+          aria-label={`选择 ${recordTitle(record)}`}
+          checked={checked}
+          onChange={() => toggleHistorySelect(record.sessionId)}
+        />
+      ) : null}
       {renamingId === record.sessionId ? (
         <div className="session-row renaming">
           <input
@@ -221,7 +246,10 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
           type="button"
           className={`session-row${navClass(rowIndex)}`}
           data-nav-index={rowIndex}
-          onClick={() => void openHistory(record)}
+          onClick={() => {
+            if (historySelectMode) toggleHistorySelect(record.sessionId);
+            else void openHistory(record);
+          }}
           onContextMenu={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -249,7 +277,8 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
         </button>
       )}
     </li>
-  );
+    );
+  };
 
   const renderGroupBlock = (section: GroupSection): ReactNode => (
     <section key={section.key} className="group-block">
@@ -432,22 +461,57 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
               ) : null}
 
               {ungroupedHistory.length > 0 ? (
-                <section className="session-group">
-                  <button
-                    type="button"
-                    className={`group-label section-toggle${collapsedSections.has('history') ? '' : ' open'}`}
-                    aria-expanded={!collapsedSections.has('history')}
-                    onClick={() => toggleSectionCollapse('history')}
-                    onContextMenu={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      openSectionMenu(event.clientX, event.clientY);
-                    }}
-                  >
-                    <ChevronRight size={11} className="section-chevron" />
-                    历史会话
-                    <span className="group-count">{ungroupedHistory.length}</span>
-                  </button>
+                <section className={`session-group${historySelectMode ? ' selecting' : ''}`}>
+                  <div className="group-head">
+                    <button
+                      type="button"
+                      className={`group-label section-toggle${collapsedSections.has('history') ? '' : ' open'}`}
+                      aria-expanded={!collapsedSections.has('history')}
+                      onClick={() => toggleSectionCollapse('history')}
+                      onContextMenu={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        openSectionMenu(event.clientX, event.clientY);
+                      }}
+                    >
+                      <ChevronRight size={11} className="section-chevron" />
+                      历史会话
+                      <span className="group-count">{ungroupedHistory.length}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`section-select${historySelectMode ? ' on' : ''}`}
+                      title={historySelectMode ? '退出多选' : '多选归档'}
+                      onClick={toggleHistorySelectMode}
+                    >
+                      {historySelectMode ? '完成' : '选择'}
+                    </button>
+                  </div>
+                  {historySelectMode && !collapsedSections.has('history') ? (
+                    <div className="history-bulk">
+                      <button
+                        type="button"
+                        className="archive-toolbar-btn"
+                        onClick={toggleSelectAllHistory}
+                      >
+                        {selectedHistoryIds.size > 0 &&
+                        selectedHistoryIds.size === ungroupedHistory.length
+                          ? '取消全选'
+                          : '全选'}
+                      </button>
+                      <span className="archive-selected-count">
+                        {selectedHistoryIds.size} 已选
+                      </span>
+                      <button
+                        type="button"
+                        className="archive-toolbar-btn primary"
+                        disabled={selectedHistoryIds.size === 0 || archivingSelection}
+                        onClick={handleArchiveSelectedHistory}
+                      >
+                        {archivingSelection ? '归档中…' : '归档'}
+                      </button>
+                    </div>
+                  ) : null}
                   {!collapsedSections.has('history') ? (
                     <SessionList
                       items={ungroupedHistory}

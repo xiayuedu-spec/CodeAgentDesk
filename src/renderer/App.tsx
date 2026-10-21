@@ -203,6 +203,10 @@ export default function App() {
   const [selectedArchiveIds, setSelectedArchiveIds] = useState<Set<string>>(new Set());
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
+  /** 历史会话多选归档：选择模式 + 已选集合。 */
+  const [historySelectMode, setHistorySelectMode] = useState(false);
+  const [selectedHistoryIds, setSelectedHistoryIds] = useState<Set<string>>(new Set());
+  const [archivingSelection, setArchivingSelection] = useState(false);
   const [confirmDeleteOne, setConfirmDeleteOne] = useState<string | null>(null);
   /** 代码搜索弹窗（null 关闭；cwd 决定搜哪个项目）。 */
   const [codeSearchTarget, setCodeSearchTarget] = useState<{ cwd: string; title?: string } | null>(
@@ -625,6 +629,62 @@ export default function App() {
       return new Set(archivedRecords.map((record) => record.sessionId));
     });
     setConfirmingDelete(false);
+  }
+
+  const recordLabel = (record?: SessionRecord): string | null =>
+    record?.customName || record?.summary || null;
+
+  function toggleHistorySelectMode(): void {
+    setHistorySelectMode((value) => !value);
+    setSelectedHistoryIds(new Set());
+  }
+
+  function toggleHistorySelect(sessionId: string): void {
+    setSelectedHistoryIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(sessionId)) next.delete(sessionId);
+      else next.add(sessionId);
+      return next;
+    });
+  }
+
+  function toggleSelectAllHistory(): void {
+    const targets = ungroupedHistory.map((record) => record.sessionId);
+    setSelectedHistoryIds((previous) =>
+      targets.length > 0 && previous.size === targets.length ? new Set() : new Set(targets),
+    );
+  }
+
+  /**
+   * 批量归档历史会话。
+   * 逐个调用（每个都要落盘 + 可能的 pty 清理），失败的不中断其余，
+   * 最后给一条汇总提示——批量操作最忌讳"错一个全废且不说清楚"。
+   */
+  async function handleArchiveSelectedHistory(): Promise<void> {
+    const ids = [...selectedHistoryIds];
+    if (ids.length === 0 || archivingSelection) return;
+    setArchivingSelection(true);
+    let done = 0;
+    const failed: string[] = [];
+    for (const sessionId of ids) {
+      const record = historyRecords.find((item) => item.sessionId === sessionId);
+      try {
+        const result = await window.codeagentdesk.archiveSession(sessionId, record?.cwd ?? '');
+        if (result.ok) done += 1;
+        else failed.push(recordLabel(record) ?? sessionId.slice(0, 8));
+      } catch {
+        failed.push(recordLabel(record) ?? sessionId.slice(0, 8));
+      }
+    }
+    setArchivingSelection(false);
+    setSelectedHistoryIds(new Set());
+    await refreshRecords();
+    if (failed.length === 0) {
+      setHistorySelectMode(false);
+      toast.success(`已归档 ${done} 个会话`);
+    } else {
+      toast.error(`归档 ${done} 个成功，${failed.length} 个失败：${failed.slice(0, 2).join('、')}`);
+    }
   }
 
   async function handleDeleteArchived(): Promise<void> {
@@ -1467,6 +1527,9 @@ export default function App() {
     selectedArchiveIds,
     confirmingDelete,
     archiveSelectMode,
+    historySelectMode,
+    selectedHistoryIds,
+    archivingSelection,
   };
   const sidebarBodyActions = {
     setMode,
@@ -1495,6 +1558,10 @@ export default function App() {
     handleDeleteArchived,
     setConfirmingDelete,
     toggleSelectMode,
+    toggleHistorySelectMode,
+    toggleHistorySelect,
+    toggleSelectAllHistory,
+    handleArchiveSelectedHistory,
   };
   const sidebarFooterData = {
     appInfo,

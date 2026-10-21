@@ -7476,3 +7476,81 @@ code,
 .rail-traces .rail-del {
   color: var(--danger);
 }
+/* ================================================================
+   历史会话多选归档：选择模式 + 复选框 + 批量工具条
+   ================================================================ */
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.group-head .section-toggle {
+  flex: 1;
+  min-width: 0;
+}
+.section-select {
+  flex: none;
+  height: 20px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 11px;
+  cursor: pointer;
+  box-shadow: none;
+  opacity: .5;
+  transition: opacity var(--motion-micro) ease, color var(--motion-micro) ease,
+    border-color var(--motion-micro) ease;
+}
+.session-group:hover .section-select,
+.section-select.on,
+.section-select:focus-visible {
+  opacity: 1;
+}
+.section-select:hover {
+  border-color: var(--border);
+  color: var(--text);
+}
+.section-select.on {
+  border-color: var(--accent-dim);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.history-bulk {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px 6px;
+}
+.history-bulk .archive-toolbar-btn.primary {
+  border-color: var(--accent-dim);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.history-bulk .archive-toolbar-btn.primary:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.history-bulk .archive-toolbar-btn:disabled {
+  opacity: .45;
+  cursor: default;
+}
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--radius-md);
+}
+.session-item.checked {
+  background: var(--accent-soft);
+}
+.session-item .session-row {
+  flex: 1;
+  min-width: 0;
+}
+/* 选择模式：复选框已经表达"这一行"，状态点就多余了 */
+.session-group.selecting .session-item .session-dot {
+  display: none;
+}
