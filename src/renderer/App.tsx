@@ -182,7 +182,6 @@ export default function App() {
   const [detailQuery, setDetailQuery] = useState('');
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [borrowedIds, setBorrowedIds] = useState<string[]>([]);
   const [infoOpen, setInfoOpen] = useState(true);
   const [infoWidth, setInfoWidth] = useState(260);
   const [sidebarWidth, setSidebarWidth] = useState(232);
@@ -283,7 +282,6 @@ export default function App() {
   const infoWidthRef = useRef(260);
   const activeIdRef = useRef<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
-  const retiringRef = useRef(new Set<string>());
 
   useEffect(() => {
     let cancelled = false;
@@ -391,16 +389,6 @@ export default function App() {
     window.addEventListener('keydown', onZoomKey, true);
     return () => window.removeEventListener('keydown', onZoomKey, true);
   }, [claudeInfo?.config.terminalFontSize, refreshClaudeInfo]);
-
-  useEffect(() => {
-    if (borrowedIds.length === 0) return;
-    for (const sessionId of borrowedIds) {
-      const session = sessions.find((item) => item.sessionId === sessionId);
-      if (session && session.id !== activeId && !retiringRef.current.has(sessionId)) {
-        void retireArchivedSession(sessionId, session.cwd);
-      }
-    }
-  }, [activeId, sessions, borrowedIds]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1026,11 +1014,7 @@ export default function App() {
   }
 
   async function handleCloseSession(id: string): Promise<void> {
-    const session = sessions.find((item) => item.id === id);
-    if (session?.sessionId && borrowedIds.includes(session.sessionId)) {
-      await retireArchivedSession(session.sessionId, session.cwd);
-      return;
-    }
+    // 从归档里打开过的会话，关闭后留在历史会话（打开即恢复，不再"退回归档"）。
     try {
       await window.codeagentdesk.closeSession(id);
     } catch (reason) {
@@ -1063,8 +1047,9 @@ export default function App() {
   }
 
   async function openArchivedSession(record: SessionRecord): Promise<void> {
-    const alreadyBorrowed = borrowedIds.includes(record.sessionId);
-    if (!alreadyBorrowed && record.archived && record.cwd) {
+    // 点开归档会话 = 恢复它（文件移出归档目录）。关闭后它就留在历史会话里，
+    // 而不是"借用一下再放回去"——那种行为会让人以为恢复没生效。
+    if (record.archived && record.cwd) {
       const restored = await window.codeagentdesk.restoreArchivedSession(
         record.sessionId,
         record.cwd,
@@ -1073,30 +1058,17 @@ export default function App() {
         setError(restored.message ?? '恢复失败');
         return;
       }
+      setRecords((previous) =>
+        previous.map((item) =>
+          item.sessionId === record.sessionId
+            ? { ...item, archived: false, archivedAt: undefined }
+            : item,
+        ),
+      );
+      // 已经不在归档里了，侧栏跟着切回会话列表（与右键「恢复」一致）。
+      setMode('sessions');
     }
-    setBorrowedIds((previous) =>
-      previous.includes(record.sessionId) ? previous : [...previous, record.sessionId],
-    );
     await openHistory(record);
-  }
-
-  async function retireArchivedSession(sessionId: string, cwd: string): Promise<void> {
-    if (retiringRef.current.has(sessionId)) return;
-    retiringRef.current.add(sessionId);
-    const removedId = sessions.find((item) => item.sessionId === sessionId)?.id;
-    const result = await window.codeagentdesk.archiveSession(sessionId, cwd);
-    setBorrowedIds((previous) => previous.filter((id) => id !== sessionId));
-    setSessions((previous) => previous.filter((item) => item.sessionId !== sessionId));
-    setRecords((previous) =>
-      previous.map((record) =>
-        record.sessionId === sessionId
-          ? { ...record, archived: true, archivedAt: new Date().toISOString() }
-          : record,
-      ),
-    );
-    retiringRef.current.delete(sessionId);
-    if (removedId) setActiveId((current) => (current === removedId ? null : current));
-    if (!result.ok) setError(result.message ?? '注销失败');
   }
 
   async function openDetailById(sessionId: string, snippet?: string): Promise<void> {
@@ -1225,7 +1197,6 @@ export default function App() {
           : record,
       ),
     );
-    setBorrowedIds((previous) => previous.filter((id) => id !== sessionId));
     setDetailSessionId((current) => (current === sessionId ? null : current));
     setDetail((current) => (current?.sessionId === sessionId ? null : current));
     setMode('sessions');

@@ -155,7 +155,7 @@
 | **备份 / 迁移** | `backup.ts`：导出把应用数据 JSON 白名单复制到 `codeagentdesk-backup-<日期>/`；导入先快照当前数据到 `pre-import-<ts>/` 再覆盖，找不到目标文件则报错不写入；弹窗 `BackupModal`（导出/导入 + 换机说明）。会话 JSONL 不在范围内 |
 | **功能使用统计** | `usage-store.ts`：`incrementUsage(key)`（**白名单校验**）+ `listUsage()`，存 `usage-stats.json` 的 `{count,lastAt}`；渲染层在关键动作埋点（命令面板/搜索/总结/知识库/详情/导出/番茄钟/视图打开）；`UsageStatsModal` 按占比条展示，指导功能删减 |
 | 终端选中自动复制 | xterm `onSelectionChange` → `navigator.clipboard.writeText(selection)` + 1.5s「已复制」徽章；保留 `Ctrl+C/V` 与右键菜单 |
-| 分组/历史区批量归档 | 分组标题右键「全部归档」= 该组历史会话；历史会话区块标题右键「全部归档」= **仅未分组**历史会话（已分组的归各组管理）；归档会话右键「恢复（放回历史会话）」只恢复不打开 |
+| 分组/历史区批量归档 | 分组标题右键「全部归档」= 该组历史会话；历史会话区块标题右键「全部归档」= **仅未分组**历史会话（已分组的归各组管理）；归档会话右键「恢复（放回历史会话）」只恢复不打开。**点开归档会话 = 恢复 + 运行**：`openArchivedSession` 先 `restoreArchivedSession` 再把本地 record 标成未归档并 `setMode('sessions')`，关闭时走普通 `closeSession`——原来的「借用/退回」机制（`borrowedIds` + `retireArchivedSession` + 失焦即归还）已整体删除，因为打开即恢复的语义更符合直觉 |
 | 长任务可取消 | `summarize.ts` 模块级跟踪 `activeChild` + `cancelled` 标记：`cancelRunningClaude()` 置位并杀进程树，`close` 时优先看标记 → 以「已取消」结束（而不是报"退出码 1"）。IPC `task:cancel` → `cancelTask()`；进度面板 `TaskProgressPanel` 的「取消」按钮触发 |
 
 ---
