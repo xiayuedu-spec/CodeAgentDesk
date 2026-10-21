@@ -7487,9 +7487,12 @@ code,
 }
 /* 痕迹：用户输入列表（点击跳到详情对应位置） */
 .rail-prompts {
+  /* 输入可能很多：限制高度 + 自己滚动（像日志），不把右栏整体顶长 */
+  max-height: 168px;
   margin: 6px 0 0;
-  padding: 0;
+  padding: 0 2px 0 0;
   list-style: none;
+  overflow-y: auto;
 }
 .rail-prompt {
   display: flex;

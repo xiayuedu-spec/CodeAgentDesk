@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import {
   ArrowRight,
@@ -87,7 +87,20 @@ export function InfoPanel({
     : [];
   const stats = insights?.stats;
   const prompts = insights?.prompts ?? [];
-  const recentPrompts = prompts.slice(-6);
+  const promptListRef = useRef<HTMLUListElement | null>(null);
+
+  // 输入列表像日志：最新在底部。
+  // 切会话时强制滚到底；同一会话里新增输入时，只有本来就在底部才跟随（不抢用户上翻的位置）。
+  const promptAnchorSession = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const element = promptListRef.current;
+    if (!element) return;
+    const switched = promptAnchorSession.current !== session.sessionId;
+    promptAnchorSession.current = session.sessionId;
+    const nearBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 40;
+    if (switched || nearBottom) element.scrollTop = element.scrollHeight;
+  }, [prompts.length, session.sessionId]);
+
   const totals = insights?.totals;
 
   return (
@@ -262,13 +275,12 @@ export function InfoPanel({
             ) : null}
           </div>
           {prompts.length > 0 ? (
-            <ul className="rail-prompts">
-              {recentPrompts.map((prompt, index) => {
+            <ul className="rail-prompts" ref={promptListRef}>
+              {prompts.map((prompt, index) => {
                 // 绝对轮次：只保留了最近 200 条，靠总数反推它的序号
-                const turn = (stats?.turns ?? prompts.length) - recentPrompts.length + index + 1;
-                const absolute = prompts.length - recentPrompts.length + index;
+                const turn = (stats?.turns ?? prompts.length) - prompts.length + index + 1;
                 // 同一句话出现多次时，终端里要定位到"对应那一次"（从末尾数）
-                const fromEnd = prompts.slice(absolute + 1).filter((p) => p.text === prompt.text).length;
+                const fromEnd = prompts.slice(index + 1).filter((p) => p.text === prompt.text).length;
                 return (
                   <li key={`${turn}-${prompt.text.slice(0, 12)}`}>
                     <button
