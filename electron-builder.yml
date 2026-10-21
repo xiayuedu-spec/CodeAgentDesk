@@ -1,5 +1,9 @@
 appId: com.codeagentdesk.app
 productName: CodeAgentDesk
+# 产物名必须显式声明成连字符形式：electron-builder 写进 latest.yml 的是
+# CodeAgentDesk-Setup-x.y.z.exe，而默认产物名带空格，自动更新会去下载一个
+# 不存在的文件名（404）。两者一致才能用 electron-updater 自动更新。
+artifactName: '${productName}-Setup-${version}.${ext}'
 directories:
   output: release
   buildResources: build
