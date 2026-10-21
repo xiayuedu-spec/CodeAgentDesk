@@ -267,16 +267,21 @@ export default function App() {
     openKnowledge,
   } = useOverlays(bumpUsage);
 
-  // 自动更新：订阅状态 + 启动静默检查（打包环境生效，开发模式返回 dev 不提示）。
+  // 自动更新：订阅状态 + 启动静默检查。
+  // 启动时的检查**失败不提示**——没有发布版本、离线、还没建 release 都会命中，
+  // 每次都弹 toast 只会变成噪音。只有"已经发现有新版本、后续下载失败"才值得提醒；
+  // 手动「检查更新」则由调用方自己给反馈。
   useEffect(() => {
+    let sawAvailable = false;
     const unsubscribe = window.codeagentdesk.onUpdateStatus((status) => {
       if (status.kind === 'available') {
+        sawAvailable = true;
         toast.info(status.message);
       } else if (status.kind === 'downloaded') {
         setUpdateReady(true);
         toast.info(`${status.message}（☰ 更多 → 重启并安装更新）`);
-      } else if (status.kind === 'error') {
-        toast.error(`检查更新失败：${status.message}`);
+      } else if (status.kind === 'error' && sawAvailable) {
+        toast.error(`下载更新失败：${status.message}`);
       }
     });
     void window.codeagentdesk.checkForUpdates();
@@ -1882,6 +1887,7 @@ export default function App() {
             void window.codeagentdesk.checkForUpdates().then((status) => {
               if (status.kind === 'up-to-date') toast.info('已是最新版本');
               else if (status.kind === 'dev') toast.info('开发模式不支持自动更新');
+              else if (status.kind === 'unsupported') toast.info(status.message);
               else if (status.kind === 'error') toast.error(`检查更新失败：${status.message}`);
             });
           }}

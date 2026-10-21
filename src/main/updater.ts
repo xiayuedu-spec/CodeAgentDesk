@@ -1,21 +1,27 @@
 import { app } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { IpcChannel } from '../shared/ipc-contract';
+import type { UpdateStatus } from '../shared/types';
 import { broadcast } from './window-manager';
 
-export type UpdateStatus =
-  | { kind: 'dev'; message: string }
-  | { kind: 'checking'; message: string }
-  | { kind: 'up-to-date'; message: string }
-  | { kind: 'available'; version: string; message: string }
-  | { kind: 'downloaded'; version: string; message: string }
-  | { kind: 'error'; message: string };
+export type { UpdateStatus };
 
 let downloadedVersion: string | null = null;
 
+/**
+ * 便携版（portable）不走自动更新：它每次启动都把自己解压到临时目录，
+ * electron-updater 的"下载后替换安装目录"语义在这里不成立。换版本 = 下载新 exe 覆盖。
+ */
+const isPortable = Boolean(process.env.PORTABLE_EXECUTABLE_DIR);
+
+/** 当前形态是否支持自动更新。 */
+export function supportsAutoUpdate(): boolean {
+  return app.isPackaged && !isPortable;
+}
+
 /** 打包环境下才真正启用自动更新；开发模式返回 dev 状态。 */
 export function setupAutoUpdater(): void {
-  if (!app.isPackaged) return;
+  if (!supportsAutoUpdate()) return;
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.on('update-available', (info) => {
@@ -46,6 +52,9 @@ export function setupAutoUpdater(): void {
 
 /** 检查更新（打包环境）。 */
 export async function checkForUpdates(): Promise<UpdateStatus> {
+  if (isPortable) {
+    return { kind: 'unsupported', message: '便携版不支持自动更新，下载新版本覆盖即可' };
+  }
   if (!app.isPackaged) {
     return { kind: 'dev', message: '开发模式不支持自动更新' };
   }
@@ -74,6 +83,6 @@ export function hasDownloadedUpdate(): boolean {
 
 /** 重启并安装已下载的更新。 */
 export function installUpdate(): void {
-  if (!app.isPackaged || !downloadedVersion) return;
+  if (!supportsAutoUpdate() || !downloadedVersion) return;
   autoUpdater.quitAndInstall();
 }

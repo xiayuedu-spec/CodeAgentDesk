@@ -486,6 +486,8 @@ export type UpdateStatus =
   | { kind: 'up-to-date'; message: string }
   | { kind: 'available'; version: string; message: string }
   | { kind: 'downloaded'; version: string; message: string }
+  /** 当前形态不支持自动更新（便携版）。 */
+  | { kind: 'unsupported'; message: string }
   | { kind: 'error'; message: string };
 
 /** 功能使用统计（本地计数）。 */

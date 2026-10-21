@@ -223,6 +223,7 @@
 | 缓冲区匹配（纯函数） | `renderer/buffer-search.ts`：`findInBufferLines(lines, text, fromEnd)` 把各行**去空白拼成长串**再 `lastIndexOf`（TUI 折行后逐行匹配必然失败），按行起点反查行号；命中跨行时 `column = -1`（只滚动不高亮）。`needleCandidates()` 产出 24/12/8 三级针。13 个单测覆盖折行/多次出现/空白差异/大小写/空行/短针。**Shift+点击输入 = 跳过终端直接开详情** |
 
 | **陷阱：模块级状态 + lazy chunk** | `TerminalPane` 是 lazy 组件，与主 chunk 共享的模块会被**分别打包**（实测 `scrollToText` 在两个 chunk 各有一份）。模块顶层的 `new Map()` 因此变成两个不同的 Map——注册写一份、查找读另一份，表现为「功能静默失效、永远走兜底」。结论：**跨 chunk 共享的可变状态一律由上层（App）用 `useRef` 持有，通过 props 下发回调**，共享模块里只放类型与纯函数 || 终端模式复位 | TUI 崩溃/异常退出可能留下鼠标上报（SGR 1000/1002/1003/1006）或备用屏幕模式，表现是**滚轮不再滚动**（被当成鼠标事件上报给已结束的进程），重启应用才恢复。现在：会话结束时自动写入 `TERMINAL_MODE_RESET`（`?1000l ?1002l ?1003l ?1005l ?1006l ?1015l ?1049l ?25h`，只复位模式不清屏）；会话右键另有「重置终端模式（滚轮失效时用）」手动复位（走 `terminal-jump.ts` 的 `resetTerminalModes`） |
+| 自动更新的降噪 | ① **启动检查失败不再弹 toast**——没有 release（404）、离线、还没发版都会命中，每次弹只会变噪音；只有「已经发现新版本之后下载失败」才提示。② **便携版不启用自动更新**（`PORTABLE_EXECUTABLE_DIR` 存在时 `supportsAutoUpdate()` 为 false）：它每次启动把自己解压到临时目录，electron-updater 的「下载后替换安装目录」语义不成立，换版本 = 下载新 exe 覆盖；手动「检查更新」返回 `unsupported` 并提示这句话。③ 顺带把 `updater.ts` 里重复定义的 `UpdateStatus` 换成共享类型（之前两处各一份，改一边不同步） |
 
 **坑位（内存）**：解析缓存的上限要按「条数 × 单条最坏体积」估，别只看条数；任何从 JSONL 里提取并长期缓存的对象（尤其 `tool_use.input`）都必须截断——一次整文件 Write 的 input 能有几十上百 KB，还会被复制多份。渲染层同理（`useSessionRail` 的缓存上限 8 条）。
 
