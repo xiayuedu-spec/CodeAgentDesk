@@ -18,8 +18,8 @@ const MAX_HUNK_CHARS = 1200;
 const MAX_HUNKS_PER_FILE = 8;
 /** 最多列出的文件数（超出合并为"其他"计数）。 */
 const MAX_FILES = 60;
-/** 右栏痕迹保留的最近用户输入条数。 */
-const MAX_PROMPTS = 12;
+/** 保留的用户输入条数上限（右栏只显示最近几条，「全部」进详情看）。 */
+const MAX_PROMPTS = 200;
 /** 活跃时长判定：相邻事件间隔不超过该值才计入（与效率洞察同口径）。 */
 const ACTIVE_GAP_MS = 5 * 60_000;
 

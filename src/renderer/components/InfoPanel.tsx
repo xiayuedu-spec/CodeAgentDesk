@@ -35,6 +35,8 @@ interface InfoPanelProps {
   onCollapse?: () => void;
   /** 跳到会话详情里对应的那条用户输入。 */
   onJumpToPrompt?: (text: string) => void;
+  /** 打开详情并只看我的输入（看全部历史输入）。 */
+  onOpenAllPrompts?: () => void;
 }
 
 /** 计划里最多直接展示几条（其余折叠进弹窗）。 */
@@ -61,6 +63,7 @@ export function InfoPanel({
   onOpenDiff,
   onCollapse,
   onJumpToPrompt,
+  onOpenAllPrompts,
 }: InfoPanelProps) {
   // 数据在面板内部取：15s 轮询只重渲染这一棵小树，不再把整个 App 叫醒。
   const { insights, git } = useSessionRail(session.sessionId, session.cwd, running);
@@ -246,6 +249,16 @@ export function InfoPanel({
               {stats?.turns ?? '—'} 轮 · {stats?.toolCalls ?? '—'} 调用
               {stats && stats.errors > 0 ? ` · ${stats.errors} 失败` : ''}
             </span>
+            {prompts.length > 6 && onOpenAllPrompts ? (
+              <button
+                type="button"
+                className="rail-link"
+                title={`查看全部 ${prompts.length} 条输入`}
+                onClick={onOpenAllPrompts}
+              >
+                全部 {prompts.length}
+              </button>
+            ) : null}
           </div>
           {prompts.length > 0 ? (
             <ul className="rail-prompts">

@@ -12,6 +12,8 @@ interface SessionDetailProps {
   summary?: { summary: string; tags: string[] } | null;
   summarizing?: boolean;
   highlightQuery?: string;
+  /** 打开时默认只看用户输入（从右栏「全部输入」进来）。 */
+  initialUserOnly?: boolean;
   onSummarize?: () => void;
   onOpenInsights?: () => void;
   onExport: () => void;
@@ -23,6 +25,7 @@ export function SessionDetail({
   summary,
   summarizing,
   highlightQuery,
+  initialUserOnly,
   onSummarize,
   onOpenInsights,
   onExport,
@@ -30,6 +33,10 @@ export function SessionDetail({
 }: SessionDetailProps) {
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(PAGE_SIZE);
+  const [userOnly, setUserOnly] = useState(initialUserOnly === true);
+  useEffect(() => {
+    setUserOnly(initialUserOnly === true);
+  }, [initialUserOnly, detail.sessionId]);
   useEscape(true, onClose);
 
   const entries = detail.entries;
@@ -38,32 +45,40 @@ export function SessionDetail({
     setVisible(PAGE_SIZE);
   }, [detail.sessionId]);
 
+  // "只看我的输入"：只过滤展示层，条目下标仍用原始索引，跳转不受影响。
+  const userEntries = useMemo(
+    () => entries.filter((entry) => entry.role === 'user'),
+    [entries],
+  );
+  const listEntries = userOnly ? userEntries : entries;
+
   // 搜索命中下标在**数据**上找（不是 DOM）：命中在窗口之外时先扩容再滚动。
   const highlightIndex = useMemo(() => {
     const query = (highlightQuery ?? '').trim().toLowerCase();
     if (!query) return -1;
-    return entries.findIndex(
+    return listEntries.findIndex(
       (entry) => entry.role !== 'tool' && (entry.text ?? '').toLowerCase().includes(query),
     );
-  }, [entries, highlightQuery]);
+  }, [listEntries, highlightQuery]);
 
   useEffect(() => {
     if (highlightIndex < 0) return;
-    setVisible((current) => Math.max(current, Math.min(entries.length, highlightIndex + 1)));
-  }, [highlightIndex, entries.length]);
+    setVisible((current) => Math.max(current, Math.min(listEntries.length, highlightIndex + 1)));
+  }, [highlightIndex, listEntries.length]);
 
   useEffect(() => {
     if (highlightIndex < 0) return;
+    const originalIndex = entries.indexOf(listEntries[highlightIndex]);
     const target = bodyRef.current?.querySelector<HTMLElement>(
-      `[data-entry-index="${highlightIndex}"]`,
+      `[data-entry-index="${originalIndex}"]`,
     );
     if (!target) return;
     target.classList.add('highlight');
     target.scrollIntoView({ block: 'center' });
   }, [highlightIndex, visible]);
 
-  const shown = entries.slice(0, visible);
-  const remaining = entries.length - shown.length;
+  const shown = listEntries.slice(0, visible);
+  const remaining = listEntries.length - shown.length;
 
   const toolPreview = (value: string): string => {
     const singleLine = value.replace(/\s+/g, ' ').trim();
@@ -79,12 +94,23 @@ export function SessionDetail({
             <span>{detail.cwd || '未知目录'}</span>
             <span>{detail.sessionId}</span>
             <span>
-              {entries.length} 条记录
+              {userOnly ? `${userEntries.length} 条输入` : `${entries.length} 条记录`}
               {remaining > 0 ? `（已显示前 ${shown.length} 条）` : ''}
             </span>
           </div>
         </div>
         <div className="detail-actions">
+          <button
+            type="button"
+            className={`detail-filter${userOnly ? ' on' : ''}`}
+            title={userOnly ? '显示全部记录' : '只看我输入的话'}
+            onClick={() => {
+              setUserOnly((value) => !value);
+              setVisible(PAGE_SIZE);
+            }}
+          >
+            {userOnly ? '我的输入' : '全部'}
+          </button>
           <button
             type="button"
             className="icon-button"
@@ -136,8 +162,9 @@ export function SessionDetail({
           />
         ) : (
           <>
-            {shown.map((entry, index) =>
-              entry.role === 'tool' ? (
+            {shown.map((entry) => {
+              const index = entries.indexOf(entry);
+              return entry.role === 'tool' ? (
                 <details key={index} className="tool-card" data-entry-index={index}>
                   <summary>
                     <span className="tool-name">{entry.toolName ?? '工具调用'}</span>
@@ -156,8 +183,8 @@ export function SessionDetail({
                   <div className="chat-role">{entry.role === 'user' ? 'User' : 'Claude'}</div>
                   <pre className="chat-text">{entry.text}</pre>
                 </div>
-              ),
-            )}
+              );
+            })}
             {remaining > 0 ? (
               <button
                 type="button"

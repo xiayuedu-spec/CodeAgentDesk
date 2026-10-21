@@ -178,6 +178,8 @@ export default function App() {
   const [records, setRecords] = useState<SessionRecord[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
+  /** 详情默认只看用户输入（右栏「全部输入」进入）。 */
+  const [detailUserOnly, setDetailUserOnly] = useState(false);
   const [detail, setDetail] = useState<SessionDetailResult | null>(null);
   const [detailQuery, setDetailQuery] = useState('');
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
@@ -1073,6 +1075,7 @@ export default function App() {
 
   async function openDetailById(sessionId: string, snippet?: string): Promise<void> {
     bumpUsage('detail.opened');
+    setDetailUserOnly(false);
     setDetailSessionId(sessionId);
     setDetailQuery(snippet ?? '');
     setSummary(null);
@@ -1738,6 +1741,7 @@ export default function App() {
                     summary={summary}
                     summarizing={summarizing}
                     highlightQuery={detailQuery}
+                initialUserOnly={detailUserOnly}
                     onSummarize={() => void handleSummarize()}
                     onOpenInsights={() => openInsights(detail)}
                     onExport={() => void exportFromDetail()}
@@ -1768,6 +1772,12 @@ export default function App() {
                     })
                   }
                   onCollapse={() => setInfoOpen(false)}
+                  onOpenAllPrompts={() => {
+                    if (!activeSession.sessionId) return;
+                    setDetailUserOnly(true);
+                    void openDetailById(activeSession.sessionId);
+                    setDetailUserOnly(true);
+                  }}
                   onJumpToPrompt={(text) => {
                     if (activeSession.sessionId) void openDetailById(activeSession.sessionId, text);
                   }}

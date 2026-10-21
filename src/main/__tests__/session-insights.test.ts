@@ -216,18 +216,18 @@ describe('会话痕迹统计', () => {
     ]);
   });
 
-  it('用户输入只保留最近 12 条，且单条截断', async () => {
-    const lines = Array.from({ length: 15 }, (_, index) => ({
+  it('用户输入最多保留 200 条，单条截断 160 字', async () => {
+    const lines = Array.from({ length: 205 }, (_, index) => ({
       type: 'user',
       message: { role: 'user', content: `第 ${index + 1} 条` },
     }));
     lines.push({ type: 'user', message: { role: 'user', content: 'x'.repeat(400) } });
     const file = writeSession(lines);
     const insights = await readSessionInsights(file, 's1');
-    expect(insights.prompts).toHaveLength(12);
-    expect(insights.prompts[insights.prompts.length - 1].text.length).toBe(160);
-    // 最后一条在末尾（最新的压在最末）
-    expect(insights.prompts[0].text).toBe('第 5 条');
+    // 一共 206 条，只留最后 200 条（丢掉最早 6 条）
+    expect(insights.prompts).toHaveLength(200);
+    expect(insights.prompts[0].text).toBe('第 7 条');
+    expect(insights.prompts[199].text.length).toBe(160);
   });
 
   it('轮次只算带文本的 user 消息，纯 tool_result 不算', async () => {
