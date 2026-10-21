@@ -36,7 +36,7 @@ import { useEscape } from './hooks/useEscape';
 import { useSessionAgentStatuses } from './hooks/useAgentStatus';
 import { useOverlays } from './hooks/useOverlays';
 import { useSessionLists } from './hooks/useSessionLists';
-import { jumpTerminalToText } from './terminal-jump';
+import { jumpTerminalToText, resetTerminalModes } from './terminal-jump';
 import { usePomodoro } from './hooks/usePomodoro';
 import { useToast } from './toast';
 import {
@@ -1620,6 +1620,14 @@ export default function App() {
     openInsights: (sessionId: string) => openInsights({ sessionId }),
     openDiff: (cwd: string) => openDiff({ cwd }),
     extractCards: (sessionId: string, cwd: string) => void handleExtractCards(sessionId, cwd),
+    resetTerminalModes: (sessionId: string) => {
+      const target = sessions.find((item) => item.sessionId === sessionId);
+      if (!target) {
+        toast.info('这个会话没有在运行，终端模式会在下次打开时重建');
+        return;
+      }
+      if (resetTerminalModes(target.id)) toast.success('已复位终端模式');
+    },
     restoreArchived: (sessionId: string, cwd: string) => void restoreArchived(sessionId, cwd),
     copySessionText: (sessionId: string) => void copySessionText(sessionId),
     onDeleteSession: (sessionId: string) => setConfirmDeleteOne(sessionId),

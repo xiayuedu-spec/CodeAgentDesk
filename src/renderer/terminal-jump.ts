@@ -11,6 +11,8 @@ export interface TerminalJumpApi {
    * `fromEnd`：同一句话出现多次时，从末尾数第几次（0 = 最近一次）。
    */
   scrollToText: (text: string, fromEnd?: number) => boolean;
+  /** 复位鼠标上报/备用屏幕等模式（滚轮被 TUI 残留模式吃掉时用）。 */
+  resetModes: () => void;
 }
 
 const terminals = new Map<string, TerminalJumpApi>();
@@ -27,6 +29,19 @@ export function registerTerminalJump(id: string, api: TerminalJumpApi): () => vo
  * 在指定终端里跳到某段文本。
  * 返回 false 表示终端缓冲区里没有（比如已经被滚动出 buffer），调用方应退回详情。
  */
+/** 复位某个终端的输入模式（滚轮失效的应急开关）。 */
+export function resetTerminalModes(id: string | null | undefined): boolean {
+  if (!id) return false;
+  const api = terminals.get(id);
+  if (!api) return false;
+  try {
+    api.resetModes();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function jumpTerminalToText(
   id: string | null | undefined,
   text: string,

@@ -6,6 +6,7 @@ import {
   BookMarked,
   FolderOpen,
   GitBranch,
+  RefreshCw,
   Link2,
   ListChecks,
   Pencil,
@@ -57,6 +58,7 @@ interface ContextMenusActions {
   openInsights: (sessionId: string) => void;
   openDiff: (cwd: string) => void;
   extractCards: (sessionId: string, cwd: string) => void;
+  resetTerminalModes: (sessionId: string) => void;
   restoreArchived: (sessionId: string, cwd: string) => void;
   copySessionText: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
@@ -154,6 +156,7 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
   openInsights,
   openDiff,
   extractCards,
+  resetTerminalModes,
     restoreArchived,
     copySessionText,
     onDeleteSession,
@@ -296,6 +299,19 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
               <GitBranch size={14} />
             </span>
             审查工作区改动
+          </button>
+          <button
+            type="button"
+            title="滚轮翻不动时用：复位 TUI 可能残留的鼠标上报/备用屏幕模式"
+            onClick={() => {
+              resetTerminalModes(menu.sessionId);
+              closeMenu();
+            }}
+          >
+            <span className="context-menu-icon">
+              <RefreshCw size={14} />
+            </span>
+            重置终端模式（滚轮失效时用）
           </button>
           <button
             type="button"

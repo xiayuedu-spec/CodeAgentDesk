@@ -50,6 +50,18 @@ function terminalTheme(skin: string): TerminalPalette {
 
 /** 终端字号/字体默认值与可选预设见 `renderer/terminal-fonts.ts`（单独模块，避免主 chunk 拉进 xterm）。 */
 
+/**
+ * 会话结束时显式复位终端模式。
+ *
+ * 为什么要手动发：TUI（Claude Code）可能开启鼠标上报（SGR 1000/1002/1003/1006）
+ * 或切到备用屏幕；如果它异常退出没来得及关，这些模式会留在终端里——
+ * 表现就是**滚轮不再滚动，被当成鼠标事件上报给已经结束的进程**。
+ * 这几条序列只复位模式，不清屏（内容还要留着看）。
+ */
+const TERMINAL_MODE_RESET =
+  '\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1005l\x1b[?1006l\x1b[?1015l' +
+  '\x1b[?1049l\x1b[?25h';
+
 export function TerminalPane({
   id,
   cwd,
@@ -154,6 +166,7 @@ export function TerminalPane({
 
     // 注册"跳到某句话"能力：右栏痕迹点击时优先在终端缓冲区里定位。
     const disposeJump = registerTerminalJump(id, {
+      resetModes: () => terminal.write(TERMINAL_MODE_RESET),
       scrollToText: (text, fromEnd = 0) => {
         const plain = text.replace(/\s+/g, ' ').trim().toLowerCase();
         if (plain.length < 4) return false;
@@ -249,7 +262,8 @@ export function TerminalPane({
       if (event.id === id) terminal.write(event.data);
     });
     const unsubscribeExit = window.codeagentdesk.onSessionExited((event) => {
-      if (event.id === id) terminal.write('\r\n\x1b[90m[会话已结束]\x1b[0m\r\n');
+      if (event.id !== id) return;
+      terminal.write(`${TERMINAL_MODE_RESET}\r\n\x1b[90m[会话已结束]\x1b[0m\r\n`);
     });
 
     const observer = new ResizeObserver(scheduleFit);
