@@ -7,10 +7,22 @@ artifactName: '${productName}-Setup-${version}.${ext}'
 directories:
   output: release
   buildResources: build
+# 只保留用得到的 Chromium 语言包：默认会带 55 个（约 47MB），我们只用中英。
+electronLanguages:
+  - zh-CN
+  - en-US
+# 打包体积：NSIS 用最大压缩（构建慢一些，产物小 10%~15%）。
+compression: maximum
 files:
   - dist/**/*
   - dist-electron/**/*
   - package.json
+  # 运行时用不到的开发文件（sourcemap / 测试 / 文档）
+  - '!node_modules/**/*.map'
+  - '!node_modules/**/{test,tests,__tests__,docs,doc,example,examples}/**'
+  # node-pty 自带多架构预编译；我们只出 x64，arm64 那套是纯冗余
+  - '!node_modules/node-pty/prebuilds/win32-arm64/**'
+  - '!node_modules/node-pty/third_party/conpty/*/win10-arm64/**'
 win:
   target: nsis
   icon: build/icon.png

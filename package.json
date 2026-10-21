@@ -21,14 +21,9 @@
     "package": "npm run build && electron-builder"
   },
   "dependencies": {
-    "@xterm/addon-fit": "^0.11.0",
-    "@xterm/xterm": "^6.0.0",
     "chokidar": "^4.0.3",
     "electron-updater": "^6.8.9",
-    "lucide-react": "^1.28.0",
-    "node-pty": "^1.1.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "node-pty": "^1.1.0"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.2.0",
@@ -44,6 +39,11 @@
     "typescript": "^7.0.2",
     "vite": "^8.2.0",
     "vitest": "^4.1.10",
-    "wait-on": "^9.1.0"
+    "wait-on": "^9.1.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "@xterm/xterm": "^6.0.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "lucide-react": "^1.28.0"
   }
 }
