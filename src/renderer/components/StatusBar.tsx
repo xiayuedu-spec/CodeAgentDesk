@@ -192,16 +192,6 @@ export function StatusBar({
           ) : null}
         </div>
       ) : null}
-      <span>{sessionCount} 会话</span>
-      <span>{archivedCount} 归档</span>
-      <button type="button" className="status-day" data-tip="返回首页" onClick={onOpenHome}>
-        <Home size={12} />
-        首页
-      </button>
-      <button type="button" className="status-day" data-tip="生成今日总结" onClick={onOpenSummary}>
-        <Sparkles size={12} />
-        今日总结
-      </button>
       <div className="status-more-wrap">
         <button
           type="button"
@@ -217,6 +207,37 @@ export function StatusBar({
         </button>
         {moreOpen ? (
           <div className="status-more-menu" role="menu" onClick={(event) => event.stopPropagation()}>
+            <div className="status-more-info">
+              {sessionCount} 会话 · {archivedCount} 归档
+            </div>
+            <div className="status-more-sep" />
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMoreOpen(false);
+                onOpenHome();
+              }}
+            >
+              <span className="status-more-icon">
+                <Home size={13} />
+              </span>
+              返回首页
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMoreOpen(false);
+                onOpenSummary();
+              }}
+            >
+              <span className="status-more-icon">
+                <Sparkles size={13} />
+              </span>
+              生成今日总结
+            </button>
+            <div className="status-more-sep" />
             {moreItems.map((item) =>
               item.separator ? (
                 <div key={item.key} className="status-more-sep" />

@@ -1706,6 +1706,7 @@ export default function App() {
                       title: formatSessionTitle(activeSession),
                     })
                   }
+                  onCollapse={() => setInfoOpen(false)}
                 />
               ) : (
                 <Welcome

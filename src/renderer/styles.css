@@ -175,7 +175,7 @@ button, input {
 
 .mode-switch {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 4px;
   margin: 0 12px 10px;
   padding: 3px;
@@ -7413,4 +7413,66 @@ code,
 }
 .code-hit:hover .code-hit-text {
   color: var(--text);
+}
+/* ================================================================
+   布局瘦身：状态栏只留状态与环境、右栏可收起、痕迹压成一行
+   ================================================================ */
+
+/* 状态栏：导航与统计收进「更多」，一行只讲一件事 */
+.status-more-info {
+  padding: 5px 10px 6px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 右栏收起按钮（也能双击分隔条收起） */
+.rail-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rail-collapse {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color var(--motion-micro) ease, background var(--motion-micro) ease;
+}
+.rail-collapse:hover {
+  background: var(--bg-inset);
+  color: var(--text);
+}
+.rail-collapse svg {
+  display: block;
+}
+.info-resizer {
+  cursor: col-resize;
+}
+
+/* 痕迹：四宫格 → 一行（省 44px，高度让给主区） */
+.rail-traces {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.rail-traces i {
+  color: var(--text-faint);
+  font-style: normal;
+}
+.rail-traces .rail-del {
+  color: var(--danger);
 }

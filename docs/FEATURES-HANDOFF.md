@@ -215,6 +215,7 @@
 | 知识卡片 | `knowledge-cards.ts` + `KnowledgeCardsModal`。一卡一文件放仓库 `docs/knowledge/<slug>.md`（front-matter + 现象/结论/证据三节），同目录 `README.md` 是自动生成的索引（按类型分组、✅/📝 标记）。`parseCard`/`serializeCard`/`renderIndex`/`slugify` 都是纯函数（12 个单测覆盖往返、宽松解析、同名加序号、更新保留 createdAt、删除重建索引、按更新时间排序）。类型 pitfall/decision/flow/module，可信度 draft/verified，`files` 字段留给将来做过期检测 |
 | 会话知识沉淀 | `session-knowledge.ts`。**右键「生成知识卡片」按需触发**（不做会话结束自动跑：/exit 是主动收工，后台再花一次模型调用突兀）。IPC `knowledge:extract-cards` 复用 `task:progress` 的知识通道（可取消）；轮次 ≥4 或有过失败才分析；`runClaude` 结构化提示（只输出 JSON 数组）、四类、最多 3 张、带已有标题去重；files 逐个校验存在性防幻觉；落 `draft` **绝不自动 verified**，toast 带「去核验」 |
 | 代码搜索 + 深链接 | `code-search.ts`（Node 遍历，跳过依赖/产物/二进制，1MB/2万文件/200命中/单文件8条预算，路径统一 `/`）+ `open-file.ts`（`code -g` → `cursor -g` → `subl` → 系统默认 → 文件管理器，探测结果缓存）。入口 `Ctrl+Shift+F`。终端用 xterm 内置 `registerLinkProvider`（无需 addon）把 `file:line` 变成可点击链接，识别逻辑在纯函数 `renderer/file-links.ts`（长扩展名要排在前面：json 先于 js、tsx 先于 ts，否则会被截断） |
+| 布局分工 | 状态栏只放状态+环境，统计与首页/今日总结收进「更多」菜单顶部（`.status-more-info`）；右栏 `rail-head` 的 `›` 或双击 `.info-resizer` 收起（TabBar 按钮展开）；「痕迹」四宫格改成一行 `.rail-traces`；`.mode-switch` 去掉重复的「搜索」项变 2 列 |
 
 **坑位（内存）**：解析缓存的上限要按「条数 × 单条最坏体积」估，别只看条数；任何从 JSONL 里提取并长期缓存的对象（尤其 `tool_use.input`）都必须截断——一次整文件 Write 的 input 能有几十上百 KB，还会被复制多份。渲染层同理（`useSessionRail` 的缓存上限 8 条）。
 

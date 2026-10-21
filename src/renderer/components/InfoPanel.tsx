@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import {
   ArrowRight,
+  ChevronRight,
   CircleCheck,
   CircleDashed,
   FileCode2,
@@ -30,6 +31,8 @@ interface InfoPanelProps {
   onContinuePlan?: (prompt: string) => void;
   /** 打开工作区改动审查（git diff）。 */
   onOpenDiff?: () => void;
+  /** 收起右栏（把宽度让给主区）。 */
+  onCollapse?: () => void;
 }
 
 /** 计划里最多直接展示几条（其余折叠进弹窗）。 */
@@ -54,6 +57,7 @@ export function InfoPanel({
   onOpenInsights,
   onContinuePlan,
   onOpenDiff,
+  onCollapse,
 }: InfoPanelProps) {
   // 数据在面板内部取：15s 轮询只重渲染这一棵小树，不再把整个 App 叫醒。
   const { insights, git } = useSessionRail(session.sessionId, session.cwd, running);
@@ -80,13 +84,29 @@ export function InfoPanel({
 
   return (
     <section className="info-panel" aria-label="会话仪表">
-      <div className="info-resizer" onMouseDown={onResizeStart} title="拖动调整宽度" />
+      <div
+        className="info-resizer"
+        onMouseDown={onResizeStart}
+        onDoubleClick={onCollapse}
+        title="拖动调整宽度 · 双击收起"
+      />
       <div className="info-scroll">
         <header className="rail-head">
           <span className={`rail-status ${session.status}`}>{statusLabel(session.status)}</span>
           <span className="rail-active">
             活跃 {stats ? formatDuration(stats.activeMs) : '—'}
           </span>
+          {onCollapse ? (
+            <button
+              type="button"
+              className="rail-collapse"
+              title="收起右栏（双击分隔条也可以）"
+              aria-label="收起右栏"
+              onClick={onCollapse}
+            >
+              <ChevronRight size={13} />
+            </button>
+          ) : null}
         </header>
 
         <section className="rail-card">
@@ -217,25 +237,16 @@ export function InfoPanel({
 
         <section className="rail-card">
           <div className="rail-title">痕迹</div>
-          <div className="rail-stats">
-            <div>
-              <strong>{stats?.turns ?? '—'}</strong>
-              <span>轮对话</span>
-            </div>
-            <div>
-              <strong>{stats?.toolCalls ?? '—'}</strong>
-              <span>次工具调用</span>
-            </div>
-            <div>
-              <strong className={stats && stats.errors > 0 ? 'rail-del' : ''}>
-                {stats?.errors ?? '—'}
-              </strong>
-              <span>次失败</span>
-            </div>
-            <div>
-              <strong>{formatClock(stats?.startedAt)}</strong>
-              <span>开始</span>
-            </div>
+          <div className="rail-traces">
+            <span>{stats?.turns ?? '—'} 轮</span>
+            <i>·</i>
+            <span>{stats?.toolCalls ?? '—'} 调用</span>
+            <i>·</i>
+            <span className={stats && stats.errors > 0 ? 'rail-del' : undefined}>
+              {stats?.errors ?? '—'} 失败
+            </span>
+            <i>·</i>
+            <span>{formatClock(stats?.startedAt)} 开始</span>
           </div>
         </section>
 

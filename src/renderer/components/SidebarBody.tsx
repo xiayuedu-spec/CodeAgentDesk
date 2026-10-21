@@ -372,13 +372,6 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
         >
           归档
         </button>
-        <button
-          type="button"
-          className={mode === 'search' ? 'active' : ''}
-          onClick={() => setMode('search')}
-        >
-          搜索
-        </button>
       </div>
 
       <div
