@@ -246,9 +246,18 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
           type="button"
           className={`session-row${navClass(rowIndex)}`}
           data-nav-index={rowIndex}
-          onClick={() => {
-            if (historySelectMode) toggleHistorySelect(record.sessionId);
-            else void openHistory(record);
+          onClick={(event) => {
+            if (historySelectMode) {
+              toggleHistorySelect(record.sessionId);
+              return;
+            }
+            // Ctrl/⌘ + 点击：进入多选并选中这一行（不常驻任何按钮）
+            if (event.ctrlKey || event.metaKey) {
+              toggleHistorySelectMode();
+              toggleHistorySelect(record.sessionId);
+              return;
+            }
+            void openHistory(record);
           }}
           onContextMenu={(event) => {
             event.preventDefault();
@@ -462,31 +471,22 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
 
               {ungroupedHistory.length > 0 ? (
                 <section className={`session-group${historySelectMode ? ' selecting' : ''}`}>
-                  <div className="group-head">
-                    <button
-                      type="button"
-                      className={`group-label section-toggle${collapsedSections.has('history') ? '' : ' open'}`}
-                      aria-expanded={!collapsedSections.has('history')}
-                      onClick={() => toggleSectionCollapse('history')}
-                      onContextMenu={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        openSectionMenu(event.clientX, event.clientY);
-                      }}
-                    >
-                      <ChevronRight size={11} className="section-chevron" />
-                      历史会话
-                      <span className="group-count">{ungroupedHistory.length}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`section-select${historySelectMode ? ' on' : ''}`}
-                      title={historySelectMode ? '退出多选' : '多选归档'}
-                      onClick={toggleHistorySelectMode}
-                    >
-                      {historySelectMode ? '完成' : '选择'}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className={`group-label section-toggle${collapsedSections.has('history') ? '' : ' open'}`}
+                    aria-expanded={!collapsedSections.has('history')}
+                    title={historySelectMode ? undefined : '右键可多选归档'}
+                    onClick={() => toggleSectionCollapse('history')}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      openSectionMenu(event.clientX, event.clientY);
+                    }}
+                  >
+                    <ChevronRight size={11} className="section-chevron" />
+                    历史会话
+                    <span className="group-count">{ungroupedHistory.length}</span>
+                  </button>
                   {historySelectMode && !collapsedSections.has('history') ? (
                     <div className="history-bulk">
                       <button
@@ -509,6 +509,13 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
                         onClick={handleArchiveSelectedHistory}
                       >
                         {archivingSelection ? '归档中…' : '归档'}
+                      </button>
+                      <button
+                        type="button"
+                        className="archive-toolbar-btn"
+                        onClick={toggleHistorySelectMode}
+                      >
+                        完成
                       </button>
                     </div>
                   ) : null}

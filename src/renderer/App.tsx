@@ -1632,6 +1632,7 @@ export default function App() {
     togglePin: (sessionId: string, pinned: boolean) => void handleTogglePin(sessionId, pinned),
     archiveGroupHistory: (groupId: string) => void handleArchiveGroupHistory(groupId),
     archiveAllHistory: () => void handleArchiveAllHistory(),
+    enterHistorySelectMode: () => setHistorySelectMode(true),
     openCwd: (cwd: string) => void handleOpenCwd(cwd),
     setGroupColor: (id: string, color: string) => void handleSetGroupColor(id, color),
     setMoveNewOpen,

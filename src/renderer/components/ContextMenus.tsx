@@ -67,6 +67,8 @@ interface ContextMenusActions {
   setGroupColor: (id: string, color: string) => void;
   archiveGroupHistory: (groupId: string) => void;
   archiveAllHistory: () => void;
+  /** 进入历史会话多选模式（区块右键入口，避免常驻按钮）。 */
+  enterHistorySelectMode: () => void;
   setMoveNewOpen: (open: boolean) => void;
   setMoveNewName: (name: string) => void;
   createGroupAndMove: () => void;
@@ -161,6 +163,7 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
     setGroupColor,
     archiveGroupHistory,
     archiveAllHistory,
+  enterHistorySelectMode,
     closeSectionMenu,
     setMoveNewOpen,
     setMoveNewName,
@@ -458,6 +461,20 @@ export function ContextMenus({ data, actions }: { data: ContextMenusData; action
               <Archive size={14} />
             </span>
             全部归档（{historyCountAll} 个历史会话）
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={historyCountAll === 0}
+            onClick={() => {
+              enterHistorySelectMode();
+              closeSectionMenu();
+            }}
+          >
+            <span className="context-menu-icon">
+              <ListChecks size={14} />
+            </span>
+            多选归档…
           </button>
         </ClampedMenu>
       ) : null}

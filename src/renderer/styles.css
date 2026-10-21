@@ -7479,44 +7479,6 @@ code,
 /* ================================================================
    历史会话多选归档：选择模式 + 复选框 + 批量工具条
    ================================================================ */
-.group-head {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.group-head .section-toggle {
-  flex: 1;
-  min-width: 0;
-}
-.section-select {
-  flex: none;
-  height: 20px;
-  padding: 0 8px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text-faint);
-  font-size: 11px;
-  cursor: pointer;
-  box-shadow: none;
-  opacity: .5;
-  transition: opacity var(--motion-micro) ease, color var(--motion-micro) ease,
-    border-color var(--motion-micro) ease;
-}
-.session-group:hover .section-select,
-.section-select.on,
-.section-select:focus-visible {
-  opacity: 1;
-}
-.section-select:hover {
-  border-color: var(--border);
-  color: var(--text);
-}
-.section-select.on {
-  border-color: var(--accent-dim);
-  background: var(--accent-soft);
-  color: var(--accent);
-}
 .history-bulk {
   display: flex;
   align-items: center;
