@@ -216,6 +216,32 @@ describe('会话痕迹统计', () => {
     ]);
   });
 
+  it('剥掉 system-reminder 等包装块，纯提醒消息既不算轮次也不算输入', async () => {
+    const file = writeSession([
+      {
+        type: 'user',
+        message: {
+          role: 'user',
+          content: [{ type: 'text', text: '<system-reminder>\n有些上下文\n</system-reminder>' }],
+        },
+      },
+      {
+        type: 'user',
+        message: {
+          role: 'user',
+          content: [
+            { type: 'text', text: '<system-reminder>gitStatus…</system-reminder>' },
+            { type: 'text', text: '帮我看下这个报错' },
+          ],
+        },
+      },
+      { type: 'user', message: { role: 'user', content: '<system-reminder>另一个提醒</system-reminder>' } },
+    ]);
+    const insights = await readSessionInsights(file, 's1');
+    expect(insights.stats.turns).toBe(1);
+    expect(insights.prompts.map((prompt) => prompt.text)).toEqual(['帮我看下这个报错']);
+  });
+
   it('用户输入最多保留 200 条，单条截断 160 字', async () => {
     const lines = Array.from({ length: 205 }, (_, index) => ({
       type: 'user',

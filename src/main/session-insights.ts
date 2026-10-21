@@ -260,8 +260,8 @@ export async function readSessionInsights(
   const prompts: SessionPrompt[] = [];
   const pushPrompt = (text: string, at?: string): void => {
     const single = text.replace(/\s+/g, ' ').trim();
-    // 跳过斜杠命令与本地命令包装（不是人写的输入）
-    if (!single || single.startsWith('<') || single.startsWith('/')) return;
+    // 斜杠命令不算"人写的输入"（但它前面已经算过一轮对话）
+    if (!single || single.startsWith('/')) return;
     prompts.push({ text: single.slice(0, 160), at });
     while (prompts.length > MAX_PROMPTS) prompts.shift();
   };
@@ -293,9 +293,12 @@ export async function readSessionInsights(
     const isUserEvent = event.type === 'user' || event.message?.role === 'user';
     if (!Array.isArray(content)) {
       // 少数记录把 content 写成裸字符串：能算一轮真实对话。
-      if (typeof content === 'string' && content.trim() && isUserEvent) {
-        stats.turns += 1;
-        pushPrompt(content, event.timestamp);
+      if (typeof content === 'string' && isUserEvent) {
+        const cleaned = stripUserWrappers(content);
+        if (cleaned) {
+          stats.turns += 1;
+          pushPrompt(cleaned, event.timestamp);
+        }
       }
       return;
     }
@@ -310,10 +313,11 @@ export async function readSessionInsights(
         continue;
       }
       if (item.type === 'text' && isUserEvent) {
-        const text = asText(item.text);
-        if (text) {
+        // 只保留剥掉包装块之后仍有内容的文本（纯 system-reminder 不算人写的）
+        const cleaned = stripUserWrappers(asText(item.text) ?? '');
+        if (cleaned) {
           hasHumanText = true;
-          humanText += (humanText ? ' ' : '') + text;
+          humanText += (humanText ? ' ' : '') + cleaned;
         }
       }
       if (item.type !== 'tool_use') continue;
@@ -365,6 +369,34 @@ export async function readSessionInsights(
     insightsCache.delete(oldest);
   }
   return insights;
+}
+
+/**
+ * 剥掉 Claude Code 注入到 user 消息里的包装块（system-reminder / ide_opened_file 等）。
+ * 真实会话里用户输入前经常跟着一整段 `<system-reminder>`，不剥掉的话
+ * 既会把整条消息误判成"非人写"，又会把纯提醒消息算成一轮对话。
+ */
+const WRAPPER_TAGS = [
+  'system-reminder',
+  'ide_opened_file',
+  'ide_selection',
+  'command-name',
+  'command-message',
+  'command-args',
+  'local-command-stdout',
+  'local-command-stderr',
+  'user-prompt-submit-hook',
+  'browser_context',
+];
+
+export function stripUserWrappers(text: string): string {
+  let result = text;
+  for (const tag of WRAPPER_TAGS) {
+    const paired = new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?<\\/${tag}>`, 'gi');
+    const single = new RegExp(`<${tag}\\b[^>]*\\/>`, 'gi');
+    result = result.replace(paired, ' ').replace(single, ' ');
+  }
+  return result.replace(/\s+/g, ' ').trim();
 }
 
 /** 空结果（找不到会话记录时使用）。 */
