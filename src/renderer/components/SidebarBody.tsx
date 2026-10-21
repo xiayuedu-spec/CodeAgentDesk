@@ -8,7 +8,7 @@ import {
   X,
 } from 'lucide-react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
-import type { AgentStatusStyle, SessionRecord } from '../../shared/types';
+import type { AgentStatusStyle, GroupRecord, SessionRecord } from '../../shared/types';
 import {
   formatSessionTitle,
   recordTitle,
@@ -37,6 +37,14 @@ interface SidebarBodyData {
   collapsedSections: Set<string>;
   historyRecords: SessionRecord[];
   archivedRecords: SessionRecord[];
+  archivedGroupSections: {
+    key: string;
+    group: GroupRecord;
+    records: SessionRecord[];
+    collapsed: boolean;
+  }[];
+  archivedUngrouped: SessionRecord[];
+  archiveIndexByKey: Map<string, number>;
   groupSections: GroupSection[];
   ungroupedRunning: SessionView[];
   ungroupedHistory: SessionRecord[];
@@ -98,6 +106,9 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
     collapsedSections,
     historyRecords,
     archivedRecords,
+    archivedGroupSections,
+    archivedUngrouped,
+    archiveIndexByKey,
     groupSections,
     ungroupedRunning,
     ungroupedHistory,
@@ -286,6 +297,62 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
         </button>
       )}
     </li>
+    );
+  };
+
+  const renderArchiveRow = (record: SessionRecord, rowIndex: number): ReactNode => {
+    const checked = selectedArchiveIds.has(record.sessionId);
+    return (
+      <li key={record.sessionId} className={`archive-row${checked ? ' checked' : ''}`}>
+        {archiveSelectMode ? (
+          <input
+            type="checkbox"
+            className="archive-check"
+            aria-label={`选择 ${recordTitle(record)}`}
+            checked={checked}
+            onChange={() => toggleArchiveSelect(record.sessionId)}
+          />
+        ) : null}
+        <button
+          type="button"
+          className={`session-row archive-row-main ${
+            sessions.some(
+              (session) => session.sessionId === record.sessionId && session.id === activeId,
+            ) || detailSessionId === record.sessionId
+              ? 'active'
+              : ''
+          }${navClass(rowIndex)}`}
+          data-nav-index={rowIndex}
+          onClick={(event) => {
+            if (archiveSelectMode) {
+              toggleArchiveSelect(record.sessionId);
+              return;
+            }
+            if (event.ctrlKey || event.metaKey) {
+              toggleSelectMode();
+              toggleArchiveSelect(record.sessionId);
+              return;
+            }
+            void openArchivedSession(record);
+          }}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openContextMenu(record.sessionId, record.cwd, true, event.clientX, event.clientY);
+          }}
+        >
+          <span className="session-dot ended" title="已结束" />
+          <div className="session-main">
+            <span className="session-title-line">
+              {record.pinned ? <Pin size={10} className="session-pin" /> : null}
+              <span className="session-title">{recordTitle(record)}</span>
+            </span>
+            <span className="session-sub" title={record.cwd || ''}>
+              {record.cwd || '未知目录'}
+            </span>
+          </div>
+        </button>
+      </li>
     );
   };
 
@@ -592,68 +659,60 @@ export function SidebarBody({ data, actions }: { data: SidebarBodyData; actions:
                   </>
                 </div>
               ) : null}
-              <SessionList
-                items={archivedRecords}
-                firstIndex={0}
-                focusIndex={activeNav}
-                scrollRef={bodyRef}
-                renderRow={(record, k) => {
-                  const checked = selectedArchiveIds.has(record.sessionId);
-                  return (
-                    <li key={record.sessionId} className={`archive-row${checked ? ' checked' : ''}`}>
-                      {archiveSelectMode ? (
-                        <input
-                          type="checkbox"
-                          className="archive-check"
-                          aria-label={`选择 ${recordTitle(record)}`}
-                          checked={checked}
-                          onChange={() => toggleArchiveSelect(record.sessionId)}
-                        />
-                      ) : null}
-                      <button
-                        type="button"
-                        className={`session-row archive-row-main ${
-                          sessions.some(
-                            (session) =>
-                              session.sessionId === record.sessionId && session.id === activeId,
-                          ) || detailSessionId === record.sessionId
-                            ? 'active'
-                            : ''
-                        }${navClass(k)}`}
-                        data-nav-index={k}
-                        onClick={(event) => {
-                          if (archiveSelectMode) {
-                            toggleArchiveSelect(record.sessionId);
-                            return;
-                          }
-                          if (event.ctrlKey || event.metaKey) {
-                            toggleSelectMode();
-                            toggleArchiveSelect(record.sessionId);
-                            return;
-                          }
-                          void openArchivedSession(record);
-                        }}
-                        onContextMenu={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          openContextMenu(record.sessionId, record.cwd, true, event.clientX, event.clientY);
-                        }}
-                      >
-                        <span className="session-dot ended" title="已结束" />
-                        <div className="session-main">
-                          <span className="session-title-line">
-                            {record.pinned ? <Pin size={10} className="session-pin" /> : null}
-                            <span className="session-title">{recordTitle(record)}</span>
-                          </span>
-                          <span className="session-sub" title={record.cwd || ''}>
-                            {record.cwd || '未知目录'}
-                          </span>
-                        </div>
-                      </button>
-                    </li>
-                  );
-                }}
-              />
+              {archivedGroupSections.map((section) => (
+                <section key={section.key} className="group-block">
+                  <div
+                    className="group-header"
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={!section.collapsed}
+                    onClick={() => toggleGroupCollapse(section.key)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        toggleGroupCollapse(section.key);
+                      }
+                    }}
+                  >
+                    <ChevronRight
+                      size={12}
+                      className={`group-chevron${section.collapsed ? '' : ' open'}`}
+                    />
+                    <span
+                      className="group-color-dot"
+                      style={{ background: section.group.color }}
+                    />
+                    <span className="group-name">{section.group.name}</span>
+                    <span className="group-count">{section.records.length}</span>
+                  </div>
+                  {!section.collapsed ? (
+                    <SessionList
+                      items={section.records}
+                      firstIndex={archiveIndexByKey.get(`a:${section.records[0].sessionId}`) ?? 0}
+                      focusIndex={activeNav}
+                      scrollRef={bodyRef}
+                      renderRow={(record, k) => renderArchiveRow(record, k)}
+                    />
+                  ) : null}
+                </section>
+              ))}
+              {archivedUngrouped.length > 0 ? (
+                <section className="group-block">
+                  {archivedGroupSections.length > 0 ? (
+                    <div className="group-label section-plain">
+                      未分组
+                      <span className="group-count">{archivedUngrouped.length}</span>
+                    </div>
+                  ) : null}
+                  <SessionList
+                    items={archivedUngrouped}
+                    firstIndex={archiveIndexByKey.get(`a:${archivedUngrouped[0].sessionId}`) ?? 0}
+                    focusIndex={activeNav}
+                    scrollRef={bodyRef}
+                    renderRow={(record, k) => renderArchiveRow(record, k)}
+                  />
+                </section>
+              ) : null}
             </>
           )
         ) : (

@@ -118,6 +118,52 @@ function withPinnedFirst<T>(items: T[], isPinned: (item: T) => boolean): T[] {
     [groups, historyRecords],
   );
 
+  // 归档视图也按分组归类：归档时 meta 里的 group 是保留的，所以归档后还能回到原分组，
+  // 不至于"归档完就找不到了"。分组被删掉的记录回落到"未分组"。
+  const archivedGroupSections = useMemo(() => {
+    const groupById = new Map(groups.map((group) => [group.id, group]));
+    const byGroup = new Map<string, SessionRecord[]>();
+    for (const record of archivedRecords) {
+      const groupId = record.group;
+      if (!groupId || !groupById.has(groupId)) continue;
+      const list = byGroup.get(groupId) ?? [];
+      list.push(record);
+      byGroup.set(groupId, list);
+    }
+    return groups
+      .map((group) => ({
+        key: group.id,
+        group,
+        records: withPinnedFirst(byGroup.get(group.id) ?? [], (record) => record.pinned === true),
+        collapsed: collapsedGroups.has(group.id),
+      }))
+      .filter((section) => section.records.length > 0);
+  }, [groups, archivedRecords, collapsedGroups]);
+
+  const archivedUngrouped = useMemo(
+    () =>
+      withPinnedFirst(
+        archivedRecords.filter(
+          (record) => !record.group || !groups.some((group) => group.id === record.group),
+        ),
+        (record) => record.pinned === true,
+      ),
+    [groups, archivedRecords],
+  );
+
+  /** 归档视图的实际渲染顺序（分组区块 → 未分组），键盘导航与行下标都按它算。 */
+  const archivedRows = useMemo(
+    () => [
+      ...archivedGroupSections.flatMap((section) => (section.collapsed ? [] : section.records)),
+      ...archivedUngrouped,
+    ],
+    [archivedGroupSections, archivedUngrouped],
+  );
+  const archiveIndexByKey = useMemo(
+    () => new Map(archivedRows.map((record, index) => [`a:${record.sessionId}`, index])),
+    [archivedRows],
+  );
+
   const visibleRows: GroupSectionItem[] = [
     ...groupSections.flatMap((section) => (section.collapsed ? [] : section.items)),
     ...ungroupedRunning.map((session) => ({
@@ -152,7 +198,7 @@ function withPinnedFirst<T>(items: T[], isPinned: (item: T) => boolean): T[] {
           cwd: item.cwd,
         }))
       : mode === 'archive'
-        ? archivedRecords.map((record) => ({
+        ? archivedRows.map((record) => ({
             key: `a:${record.sessionId}`,
             kind: 'archived' as const,
             sessionId: record.sessionId,
@@ -173,6 +219,9 @@ function withPinnedFirst<T>(items: T[], isPinned: (item: T) => boolean): T[] {
   return {
     historyRecords,
     archivedRecords,
+    archivedGroupSections,
+    archivedUngrouped,
+    archiveIndexByKey,
     groupSections,
     ungroupedRunning,
     ungroupedHistory,
