@@ -1,6 +1,7 @@
 import {
   lazy,
   Suspense,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -36,7 +37,7 @@ import { useEscape } from './hooks/useEscape';
 import { useSessionAgentStatuses } from './hooks/useAgentStatus';
 import { useOverlays } from './hooks/useOverlays';
 import { useSessionLists } from './hooks/useSessionLists';
-import { jumpTerminalToText, resetTerminalModes } from './terminal-jump';
+import type { RegisterTerminalApi, TerminalJumpApi } from './terminal-jump';
 import { usePomodoro } from './hooks/usePomodoro';
 import { useToast } from './toast';
 import {
@@ -179,6 +180,12 @@ export default function App() {
   const [records, setRecords] = useState<SessionRecord[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
+  /** 终端 API 注册表：由 App 持有（不能放模块级，见 terminal-jump.ts 的注释）。 */
+  const terminalApisRef = useRef(new Map<string, TerminalJumpApi>());
+  const registerTerminalApi = useCallback<RegisterTerminalApi>((id, api) => {
+    if (api) terminalApisRef.current.set(id, api);
+    else terminalApisRef.current.delete(id);
+  }, []);
   /** 详情默认只看用户输入（右栏「全部输入」进入）。 */
   const [detailUserOnly, setDetailUserOnly] = useState(false);
   const [detail, setDetail] = useState<SessionDetailResult | null>(null);
@@ -1485,6 +1492,7 @@ export default function App() {
             <LazyTerminalPane
               id={session.id}
               cwd={session.cwd}
+              onRegisterApi={registerTerminalApi}
               active={!terminalStackHidden && session.id === activeId}
               fontSize={claudeInfo?.config.terminalFontSize ?? DEFAULT_TERMINAL_FONT_SIZE}
               fontFamily={claudeInfo?.config.terminalFontFamily ?? DEFAULT_TERMINAL_FONT_FAMILY}
@@ -1626,7 +1634,13 @@ export default function App() {
         toast.info('这个会话没有在运行，终端模式会在下次打开时重建');
         return;
       }
-      if (resetTerminalModes(target.id)) toast.success('已复位终端模式');
+      const api = terminalApisRef.current.get(target.id);
+      if (!api) {
+        toast.info('这个终端还没就绪，稍后再试');
+        return;
+      }
+      api.resetModes();
+      toast.success('已复位终端模式');
     },
     restoreArchived: (sessionId: string, cwd: string) => void restoreArchived(sessionId, cwd),
     copySessionText: (sessionId: string) => void copySessionText(sessionId),
@@ -1790,7 +1804,8 @@ export default function App() {
                   onJumpToPrompt={(text, fromEnd) => {
                     // 优先在终端缓冲区里定位（那就是"实际会话的位置"）；
                     // 找不到（已滚出 buffer / 还没渲染）才退回详情页。
-                    if (jumpTerminalToText(activeId, text, fromEnd)) return;
+                    const api = activeId ? terminalApisRef.current.get(activeId) : undefined;
+                    if (api?.scrollToText(text, fromEnd)) return;
                     if (activeSession.sessionId) {
                       toast.info('终端里已找不到这句，改在详情里定位');
                       void openDetailById(activeSession.sessionId, text);

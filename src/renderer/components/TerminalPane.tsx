@@ -3,7 +3,7 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { findFileLinks } from '../file-links';
-import { registerTerminalJump } from '../terminal-jump';
+import type { RegisterTerminalApi, TerminalJumpApi } from '../terminal-jump';
 import {
   DEFAULT_TERMINAL_FONT_FAMILY,
   DEFAULT_TERMINAL_FONT_SIZE,
@@ -11,6 +11,8 @@ import {
 
 interface TerminalPaneProps {
   id: string;
+  /** 把终端 API 交给上层登记（上层持有注册表，见 terminal-jump.ts 注释）。 */
+  onRegisterApi?: RegisterTerminalApi;
   /** 工作目录：用于把终端里的相对路径解析成可打开的文件。 */
   cwd?: string;
   active: boolean;
@@ -65,6 +67,7 @@ const TERMINAL_MODE_RESET =
 export function TerminalPane({
   id,
   cwd,
+  onRegisterApi,
   active,
   fontSize = DEFAULT_TERMINAL_FONT_SIZE,
   fontFamily = DEFAULT_TERMINAL_FONT_FAMILY,
@@ -165,7 +168,7 @@ export function TerminalPane({
     scheduleFit();
 
     // 注册"跳到某句话"能力：右栏痕迹点击时优先在终端缓冲区里定位。
-    const disposeJump = registerTerminalJump(id, {
+    const jumpApi: TerminalJumpApi = {
       resetModes: () => terminal.write(TERMINAL_MODE_RESET),
       scrollToText: (text, fromEnd = 0) => {
         const plain = text.replace(/\s+/g, ' ').trim().toLowerCase();
@@ -208,7 +211,8 @@ export function TerminalPane({
         }
         return false;
       },
-    });
+    };
+    onRegisterApi?.(id, jumpApi);
 
     // 终端里的 file:line 变成可点击链接（xterm 内置 link provider，无需 addon）。
     const linkDisposable = terminal.registerLinkProvider({
@@ -271,7 +275,7 @@ export function TerminalPane({
 
     return () => {
       linkDisposable.dispose();
-      disposeJump();
+      onRegisterApi?.(id, null);
       cancelAnimationFrame(frame);
       observer.disconnect();
       dataDisposable.dispose();
