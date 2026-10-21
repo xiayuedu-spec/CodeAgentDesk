@@ -173,39 +173,70 @@ export function TerminalPane({
       scrollToText: (text, fromEnd = 0) => {
         const plain = text.replace(/\s+/g, ' ').trim().toLowerCase();
         if (plain.length < 4) return false;
-        // 长句被终端折行后就匹配不上，所以逐级缩短针，先准后宽
+        // 长句在终端里会折行，逐级缩短针：先准后宽
         const needles = [plain.slice(0, 24), plain.slice(0, 12), plain.slice(0, 8)].filter(
           (needle, index, list) => needle.length >= 4 && list.indexOf(needle) === index,
         );
         const buffer = terminal.buffer.active;
-        for (const needle of needles) {
-          const matches: { row: number; column: number }[] = [];
-          for (let row = buffer.length - 1; row >= 0; row -= 1) {
-            const line = buffer.getLine(row);
-            if (!line) continue;
-            const rendered = line
-              .translateToString(true)
-              .replace(/\s+/g, ' ')
-              .trim()
-              .toLowerCase();
-            const column = rendered.indexOf(needle);
-            if (column >= 0) matches.push({ row, column });
+
+        // 把整个缓冲区"去空白"拼成一条长串再找：
+        // TUI 按窗宽折行时，一句话会被拆到两行，逐行匹配必然失败。
+        // 同时记下每行在长串里的起点，命中后反查行号。
+        const starts: number[] = [];
+        const pieces: string[] = [];
+        const texts: string[] = [];
+        let cursor = 0;
+        for (let row = 0; row < buffer.length; row += 1) {
+          const line = buffer.getLine(row);
+          const text = line ? line.translateToString(true) : '';
+          const stripped = text.replace(/\s+/g, '').toLowerCase();
+          starts.push(cursor);
+          pieces.push(stripped);
+          texts.push(text);
+          cursor += stripped.length;
+        }
+        const big = pieces.join('');
+
+        const rowAt = (offset: number): number => {
+          let low = 0;
+          let high = starts.length - 1;
+          while (low < high) {
+            const mid = (low + high + 1) >> 1;
+            if (starts[mid] <= offset) low = mid;
+            else high = mid - 1;
           }
-          if (matches.length === 0) continue;
-          // 同一句话出现多次时取对应那一次（从末尾数）
-          const hit = matches[Math.min(fromEnd, matches.length - 1)];
-          terminal.scrollToLine(Math.max(0, hit.row - 2));
-          try {
-            terminal.select(hit.column, hit.row, needle.length);
-            window.setTimeout(() => {
-              try {
-                terminal.clearSelection();
-              } catch {
-                // 终端可能已被销毁
-              }
-            }, 2200);
-          } catch {
-            // 选中失败不影响滚动
+          return low;
+        };
+
+        for (const needle of needles) {
+          const needleN = needle.replace(/\s+/g, '');
+          // 同一句话出现多次时，从末尾数第 fromEnd 次
+          let searchFrom = big.length;
+          let found = -1;
+          for (let attempt = 0; attempt <= fromEnd; attempt += 1) {
+            found = big.lastIndexOf(needleN, searchFrom - 1);
+            if (found < 0) break;
+            searchFrom = found;
+          }
+          if (found < 0) continue;
+
+          const row = rowAt(found);
+          terminal.scrollToLine(Math.max(0, row - 2));
+          // 只有命中完整落在同一行时才高亮（跨行时列号对不上，只滚动）
+          const column = texts[row] ? texts[row].toLowerCase().indexOf(needle) : -1;
+          if (column >= 0) {
+            try {
+              terminal.select(column, row, needle.length);
+              window.setTimeout(() => {
+                try {
+                  terminal.clearSelection();
+                } catch {
+                  // 终端可能已被销毁
+                }
+              }, 2200);
+            } catch {
+              // 选中失败不影响滚动
+            }
           }
           return true;
         }

@@ -1802,12 +1802,19 @@ export default function App() {
                     setDetailUserOnly(true);
                   }}
                   onJumpToPrompt={(text, fromEnd) => {
-                    // 优先在终端缓冲区里定位（那就是"实际会话的位置"）；
-                    // 找不到（已滚出 buffer / 还没渲染）才退回详情页。
+                    // 优先在终端缓冲区里定位（那就是"实际会话的位置"）。
                     const api = activeId ? terminalApisRef.current.get(activeId) : undefined;
-                    if (api?.scrollToText(text, fromEnd)) return;
+                    if (!api) {
+                      // 没有活终端（会话已结束/未运行）：只能看详情，别说成"终端里找不到"
+                      if (activeSession.sessionId) {
+                        toast.info('这个会话已结束，改在详情里定位');
+                        void openDetailById(activeSession.sessionId, text);
+                      }
+                      return;
+                    }
+                    if (api.scrollToText(text, fromEnd)) return;
                     if (activeSession.sessionId) {
-                      toast.info('终端里已找不到这句，改在详情里定位');
+                      toast.info('终端缓冲区里已没有这句（被重绘或滚出），改在详情定位');
                       void openDetailById(activeSession.sessionId, text);
                     }
                   }}
