@@ -1,311 +1,521 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-skin="a">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CodeAgentDesk 风格预览</title>
+<title>CodeAgentDesk · 界面重构样张</title>
+<!--
+  样张：不参与应用构建，直接用浏览器打开（file:// 或任意静态服务）。
+  目的：在动 6700 行 styles.css 之前先定方向。三个方向共用同一套结构与文案，
+  只有设计令牌、材质与排版不同；右上角可实时切换，也支持 ?skin=a|b|c 直达。
+-->
 <style>
+  /* ============================================================
+     公共结构（与方向无关）
+     ============================================================ */
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
-    background: #eef0f3; color: #222; padding: 40px 32px 80px;
+    min-height: 100vh; padding: 28px 28px 80px;
+    background: #0b0c0f; color: #ddd;
+    font-family: var(--sans); font-size: 13px;
+    transition: background .25s ease, color .25s ease;
   }
-  .page-title { text-align: center; margin-bottom: 8px; font-size: 26px; font-weight: 700; }
-  .page-sub { text-align: center; color: #666; margin-bottom: 48px; font-size: 14px; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  code { font-family: var(--mono); font-size: .92em; padding: 1px 5px; border-radius: 4px; background: var(--inset); }
 
-  /* ---------- 主题块 ---------- */
-  .theme-block { margin: 36px auto; max-width: 920px; border-radius: 18px; overflow: hidden;
-    box-shadow: 0 20px 50px rgba(0,0,0,.14); }
-  .theme-head { display: flex; align-items: baseline; gap: 12px; padding: 18px 24px; }
-  .theme-head h2 { font-size: 19px; font-weight: 700; }
-  .theme-head .tagline { font-size: 13px; opacity: .75; }
-  .swatches { display: flex; gap: 8px; margin-left: auto; }
-  .swatch { width: 26px; height: 26px; border-radius: 8px; border: 1px solid rgba(0,0,0,.15); }
+  .bar { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 22px; flex-wrap: wrap; }
+  .bar h1 { font-size: 19px; font-weight: 650; letter-spacing: -.01em; }
+  .bar p { margin-top: 5px; font-size: 12px; color: var(--muted); max-width: 640px; line-height: 1.65; }
+  .switch { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--hairline); border-radius: 10px; background: var(--panel); }
+  .switch button {
+    padding: 6px 13px; border: 0; border-radius: 7px; background: transparent;
+    color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; transition: background .15s, color .15s;
+  }
+  .switch button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 
-  /* ---------- 通用 mock ---------- */
-  .mock { display: grid; grid-template-columns: 170px 1fr; min-height: 340px; }
-  .mock-sidebar { padding: 14px 10px; display: flex; flex-direction: column; gap: 4px; }
-  .mock-logo { display: flex; align-items: center; gap: 8px; padding: 6px 8px 12px; font-weight: 700; font-size: 13px; }
-  .mock-logo-dot { width: 16px; height: 16px; border-radius: 5px; display: grid; place-items: center; font-size: 9px; color: #fff; }
-  .mock-label { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; padding: 8px 8px 4px; opacity: .6; }
-  .mock-item { padding: 7px 8px; border-radius: 7px; font-size: 12px; display: flex; gap: 7px; align-items: center; }
-  .mock-item .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
-  .mock-item.active { font-weight: 600; }
-  .mock-item .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .mock-main { padding: 12px 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-  .mock-tabs { display: flex; gap: 6px; }
-  .mock-tab { padding: 5px 12px; border-radius: 7px; font-size: 12px; display: flex; gap: 6px; align-items: center; }
-  .mock-tab .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
-  .mock-card { border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
-  .mock-card .k { font-size: 10px; opacity: .65; }
-  .mock-card .v { font-size: 13px; font-weight: 600; }
-  .mock-row { display: flex; gap: 8px; }
-  .mock-bar { height: 8px; border-radius: 999px; display: flex; overflow: hidden; gap: 2px; }
-  .mock-bar i { display: block; }
-  .mock-btn { border: 0; border-radius: 8px; padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer; align-self: flex-start; }
-  .mock-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-  .mock-chip { padding: 2px 9px; border-radius: 999px; font-size: 10px; }
+  /* 应用外框 */
+  .window {
+    position: relative;
+    border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--hairline);
+    background: var(--bg); box-shadow: var(--window-shadow);
+    display: grid; grid-template-columns: 214px minmax(0, 1fr) 236px;
+    grid-template-rows: 38px minmax(0, 1fr) 30px; height: 560px;
+  }
+  .window::before {
+    content: ""; position: absolute; inset: 0 0 auto; height: 1px; z-index: 2;
+    background: linear-gradient(90deg, transparent, var(--edge) 22%, var(--edge) 78%, transparent);
+    opacity: .8;
+  }
+  .titlebar { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 0 12px;
+    border-bottom: 1px solid var(--hairline); background: var(--raised); }
+  .traffic { display: flex; gap: 6px; }
+  .traffic i { width: 10px; height: 10px; border-radius: 50%; background: var(--faint); opacity: .5; }
+  .traffic i:first-child { background: #ff6159; opacity: .9; }
+  .traffic i:nth-child(2) { background: #ffbd2e; opacity: .9; }
+  .traffic i:nth-child(3) { background: #28c840; opacity: .9; }
+  .titlebar .doc { margin-left: 6px; font-size: 12px; color: var(--muted); }
+  .titlebar .cmd { margin-left: auto; padding: 3px 9px; border: 1px solid var(--hairline); border-radius: 999px; font-size: 11px; color: var(--faint); }
 
-  /* ---------- 主题 A：深空科技 ---------- */
-  .theme-a { background: var(--a-bg); color: var(--a-text); }
-  .theme-a .theme-head { background: var(--a-raised); color: var(--a-text); }
-  .theme-a { --a-bg:#0b0e14; --a-raised:#12161f; --a-inset:#07090e; --a-border:#1f2532; --a-text:#e6ecf5;
-    --a-muted:#8b96a8; --a-accent:#22d3ee; --a-soft:rgba(34,211,238,.14); --a-warn:#fbbf24; --a-radius:9px; }
-  .theme-a .mock { background: var(--a-bg); }
-  .theme-a .mock-sidebar { background: var(--a-raised); border-right: 1px solid var(--a-border); }
-  .theme-a .mock-item:hover, .theme-a .mock-item.active { background: var(--a-soft); }
-  .theme-a .mock-item.active { color: var(--a-accent); }
-  .theme-a .mock-item .dot { background: var(--a-muted); }
-  .theme-a .mock-item:nth-child(4) .dot { background: var(--a-accent); box-shadow: 0 0 8px var(--a-accent); }
-  .theme-a .mock-main { background: var(--a-bg); }
-  .theme-a .mock-tab { background: var(--a-inset); border: 1px solid var(--a-border); color: var(--a-muted); }
-  .theme-a .mock-tab.active { background: var(--a-soft); border-color: var(--a-accent); color: var(--a-text); box-shadow: 0 0 12px var(--a-soft); }
-  .theme-a .mock-card { background: var(--a-raised); border: 1px solid var(--a-border); box-shadow: 0 6px 20px rgba(0,0,0,.25); }
-  .theme-a .mock-bar { background: var(--a-inset); }
-  .theme-a .mock-bar i:nth-child(1){ background: var(--a-accent); } .theme-a .mock-bar i:nth-child(2){ background: var(--a-warn); } .theme-a .mock-bar i:nth-child(3){ background: var(--a-border); }
-  .theme-a .mock-btn { background: linear-gradient(180deg, #67e8f9, var(--a-accent)); color: #062a33; box-shadow: 0 3px 12px rgba(34,211,238,.35); }
-  .theme-a .mock-chip { background: var(--a-soft); color: var(--a-accent); }
-  .theme-a .mock-logo-dot { background: linear-gradient(135deg, #67e8f9, var(--a-accent)); box-shadow: 0 0 12px var(--a-accent); }
+  /* 侧栏 */
+  .sidebar { border-right: 1px solid var(--hairline); background: var(--raised); display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .brand { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px; }
+  .brand-mark { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center;
+    background: var(--brand-bg); color: var(--brand-fg); font-size: 11px; font-weight: 700; }
+  .brand-name { font-size: 13px; font-weight: 650; letter-spacing: -.01em; color: var(--text); }
+  .search { display: flex; align-items: center; gap: 7px; margin: 0 10px 8px; padding: 0 9px; height: 28px;
+    border: 1px solid var(--hairline); border-radius: 7px; background: var(--inset); color: var(--faint); font-size: 11px; }
+  .segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin: 0 10px 10px; padding: 2px;
+    border: 1px solid var(--hairline); border-radius: 8px; background: var(--inset); }
+  .segmented span { text-align: center; padding: 4px 0; border-radius: 6px; font-size: 11px; color: var(--muted); }
+  .segmented span.on { background: var(--segmented-on); color: var(--accent); font-weight: 600; box-shadow: var(--segmented-shadow); }
 
-  /* ---------- 主题 B：暖纸书卷 ---------- */
-  .theme-b { background: var(--b-bg); color: var(--b-text); }
-  .theme-b .theme-head { background: var(--b-raised); }
-  .theme-b { --b-bg:#faf6ef; --b-raised:#f4eee2; --b-inset:#fffdf8; --b-border:#e3d8c4; --b-text:#3a3226;
-    --b-muted:#8a7a5f; --b-accent:#c2600a; --b-soft:rgba(194,96,10,.12); --b-warn:#d97706; --b-radius:12px; }
-  .theme-b .mock { background: var(--b-bg); }
-  .theme-b .mock-sidebar { background: var(--b-raised); border-right: 1px solid var(--b-border); }
-  .theme-b .mock-item:hover, .theme-b .mock-item.active { background: var(--b-soft); }
-  .theme-b .mock-item.active { color: var(--b-accent); }
-  .theme-b .mock-item .dot { background: var(--b-muted); }
-  .theme-b .mock-item:nth-child(4) .dot { background: var(--b-accent); }
-  .theme-b .mock-main { background: var(--b-bg); }
-  .theme-b .mock-tab { background: var(--b-inset); border: 1px solid var(--b-border); color: var(--b-muted); }
-  .theme-b .mock-tab.active { background: var(--b-inset); border-color: var(--b-accent); color: var(--b-accent); box-shadow: 0 1px 4px rgba(194,96,10,.15); }
-  .theme-b .mock-card { background: var(--b-inset); border: 1px solid var(--b-border); border-radius: 14px; box-shadow: 0 4px 16px rgba(90,70,40,.08); }
-  .theme-b .mock-bar { background: var(--b-border); }
-  .theme-b .mock-bar i:nth-child(1){ background: var(--b-accent); } .theme-b .mock-bar i:nth-child(2){ background: var(--b-warn); } .theme-b .mock-bar i:nth-child(3){ background: #d4c4a4; }
-  .theme-b .mock-btn { background: linear-gradient(180deg, #d97706, var(--b-accent)); color: #fffdf8; box-shadow: 0 3px 10px rgba(194,96,10,.25); }
-  .theme-b .mock-chip { background: var(--b-soft); color: var(--b-accent); }
-  .theme-b .mock-logo-dot { background: linear-gradient(135deg, #e8930c, var(--b-accent)); }
+  .list { padding: 0 8px; }
+  .eyebrow { display: flex; align-items: center; gap: 6px; padding: 9px 6px 5px;
+    color: var(--faint); font-size: 10px; letter-spacing: .09em; }
+  .eyebrow::before { content: ""; height: 1px; flex: 1; background: var(--hairline); order: 2; }
+  .eyebrow span { order: 3; }
 
-  /* ---------- 主题 C：紫夜霓虹 ---------- */
-  .theme-c { background: var(--c-bg); color: var(--c-text); }
-  .theme-c .theme-head { background: var(--c-raised); }
-  .theme-c { --c-bg:#151022; --c-raised:#1d1630; --c-inset:#0f0b1a; --c-border:#2d2347; --c-text:#ece7f7;
-    --c-muted:#9b8ec2; --c-accent:#a78bfa; --c-soft:rgba(167,139,250,.16); --c-warn:#f472b6; --c-radius:12px; }
-  .theme-c .mock { background: var(--c-bg); }
-  .theme-c .mock-sidebar { background: var(--c-raised); border-right: 1px solid var(--c-border); }
-  .theme-c .mock-item:hover, .theme-c .mock-item.active { background: var(--c-soft); }
-  .theme-c .mock-item.active { color: var(--c-accent); }
-  .theme-c .mock-item .dot { background: var(--c-muted); }
-  .theme-c .mock-item:nth-child(4) .dot { background: var(--c-accent); box-shadow: 0 0 10px var(--c-accent); }
-  .theme-c .mock-main { background: radial-gradient(700px 300px at 80% -10%, rgba(167,139,250,.12), transparent 60%), var(--c-bg); }
-  .theme-c .mock-tab { background: var(--c-inset); border: 1px solid var(--c-border); color: var(--c-muted); }
-  .theme-c .mock-tab.active { background: var(--c-soft); border-color: var(--c-accent); color: var(--c-text); box-shadow: 0 0 14px var(--c-soft); }
-  .theme-c .mock-card { background: var(--c-raised); border: 1px solid var(--c-border); box-shadow: 0 8px 26px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
-  .theme-c .mock-bar { background: var(--c-inset); }
-  .theme-c .mock-bar i:nth-child(1){ background: var(--c-accent); } .theme-c .mock-bar i:nth-child(2){ background: var(--c-warn); } .theme-c .mock-bar i:nth-child(3){ background: var(--c-border); }
-  .theme-c .mock-btn { background: linear-gradient(180deg, #c4b5fd, var(--c-accent)); color: #1b1133; box-shadow: 0 3px 16px rgba(167,139,250,.4); }
-  .theme-c .mock-chip { background: var(--c-soft); color: var(--c-accent); }
-  .theme-c .mock-logo-dot { background: linear-gradient(135deg, #c4b5fd, #e879f9); box-shadow: 0 0 14px rgba(167,139,250,.5); }
+  .row { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 1px 7px;
+    padding: 6px 7px; border: 1px solid transparent; border-radius: var(--r-sm); cursor: pointer; }
+  .row:hover { background: var(--row-hover); }
+  .row.on { background: var(--row-on); border-color: var(--row-on-border); box-shadow: var(--row-on-shadow); }
+  .row .mark { grid-column: 1; grid-row: 1 / span 2; align-self: center; justify-self: center; font-size: 11px; line-height: 1; }
+  .row .t { grid-column: 2; grid-row: 1; display: flex; align-items: baseline; gap: 6px; overflow: hidden; white-space: nowrap; font-size: 12px; color: var(--text); }
+  .row .t b { overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
+  .row .sub { grid-column: 2; grid-row: 2; display: flex; align-items: baseline; gap: 6px; overflow: hidden; white-space: nowrap; font-size: 11px; color: var(--faint); }
+  .row .sub .path { overflow: hidden; text-overflow: ellipsis; }
+  .row .sub .plan { margin-left: auto; flex: none; font-size: 10px; color: var(--faint); }
+  .row .sub .plan b { color: var(--accent); font-variant-numeric: tabular-nums; }
+  .row .when { grid-column: 3; grid-row: 1 / span 2; align-self: center; font-size: 10px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .sidebar-foot { margin-top: auto; padding: 10px; }
+  .new-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 30px;
+    border: 0; border-radius: var(--r-sm); background: var(--primary-bg); color: var(--primary-fg);
+    font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: var(--primary-shadow); }
 
-  /* ---------- 主题 D：青柠清爽 ---------- */
-  .theme-d { background: var(--d-bg); color: var(--d-text); }
-  .theme-d .theme-head { background: var(--d-raised); }
-  .theme-d { --d-bg:#f6f9f8; --d-raised:#ffffff; --d-inset:#eef4f2; --d-border:#d9e4e0; --d-text:#1c2b26;
-    --d-muted:#5f756e; --d-accent:#0e9f6e; --d-soft:rgba(14,159,110,.12); --d-warn:#eab308; --d-radius:10px; }
-  .theme-d .mock { background: var(--d-bg); }
-  .theme-d .mock-sidebar { background: var(--d-raised); border-right: 1px solid var(--d-border); }
-  .theme-d .mock-item:hover, .theme-d .mock-item.active { background: var(--d-soft); }
-  .theme-d .mock-item.active { color: var(--d-accent); }
-  .theme-d .mock-item .dot { background: var(--d-muted); }
-  .theme-d .mock-item:nth-child(4) .dot { background: var(--d-accent); }
-  .theme-d .mock-main { background: var(--d-bg); }
-  .theme-d .mock-tab { background: var(--d-inset); border: 1px solid var(--d-border); color: var(--d-muted); }
-  .theme-d .mock-tab.active { background: var(--d-raised); border-color: var(--d-accent); color: var(--d-accent); box-shadow: 0 1px 6px rgba(14,159,110,.15); }
-  .theme-d .mock-card { background: var(--d-raised); border: 1px solid var(--d-border); box-shadow: 0 4px 18px rgba(20,60,50,.06); }
-  .theme-d .mock-bar { background: var(--d-inset); }
-  .theme-d .mock-bar i:nth-child(1){ background: var(--d-accent); } .theme-d .mock-bar i:nth-child(2){ background: var(--d-warn); } .theme-d .mock-bar i:nth-child(3){ background: var(--d-border); }
-  .theme-d .mock-btn { background: linear-gradient(180deg, #10b981, var(--d-accent)); color: #f0fdf8; box-shadow: 0 3px 10px rgba(14,159,110,.28); }
-  .theme-d .mock-chip { background: var(--d-soft); color: var(--d-accent); }
-  .theme-d .mock-logo-dot { background: linear-gradient(135deg, #10b981, var(--d-accent)); }
+  /* 主区 */
+  .main { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--bg); }
+  .tabs { display: flex; align-items: center; gap: 3px; padding: 7px 9px; border-bottom: 1px solid var(--hairline); background: var(--raised); }
+  .tab { padding: 5px 9px 5px 11px; border-radius: var(--r-sm); border: 1px solid transparent;
+    font-size: 12px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .tab.on { background: var(--bg); border-color: var(--hairline); color: var(--text); box-shadow: var(--tab-on-shadow); }
+  .tab .x { margin-left: 6px; color: var(--faint); }
+  .tabs .grow { flex: 1; }
+  .tabs .act { display: inline-flex; gap: 2px; padding-left: 8px; border-left: 1px solid var(--hairline); }
+  .icon-btn { width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid transparent;
+    border-radius: 6px; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
+  .icon-btn:hover { background: var(--row-hover); color: var(--text); }
 
-  .theme-tip { max-width: 920px; margin: 0 auto 12px; font-size: 13px; color: #555; line-height: 1.7; }
-  .theme-tip code { background: #e5e7eb; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+  .term { flex: 1; min-height: 0; margin: 9px; border: 1px solid var(--hairline); border-radius: var(--r-md);
+    background: var(--term-bg); overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--term-shadow); }
+  .term-head { display: flex; align-items: center; gap: 7px; padding: 6px 10px; border-bottom: 1px solid var(--hairline);
+    background: var(--raised); font-size: 11px; color: var(--faint); }
+  .term-head .state { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: var(--dot-glow); }
+  .term-head .path { font-family: var(--mono); color: var(--muted); }
+  .term-head .grow { flex: 1; }
+  .term-body { flex: 1; padding: 9px 11px; font-family: var(--mono); font-size: 11px; line-height: 1.75;
+    color: var(--term-fg); overflow: hidden; }
+  .term-body .p { color: var(--accent); }
+  .term-body .dim { color: var(--faint); }
+  .term-body .link { color: var(--link); border-bottom: 1px dashed color-mix(in srgb, var(--link) 45%, transparent); }
+  .term-body .add { display: block; margin: 0 -4px; padding: 0 4px; color: var(--add-fg); background: var(--add-bg); }
+  .term-body .del { display: block; margin: 0 -4px; padding: 0 4px; color: var(--del-fg); background: var(--del-bg); }
+  .term-body .caret { display: inline-block; width: 6px; height: 13px; background: var(--accent); vertical-align: -2px; animation: blink 1.1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0 } }
+
+  /* 右栏 */
+  .rail { border-left: 1px solid var(--hairline); background: var(--raised); overflow: hidden; }
+  .rail-head { display: flex; align-items: center; justify-content: space-between; padding: 11px 12px 9px; border-bottom: 1px solid var(--hairline); }
+  .rail-head .st { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text); }
+  .rail-head .st i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: var(--dot-glow); }
+  .rail-head .since { font-size: 10px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .card { padding: 10px 12px; border-bottom: 1px solid var(--hairline); }
+  .card .hd { display: flex; align-items: baseline; gap: 6px; font-size: 10px; letter-spacing: .08em; color: var(--faint); }
+  .card .hd b { margin-left: auto; color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+  .progress { height: 3px; margin: 7px 0 6px; border-radius: 999px; background: var(--inset); overflow: hidden; }
+  .progress i { display: block; width: 43%; height: 100%; background: var(--accent); box-shadow: var(--dot-glow); }
+  .todo { display: flex; gap: 5px; font-size: 11px; line-height: 1.55; color: var(--muted); }
+  .todo + .todo { margin-top: 2px; }
+  .todo.done { color: var(--faint); text-decoration: line-through; }
+  .todo.now { color: var(--text); }
+  .todo .ic { flex: none; color: var(--accent); }
+  .tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  .tag { padding: 1px 6px; border-radius: 999px; font-size: 10px; border: 1px solid var(--hairline); color: var(--faint); }
+  .tag.spec { color: var(--tag-spec); border-color: color-mix(in srgb, var(--tag-spec) 40%, transparent); }
+  .tag.change { color: var(--tag-change); border-color: color-mix(in srgb, var(--tag-change) 40%, transparent); }
+  .tag.pitfall { color: var(--tag-pitfall); border-color: color-mix(in srgb, var(--tag-pitfall) 40%, transparent); }
+  .file { display: flex; gap: 7px; align-items: baseline; font-size: 11px; color: var(--muted); }
+  .file + .file { margin-top: 2px; }
+  .file .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); }
+  .file .a { color: var(--add-fg); font-variant-numeric: tabular-nums; }
+  .file .d { color: var(--del-fg); font-variant-numeric: tabular-nums; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; margin-top: 7px; }
+  .stats div { display: flex; flex-direction: column; gap: 1px; }
+  .stats b { font-size: 13px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  .stats span { font-size: 10px; color: var(--faint); }
+  .git { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .git i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .rail-actions { display: flex; gap: 5px; margin-top: 8px; }
+  .rail-actions button { flex: 1; height: 25px; border: 1px solid var(--hairline); border-radius: 6px;
+    background: var(--inset); color: var(--muted); font: inherit; font-size: 11px; cursor: pointer; }
+  .rail-actions button:hover { color: var(--text); border-color: var(--hairline-strong); }
+
+  /* 状态栏 */
+  .status { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 0 12px;
+    border-top: 1px solid var(--hairline); background: var(--raised); font-size: 11px; color: var(--faint); }
+  .status .agent { font-size: 13px; }
+  .status .alert { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px;
+    font-size: 10px; font-weight: 600; color: var(--warn);
+    border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+    background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .status .pill { padding: 2px 8px; border: 1px solid var(--hairline); border-radius: 999px; color: var(--muted); font-size: 10px; }
+  .status .grow { flex: 1; }
+
+  /* 组件区 */
+  .kit { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .panel { padding: 13px 14px; border: 1px solid var(--hairline); border-radius: var(--r-md); background: var(--panel); }
+  .panel h3 { margin-bottom: 10px; font-size: 11px; letter-spacing: .09em; color: var(--faint); }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .btn { height: 28px; padding: 0 12px; border-radius: 7px; border: 1px solid var(--hairline);
+    background: var(--inset); color: var(--text); font: inherit; font-size: 12px; cursor: pointer; }
+  .btn.primary { border-color: transparent; background: var(--primary-bg); color: var(--primary-fg); font-weight: 600; box-shadow: var(--primary-shadow); }
+  .btn.ghost { background: transparent; color: var(--muted); }
+  .btn.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+  .input { width: 100%; height: 30px; padding: 0 9px; border: 1px solid var(--hairline); border-radius: 7px;
+    background: var(--inset); color: var(--text); font: inherit; font-size: 12px; }
+  .input:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .hit { display: flex; gap: 8px; align-items: baseline; padding: 3px 6px; border-radius: 6px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .hit:hover { background: var(--row-hover); color: var(--text); }
+  .hit .ln { min-width: 4ch; text-align: right; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .swatch-row { display: flex; gap: 6px; }
+  .sw { width: 100%; height: 30px; border-radius: 6px; border: 1px solid rgba(255,255,255,.1);
+    display: grid; place-items: end center; padding-bottom: 2px; font-size: 8px; color: rgba(255,255,255,.55); }
+  .type-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .type-row span:first-child { min-width: 46px; color: var(--faint); font-size: 10px; font-variant-numeric: tabular-nums; }
+  .empty { display: grid; place-items: center; gap: 4px; padding: 18px 8px; color: var(--faint); font-size: 11px; }
+  .empty i { font-size: 18px; opacity: .7; font-style: normal; }
+
+  /* ============================================================
+     A · 指挥中心：近黑 + 单色 accent + 极紧密度（专业工具向）
+     ============================================================ */
+  :root {
+    --sans: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
+    --mono: "Cascadia Mono", Consolas, "Courier New", monospace;
+  }
+  :root[data-skin="a"] {
+    --bg: #0a0b0d; --panel: #0f1115; --raised: #15181e; --inset: #07090b;
+    --hairline: #262c34; --hairline-strong: #3b434f;
+    --text: #e6e9ee; --muted: #9aa3ae; --faint: #6b7480;
+    --accent: #34d399; --accent-soft: rgba(52, 211, 153, .13);
+    --warn: #e3b341; --danger: #f0616d;
+    --add-fg: #4ade80; --add-bg: rgba(74, 222, 128, .09);
+    --del-fg: #f8717c; --del-bg: rgba(248, 113, 124, .09);
+    --link: #7dd3fc;
+    --tag-spec: #93c5fd; --tag-change: #fbbf24; --tag-pitfall: #f8717c;
+    --term-bg: #060709; --term-fg: #c9d1d9;
+    --r-sm: 6px; --r-md: 8px; --r-lg: 12px;
+    --brand-bg: linear-gradient(140deg, #34d399, #0e9f74); --brand-fg: #04231b;
+    --primary-bg: #34d399; --primary-fg: #04231b; --primary-shadow: 0 1px 2px rgba(52, 211, 153, .25);
+    --row-hover: rgba(255, 255, 255, .035);
+    --row-on: linear-gradient(90deg, rgba(52, 211, 153, .12), transparent 70%);
+    --row-on-border: rgba(52, 211, 153, .3); --row-on-shadow: inset 2px 0 0 var(--accent);
+    --segmented-on: #1a1f25; --segmented-shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    --tab-on-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+    --dot-glow: 0 0 7px rgba(52, 211, 153, .6);
+    --window-shadow: 0 30px 80px rgba(0, 0, 0, .72);
+    --term-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+    --edge: rgba(52, 211, 153, .55);
+  }
+  :root[data-skin="a"] body { background: #08090b; color: var(--text); }
+  :root[data-skin="a"] .eyebrow,
+  :root[data-skin="a"] .card .hd { font-family: var(--mono); }
+
+  /* ============================================================
+     B · 霓虹脉冲：深紫底 + 双 accent + 更强辉光（最"炫"）
+     ============================================================ */
+  :root[data-skin="b"] {
+    --bg: #08060f; --panel: #0d0a17; --raised: #110d1d; --inset: #06050c;
+    --hairline: #241c3a; --hairline-strong: #3a2d5c;
+    --text: #ece9ff; --muted: #a79fc9; --faint: #6f679a;
+    --accent: #22d3ee; --accent-2: #a855f7; --accent-soft: rgba(34, 211, 238, .14);
+    --warn: #fbbf24; --danger: #fb7185;
+    --add-fg: #34d399; --add-bg: rgba(52, 211, 153, .12);
+    --del-fg: #fb7185; --del-bg: rgba(251, 113, 133, .12);
+    --link: #c084fc;
+    --tag-spec: #22d3ee; --tag-change: #a855f7; --tag-pitfall: #fb7185;
+    --term-bg: #05040a; --term-fg: #d8d2f5;
+    --r-sm: 8px; --r-md: 11px; --r-lg: 16px;
+    --brand-bg: linear-gradient(140deg, #22d3ee, #a855f7); --brand-fg: #08060f;
+    --primary-bg: linear-gradient(120deg, #22d3ee, #a855f7); --primary-fg: #05040a;
+    --primary-shadow: 0 2px 14px rgba(34, 211, 238, .3);
+    --row-hover: rgba(168, 85, 247, .08);
+    --row-on: linear-gradient(90deg, rgba(34, 211, 238, .14), rgba(168, 85, 247, .1) 70%);
+    --row-on-border: rgba(34, 211, 238, .35);
+    --row-on-shadow: inset 2px 0 0 #22d3ee, 0 0 18px rgba(34, 211, 238, .12);
+    --segmented-on: #1b1430; --segmented-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+    --tab-on-shadow: 0 2px 12px rgba(34, 211, 238, .16);
+    --dot-glow: 0 0 9px rgba(34, 211, 238, .85);
+    --window-shadow: 0 30px 80px rgba(88, 28, 135, .45), 0 0 0 1px rgba(34, 211, 238, .08);
+    --term-shadow: inset 0 1px 0 rgba(168, 85, 247, .14);
+    --edge: rgba(168, 85, 247, .6);
+  }
+  :root[data-skin="b"] body {
+    background: radial-gradient(900px 500px at 78% -10%, rgba(88, 28, 135, .35), transparent 65%), #08060f;
+    color: var(--text);
+  }
+  :root[data-skin="b"] .tab.on { border-image: linear-gradient(120deg, #22d3ee, #a855f7) 1; }
+  :root[data-skin="b"] .progress i { background: linear-gradient(90deg, #22d3ee, #a855f7); }
+  :root[data-skin="b"] .eyebrow,
+  :root[data-skin="b"] .card .hd { font-family: var(--mono); }
+
+  /* ============================================================
+     C · 纸感深化：暖白画布 + 墨色 + 珊瑚 + 衬线标题（白天向）
+     ============================================================ */
+  :root[data-skin="c"] {
+    --bg: #f7f4ec; --panel: #fffdf8; --raised: #efe9dd; --inset: #e9e2d3;
+    --hairline: #e2dccd; --hairline-strong: #cdc5b2;
+    --text: #1a1917; --muted: #55524b; --faint: #8a8578;
+    --accent: #c96f4a; --accent-soft: rgba(201, 111, 74, .13);
+    --warn: #b07d2a; --danger: #b8402f;
+    --add-fg: #2f7d4f; --add-bg: rgba(47, 125, 79, .09);
+    --del-fg: #b8402f; --del-bg: rgba(184, 64, 47, .08);
+    --link: #1f6feb;
+    --tag-spec: #2f6f9f; --tag-change: #a06a1f; --tag-pitfall: #b8402f;
+    --term-bg: #fffdf8; --term-fg: #3d3a34;
+    --r-sm: 7px; --r-md: 10px; --r-lg: 14px;
+    --brand-bg: #1a1917; --brand-fg: #fbf7f0;
+    --primary-bg: #c96f4a; --primary-fg: #fdf8f2; --primary-shadow: 0 1px 2px rgba(184, 92, 63, .2);
+    --row-hover: rgba(26, 25, 23, .04); --row-on: var(--inset);
+    --row-on-border: transparent; --row-on-shadow: none;
+    --segmented-on: #fffdf8; --segmented-shadow: 0 1px 2px rgba(26, 25, 23, .06);
+    --tab-on-shadow: 0 1px 2px rgba(26, 25, 23, .06);
+    --dot-glow: none;
+    --window-shadow: 0 18px 44px rgba(80, 66, 44, .16);
+    --term-shadow: 0 0 0 1px var(--hairline);
+    --edge: rgba(201, 111, 74, .55);
+  }
+  :root[data-skin="c"] body { background: #f2eee3; color: var(--text); }
+  :root[data-skin="c"] .brand-name,
+  :root[data-skin="c"] .bar h1 {
+    font-family: ui-serif, "Palatino Linotype", Palatino, Georgia, "Songti SC", serif;
+    letter-spacing: -.015em;
+  }
+  :root[data-skin="c"] .eyebrow,
+  :root[data-skin="c"] .card .hd { font-family: var(--sans); letter-spacing: .1em; }
+  :root[data-skin="c"] .term-body { font-size: 11.5px; }
+  :root[data-skin="c"] .sw { border-color: rgba(0, 0, 0, .12); color: rgba(0, 0, 0, .45); }
+
+  @media (max-width: 1080px) {
+    .window { grid-template-columns: 200px minmax(0, 1fr); }
+    .rail { display: none; }
+  }
 </style>
 </head>
 <body>
-  <div class="page-title">CodeAgentDesk · 风格预览</div>
-  <div class="page-sub">4 个方向，用浏览器打开此文件查看效果，选一个告诉我即可落地为应用主题</div>
-
-  <div class="theme-tip">每块都模拟了应用的真实界面：<b>左侧</b> 侧边栏（品牌 + 运行中/历史列表），<b>右侧</b> 标签栏 + token 用量卡片 + 按钮 + 标签徽章。底部色板是各风格的主色。</div>
-
-  <!-- A -->
-  <section class="theme-block theme-a">
-    <div class="theme-head">
-      <h2>A · 深空科技</h2>
-      <span class="tagline">深蓝黑 · 青色光晕 · 玻璃质感 — 类 Linear / Vercel，克制有科技感</span>
-      <div class="swatches">
-        <span class="swatch" style="background:#0b0e14"></span>
-        <span class="swatch" style="background:#22d3ee"></span>
-        <span class="swatch" style="background:#12161f"></span>
-      </div>
+<div class="wrap">
+  <div class="bar">
+    <div>
+      <h1>界面重构 · 三个方向</h1>
+      <p>
+        同一套内容，只有设计令牌、材质与排版不同。右上角实时切换；选定方向后我再重建真正的
+        <code>styles.css</code>。以下都是静态样张，不影响现在的应用。
+      </p>
     </div>
-    <div class="mock">
-      <div class="mock-sidebar">
-        <div class="mock-logo"><span class="mock-logo-dot">⌘</span>CodeAgentDesk</div>
-        <div class="mock-label">当前会话</div>
-        <div class="mock-item active"><span class="dot"></span><span class="t">dsh-harness #3</span></div>
-        <div class="mock-item"><span class="dot"></span><span class="t">CodeAgentDesk #2</span></div>
-        <div class="mock-label">历史会话</div>
-        <div class="mock-item"><span class="dot"></span><span class="t">分组功能开发</span></div>
-        <div class="mock-item"><span class="dot"></span><span class="t">UI 升级</span></div>
-        <div class="mock-item"><span class="dot"></span><span class="t">性能优化</span></div>
-      </div>
-      <div class="mock-main">
-        <div class="mock-tabs">
-          <div class="mock-tab active"><span class="dot"></span>dsh-harness #3</div>
-          <div class="mock-tab"><span class="dot"></span>CodeAgentDesk #2</div>
-        </div>
-        <div class="mock-card">
-          <span class="k">Token 用量（近 14 天）</span>
-          <div class="mock-bar"><i style="flex:5"></i><i style="flex:2"></i><i style="flex:3"></i></div>
-          <div class="mock-chips"><span class="mock-chip">输入 1.2M</span><span class="mock-chip">输出 480k</span></div>
-        </div>
-        <div class="mock-card">
-          <span class="k">会话 ID</span>
-          <span class="v">a1b2c3d4-…</span>
-        </div>
-        <button class="mock-btn">新建会话</button>
-      </div>
+    <div class="switch" role="group" aria-label="方向切换">
+      <button type="button" data-set="a" aria-pressed="true">A · 指挥中心</button>
+      <button type="button" data-set="b" aria-pressed="false">B · 霓虹脉冲</button>
+      <button type="button" data-set="c" aria-pressed="false">C · 纸感深化</button>
     </div>
-  </section>
-
-  <!-- B -->
-  <section class="theme-block theme-b">
-    <div class="theme-head">
-      <h2>B · 暖纸书卷</h2>
-      <span class="tagline">米白纸感 · 暖棕文字 · 琥珀强调 — 类 Notion / 纸书，护眼、安静、有温度</span>
-      <div class="swatches">
-        <span class="swatch" style="background:#faf6ef"></span>
-        <span class="swatch" style="background:#c2600a"></span>
-        <span class="swatch" style="background:#f4eee2"></span>
-      </div>
-    </div>
-    <div class="mock">
-      <div class="mock-sidebar">
-        <div class="mock-logo"><span class="mock-logo-dot">⌘</span>CodeAgentDesk</div>
-        <div class="mock-label">当前会话</div>
-        <div class="mock-item active"><span class="dot"></span><span class="t">dsh-harness #3</span></div>
-        <div class="mock-item"><span class="dot"></span><span class="t">CodeAgentDesk #2</span></div>
-        <div class="mock-label">历史会话</div>
-        <div class="mock-item"><span class="dot"></span><span class="t">分组功能开发</span></div>
-        <div class="mock-item"><span class="dot"></span><span class="t">UI 升级</span></div>
-        <div class="mock-item"><span class="dot"></span><span class="t">性能优化</span></div>
-      </div>
-      <div class="mock-main">
-        <div class="mock-tabs">
-          <div class="mock-tab active"><span class="dot"></span>dsh-harness #3</div>
-          <div class="mock-tab"><span class="dot"></span>CodeAgentDesk #2</div>
-        </div>
-        <div class="mock-card">
-          <span class="k">Token 用量（近 14 天）</span>
-          <div class="mock-bar"><i style="flex:5"></i><i style="flex:2"></i><i style="flex:3"></i></div>
-          <div class="mock-chips"><span class="mock-chip">输入 1.2M</span><span class="mock-chip">输出 480k</span></div>
-        </div>
-        <div class="mock-card">
-          <span class="k">会话 ID</span>
-          <span class="v">a1b2c3d4-…</span>
-        </div>
-        <button class="mock-btn">新建会话</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- C -->
-  <section class="theme-block theme-c">
-    <div class="theme-head">
-      <h2>C · 紫夜霓虹</h2>
-      <span class="tagline">深紫黑 · 紫粉霓虹 · 强发光 — 有态度的开发工具感，醒目、个性</span>
-      <div class="swatches">
-        <span class="swatch" style="background:#151022"></span>
-        <span class="swatch" style="background:#a78bfa"></span>
-        <span class="swatch" style="background:#e879f9"></span>
-      </div>
-    </div>
-    <div class="mock">
-      <div class="mock-sidebar">
-        <div class="mock-logo"><span class="mock-logo-dot">⌘</span>CodeAgentDesk</div>
-        <div class="mock-label">当前会话</div>
-        <div class="mock-item active"><span class="dot"></span><span class="t">dsh-harness #3</span></div>
-        <div class="mock-item"><span class="dot"></span><span class="t">CodeAgentDesk #2</span></div>
-        <div class="mock-label">历史会话</div>
-        <div class="mock-item"><span class="dot"></span><span class="t">分组功能开发</span></div>
-        <div class="mock-item"><span class="dot"></span><span class="t">UI 升级</span></div>
-        <div class="mock-item"><span class="dot"></span><span class="t">性能优化</span></div>
-      </div>
-      <div class="mock-main">
-        <div class="mock-tabs">
-          <div class="mock-tab active"><span class="dot"></span>dsh-harness #3</div>
-          <div class="mock-tab"><span class="dot"></span>CodeAgentDesk #2</div>
-        </div>
-        <div class="mock-card">
-          <span class="k">Token 用量（近 14 天）</span>
-          <div class="mock-bar"><i style="flex:5"></i><i style="flex:2"></i><i style="flex:3"></i></div>
-          <div class="mock-chips"><span class="mock-chip">输入 1.2M</span><span class="mock-chip">输出 480k</span></div>
-        </div>
-        <div class="mock-card">
-          <span class="k">会话 ID</span>
-          <span class="v">a1b2c3d4-…</span>
-        </div>
-        <button class="mock-btn">新建会话</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- D -->
-  <section class="theme-block theme-d">
-    <div class="theme-head">
-      <h2>D · 青柠清爽</h2>
-      <span class="tagline">白底 · 薄荷绿 · 高对比 — 明亮的现代浅色，干净利落（类 Arc / Linear 浅色）</span>
-      <div class="swatches">
-        <span class="swatch" style="background:#f6f9f8"></span>
-        <span class="swatch" style="background:#0e9f6e"></span>
-        <span class="swatch" style="background:#ffffff"></span>
-      </div>
-    </div>
-    <div class="mock">
-      <div class="mock-sidebar">
-        <div class="mock-logo"><span class="mock-logo-dot">⌘</span>CodeAgentDesk</div>
-        <div class="mock-label">当前会话</div>
-        <div class="mock-item active"><span class="dot"></span><span class="t">dsh-harness #3</span></div>
-        <div class="mock-item"><span class="dot"></span><span class="t">CodeAgentDesk #2</span></div>
-        <div class="mock-label">历史会话</div>
-        <div class="mock-item"><span class="dot"></span><span class="t">分组功能开发</span></div>
-        <div class="mock-item"><span class="dot"></span><span class="t">UI 升级</span></div>
-        <div class="mock-item"><span class="dot"></span><span class="t">性能优化</span></div>
-      </div>
-      <div class="mock-main">
-        <div class="mock-tabs">
-          <div class="mock-tab active"><span class="dot"></span>dsh-harness #3</div>
-          <div class="mock-tab"><span class="dot"></span>CodeAgentDesk #2</div>
-        </div>
-        <div class="mock-card">
-          <span class="k">Token 用量（近 14 天）</span>
-          <div class="mock-bar"><i style="flex:5"></i><i style="flex:2"></i><i style="flex:3"></i></div>
-          <div class="mock-chips"><span class="mock-chip">输入 1.2M</span><span class="mock-chip">输出 480k</span></div>
-        </div>
-        <div class="mock-card">
-          <span class="k">会话 ID</span>
-          <span class="v">a1b2c3d4-…</span>
-        </div>
-        <button class="mock-btn">新建会话</button>
-      </div>
-    </div>
-  </section>
-
-  <div class="theme-tip" style="text-align:center; margin-top:36px;">
-    选定后回复字母（如 <code>B</code>）即可；也可以说"A 改深一点"这类微调意见。
   </div>
+
+  <!-- ================= 应用框架 ================= -->
+  <div class="window">
+    <div class="titlebar">
+      <div class="traffic"><i></i><i></i><i></i></div>
+      <span class="doc">CodeAgentDesk</span>
+      <span class="cmd">Ctrl+K 命令面板</span>
+    </div>
+
+    <!-- 侧栏 -->
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">◆</div><div class="brand-name">CodeAgentDesk</div></div>
+      <div class="search">⌕ 搜索会话</div>
+      <div class="segmented"><span class="on">会话</span><span>归档</span><span>搜索</span></div>
+      <div class="list">
+        <div class="eyebrow">当前会话 <span>2</span></div>
+        <div class="row on">
+          <span class="mark" style="color:var(--accent)">●</span>
+          <span class="t"><b>实现工作区 diff 审查</b></span>
+          <span class="sub"><span class="path">D:\ai\CodeAgentDesk</span><span class="plan">计划 <b>3/7</b></span></span>
+          <span class="when">刚</span>
+        </div>
+        <div class="row">
+          <span class="mark" style="color:var(--faint)">◐</span>
+          <span class="t"><b>修复右栏 git 不刷新</b></span>
+          <span class="sub"><span class="path">src\main\git-info.ts</span></span>
+          <span class="when">12m</span>
+        </div>
+        <div class="eyebrow">历史会话 <span>128</span></div>
+        <div class="row">
+          <span class="mark" style="color:var(--hairline-strong)">○</span>
+          <span class="t"><b>知识卡片：规格与变更</b></span>
+          <span class="sub"><span class="path">docs\knowledge\README.md</span></span>
+          <span class="when">2h</span>
+        </div>
+        <div class="row">
+          <span class="mark" style="color:var(--hairline-strong)">○</span>
+          <span class="t"><b>Claude 纸感主题</b></span>
+          <span class="sub"><span class="path">src\renderer\styles.css</span></span>
+          <span class="when">昨天</span>
+        </div>
+      </div>
+      <div class="sidebar-foot"><button class="new-btn" type="button">＋ 新建会话</button></div>
+    </aside>
+
+    <!-- 主区 -->
+    <main class="main">
+      <div class="tabs">
+        <div class="tab on">实现工作区 diff 审查<span class="x">×</span></div>
+        <div class="tab">修复右栏 git<span class="x">×</span></div>
+        <div class="tab">知识卡片<span class="x">×</span></div>
+        <span class="grow"></span>
+        <span class="act">
+          <button class="icon-btn" title="复制">⧉</button>
+          <button class="icon-btn" title="详情">▤</button>
+          <button class="icon-btn" title="信息面板">▥</button>
+          <button class="icon-btn" title="新建">＋</button>
+        </span>
+      </div>
+
+      <div class="term">
+        <div class="term-head">
+          <span class="state"></span>
+          <span class="path">D:\ai\CodeAgentDesk</span>
+          <span class="grow"></span>
+          <span>运行中 · 02:14</span>
+        </div>
+        <div class="term-body">
+          <div><span class="p">❯</span> 帮我把 diff 面板的列对齐问题修一下</div>
+          <div class="dim">● 我先看当前样式（三处成因：连字 / 中文宽度 / tab）</div>
+          <div>  Read <span class="link">src/renderer/styles.css:7102</span></div>
+          <div class="add">+  font-variant-ligatures: none;</div>
+          <div class="add">+  tab-size: 4;</div>
+          <div class="del">-  direction: rtl;</div>
+          <div class="dim">● 改完了，构建通过（113 tests）</div>
+          <div><span class="p">❯</span> 提交 <span class="caret"></span></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 右栏 -->
+    <aside class="rail">
+      <div class="rail-head">
+        <span class="st"><i></i>运行中</span>
+        <span class="since">活跃 2h14m</span>
+      </div>
+      <div class="card">
+        <div class="hd">计划 <b>3/7</b></div>
+        <div class="progress"><i></i></div>
+        <div class="todo done"><span class="ic">✓</span>抽离 insights 解析</div>
+        <div class="todo now"><span class="ic">◐</span>diff 面板列对齐</div>
+        <div class="todo"><span class="ic">○</span>终端链接 provider</div>
+      </div>
+      <div class="card">
+        <div class="hd">改动 <b>7 文件 +120 −30</b></div>
+        <div class="file"><span class="n">session-insights.ts</span><span class="a">+84</span><span class="d">−2</span></div>
+        <div class="file"><span class="n">InfoPanel.tsx</span><span class="a">+22</span><span class="d">−6</span></div>
+        <div class="file"><span class="n">styles.css</span><span class="a">+14</span><span class="d">−8</span></div>
+        <div class="rail-actions"><button type="button">审查改动</button><button type="button">工作区 diff</button></div>
+      </div>
+      <div class="card">
+        <div class="hd">痕迹</div>
+        <div class="stats">
+          <div><b>12</b><span>轮对话</span></div>
+          <div><b>46</b><span>次工具调用</span></div>
+          <div><b>2</b><span>次失败</span></div>
+          <div><b>11:52</b><span>开始</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="git"><i></i>main · 3 个文件未提交</div>
+        <div class="tags"><span class="tag spec">规格</span><span class="tag change">变更</span><span class="tag pitfall">踩坑</span></div>
+      </div>
+    </aside>
+
+    <!-- 状态栏 -->
+    <footer class="status">
+      <span class="agent">🧠</span>
+      <span class="alert">⚠ 2 在等你</span>
+      <span>3 会话</span>
+      <span>128 归档</span>
+      <span class="pill">首页</span>
+      <span class="pill">今日总结</span>
+      <span class="pill">更多</span>
+      <span class="grow"></span>
+      <span>D:\ai\CodeAgentDesk</span>
+      <span>v0.1.1</span>
+    </footer>
+  </div>
+
+  <!-- ================= 组件区 ================= -->
+  <div class="kit">
+    <div class="panel">
+      <h3>按钮</h3>
+      <div class="btn-row">
+        <button class="btn primary" type="button">新建会话</button>
+        <button class="btn" type="button">暂存</button>
+        <button class="btn ghost" type="button">取消</button>
+        <button class="btn danger" type="button">删除</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>输入</h3>
+      <input class="input" placeholder="提交信息…" />
+      <div style="height:8px"></div>
+      <input class="input" placeholder="搜索代码（Ctrl+Shift+F）" />
+    </div>
+    <div class="panel">
+      <h3>代码搜索命中</h3>
+      <div class="hit"><span class="ln">239</span><span>export async function readSessionInsights(</span></div>
+      <div class="hit"><span class="ln">312</span><span>const insights = await readSessionInsights(</span></div>
+      <div class="hit"><span class="ln">41</span><span>.getSessionInsights(sessionId)</span></div>
+    </div>
+    <div class="panel">
+      <h3>空状态</h3>
+      <div class="empty"><i>◍</i><span>还没有卡片</span><span>把踩过的坑记成卡片</span></div>
+    </div>
+    <div class="panel" style="grid-column: span 2">
+      <h3>色阶与字号</h3>
+      <div class="swatch-row">
+        <div class="sw" style="background: var(--bg)">bg</div>
+        <div class="sw" style="background: var(--raised)">raised</div>
+        <div class="sw" style="background: var(--inset)">inset</div>
+        <div class="sw" style="background: var(--hairline)">hairline</div>
+        <div class="sw" style="background: var(--text)">text</div>
+        <div class="sw" style="background: var(--muted)">muted</div>
+        <div class="sw" style="background: var(--accent)">accent</div>
+        <div class="sw" style="background: var(--warn)">warn</div>
+        <div class="sw" style="background: var(--danger)">danger</div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="type-row"><span>16</span><b style="font-size:16px">会话标题与面板标题</b></div>
+      <div class="type-row"><span>13</span><span style="font-size:13px;color:var(--text)">正文 13px</span></div>
+      <div class="type-row"><span>12</span><span style="font-size:12px;color:var(--muted)">次要信息 12px</span></div>
+      <div class="type-row"><span>11</span><span style="font-size:11px;color:var(--faint)">环境信息 11px</span></div>
+      <div class="type-row"><span>10</span><span style="font-size:10px;letter-spacing:.09em;color:var(--faint)">EYEBROW 10PX</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const buttons = document.querySelectorAll('.switch button');
+  function setSkin(skin) {
+    document.documentElement.dataset.skin = skin;
+    buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.set === skin)));
+  }
+  buttons.forEach((b) => b.addEventListener('click', () => setSkin(b.dataset.set)));
+  const fromQuery = new URLSearchParams(location.search).get('skin');
+  if (fromQuery && ['a', 'b', 'c'].includes(fromQuery)) setSkin(fromQuery);
+</script>
 </body>
 </html>
